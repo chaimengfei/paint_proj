@@ -19,8 +19,8 @@ func NewProductService(pr repository.ProductRepository) ProductService {
 	}
 }
 func (p productService) GetProductList() ([]model.Category, map[int64][]model.ProductSimple, error) {
-	// 1.获取所有分类
-	categories, err := p.productRepo.GetProductCategory()
+	// 1 从product表查分类
+	categories, categoryMap, err := p.productRepo.GetProductCategory()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -37,7 +37,7 @@ func (p productService) GetProductList() ([]model.Category, map[int64][]model.Pr
 			Name:         p.Name,
 			SellerPrice:  p.SellerPrice,
 			CategoryID:   p.CategoryId,
-			CategoryName: p.CategoryName,
+			CategoryName: categoryMap[p.CategoryId],
 			Image:        p.Image,
 			Unit:         p.Unit,
 			Remark:       p.Remark,

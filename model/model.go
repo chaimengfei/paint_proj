@@ -11,7 +11,6 @@ type Product struct {
 	ShippingCost float64 `json:"shipping_cost" gorm:"shipping_cost"` // 运费(暂不用)
 	ProductCost  float64 `json:"product_cost" gorm:"product_cost"`   // 货物成本(暂不用)
 	CategoryId   int64   `json:"category_id" gorm:"category_id"`     // 分类id
-	CategoryName string  `json:"category_name" gorm:"category_name"` // 分类名称(冗余)
 	Image        string  `json:"image" gorm:"image"`                 // 图片地址
 	Unit         string  `json:"unit" gorm:"unit"`                   // 单位 L/桶/套
 	Remark       string  `json:"remark" gorm:"remark"`               // 备注

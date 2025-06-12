@@ -6,8 +6,8 @@ import (
 )
 
 type ProductRepository interface {
-	GetProductCategory() ([]model.Category, error) //  获取所有分类
-	GetAllProduct() ([]model.Product, error)       //  获取所有分类
+	GetProductCategory() ([]model.Category, map[int64]string, error) //  从product表查分类
+	GetAllProduct() ([]model.Product, error)                         //  获取所有商品
 
 	GetByID(productID int64) (*model.Product, error)
 }
@@ -20,13 +20,17 @@ func NewProductRepository(db *gorm.DB) ProductRepository {
 	return &productRepository{db: db}
 }
 
-// GetProductCategory 从product表查有效的分类
-func (p *productRepository) GetProductCategory() ([]model.Category, error) {
+// GetProductCategory  从product表查分类
+func (p *productRepository) GetProductCategory() ([]model.Category, map[int64]string, error) {
 	var categories []model.Category
-	if err := p.db.Model(&model.Product{}).Select("distinct category_id as id,category_name as name").Order("id").Find(&categories).Error; err != nil {
-		return nil, err
+	if err := p.db.Table("product p").Select("distinct p.category_id as id,c.name").Joins("INNER JOIN category c ON p.category_id = c.id").Scan(&categories).Error; err != nil {
+		return nil, nil, err
 	}
-	return categories, nil
+	var categoryMap = make(map[int64]string)
+	for _, category := range categories {
+		categoryMap[category.ID] = category.Name
+	}
+	return categories, categoryMap, nil
 }
 
 // GetAllProduct 获取所有商品

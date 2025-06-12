@@ -6,7 +6,7 @@ import (
 )
 
 type CartService interface {
-	GetCartList(userID int64) ([]model.Cart, error)
+	GetCartList(userID int64) ([]model.CartWithProduct, error)
 	AddToCart(userID, productID int64) error
 	UpdateCartItem(userID, cartID int64, quantity int) error
 	DeleteCartItem(userID, cartID int64) error
@@ -24,7 +24,7 @@ func NewCartService(cr repository.CartRepository, pr repository.ProductRepositor
 	}
 }
 
-func (cs *cartService) GetCartList(userID int64) ([]model.Cart, error) {
+func (cs *cartService) GetCartList(userID int64) ([]model.CartWithProduct, error) {
 	// 获取购物车列表并关联商品信息
 	cartItems, err := cs.cartRepo.GetByUserIDWithProduct(userID)
 	if err != nil {

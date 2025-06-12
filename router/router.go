@@ -1,6 +1,7 @@
 package router
 
 import (
+	"cmf/paint_proj/auth"
 	"cmf/paint_proj/configs"
 	"cmf/paint_proj/controller"
 	"cmf/paint_proj/repository"
@@ -50,10 +51,10 @@ func SetupRouter() *gin.Engine {
 		}
 		cartGroup := api.Group("/cart")
 		{
-			cartGroup.POST("/add", cartController.AddToCart)
-			cartGroup.GET("/list", cartController.GetCartList)
-			cartGroup.POST("/update", cartController.UpdateCartItem)
-			cartGroup.POST("/delete", cartController.DeleteCartItem)
+			cartGroup.GET("/list", auth.AuthMiddleware(), cartController.GetCartList)
+			cartGroup.POST("/add", auth.AuthMiddleware(), cartController.AddToCart)
+			cartGroup.POST("/update", auth.AuthMiddleware(), cartController.UpdateCartItem)
+			cartGroup.POST("/delete", auth.AuthMiddleware(), cartController.DeleteCartItem)
 		}
 	}
 

@@ -41,12 +41,6 @@ type Cart struct {
 	Selected  bool      `gorm:"column:selected" json:"selected"`
 	CreatedAt time.Time `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt time.Time `gorm:"column:updated_at" json:"updated_at"`
-
-	// 关联商品信息（非数据库字段）
-	ProductName        string  `gorm:"-" json:"product_name"`
-	ProductImage       string  `gorm:"-" json:"product_image"`
-	ProductSellerPrice float64 `gorm:"-" json:"product_seller_price"`
-	ProductUnit        string  `gorm:"-" json:"product_unit"`
 }
 
 func (Cart) TableName() string {

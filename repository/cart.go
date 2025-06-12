@@ -14,7 +14,7 @@ type CartRepository interface {
 	GetByIDAndUser(id, userID int64) (*model.Cart, error)
 	GetByUserAndProduct(userID, productID int64) (*model.Cart, error)
 	GetByUserID(userID int64) ([]model.Cart, error)
-	GetByUserIDWithProduct(userID int64) ([]model.Cart, error)
+	GetByUserIDWithProduct(userID int64) ([]model.CartWithProduct, error)
 }
 
 type cartRepository struct {
@@ -59,8 +59,8 @@ func (cr *cartRepository) GetByUserID(userID int64) ([]model.Cart, error) {
 	return carts, err
 }
 
-func (cr *cartRepository) GetByUserIDWithProduct(userID int64) ([]model.Cart, error) {
-	var carts []model.Cart
+func (cr *cartRepository) GetByUserIDWithProduct(userID int64) ([]model.CartWithProduct, error) {
+	var carts []model.CartWithProduct
 	err := cr.db.Table("cart c").
 		Select("c.*, p.name as product_name, p.image as product_image, p.seller_price as product_seller_price, p.unit as product_unit").
 		Joins("LEFT JOIN product p ON c.product_id = p.id").

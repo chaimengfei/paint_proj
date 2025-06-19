@@ -18,14 +18,14 @@ func NewProductService(pr repository.ProductRepository) ProductService {
 		productRepo: pr,
 	}
 }
-func (p productService) GetProductList() ([]model.Category, map[int64][]model.ProductSimple, error) {
+func (ps *productService) GetProductList() ([]model.Category, map[int64][]model.ProductSimple, error) {
 	// 1 从product表查分类
-	categories, categoryMap, err := p.productRepo.GetProductCategory()
+	categories, categoryMap, err := ps.productRepo.GetProductCategory()
 	if err != nil {
 		return nil, nil, err
 	}
 	// 2.获取所有商品
-	products, err := p.productRepo.GetAllProduct()
+	products, err := ps.productRepo.GetAllProduct()
 	if err != nil {
 		return nil, nil, err
 	}

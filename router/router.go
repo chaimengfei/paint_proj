@@ -33,14 +33,17 @@ func SetupRouter() *gin.Engine {
 	// 3.初始化仓储层
 	cartRepo := repository.NewCartRepository(db)
 	productRepo := repository.NewProductRepository(db)
+	orderRepo := repository.NewOrderRepository(db)
 
 	// 4.初始化服务层
 	cartService := service.NewCartService(cartRepo, productRepo)
 	productService := service.NewProductService(productRepo)
+	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo)
 
 	// 5. 初始化控制器
 	cartController := controller.NewCartController(cartService)
 	productController := controller.NewProductController(productService)
+	orderController := controller.NewOrderController(orderService)
 
 	// API路由
 	api := r.Group("/api")
@@ -55,6 +58,16 @@ func SetupRouter() *gin.Engine {
 			cartGroup.POST("/add", auth.AuthMiddleware(), cartController.AddToCart)
 			cartGroup.POST("/update", auth.AuthMiddleware(), cartController.UpdateCartItem)
 			cartGroup.POST("/delete", auth.AuthMiddleware(), cartController.DeleteCartItem)
+		}
+		orderGroup := api.Group("/order")
+		{
+			orderGroup.GET("/list", auth.AuthMiddleware(), orderController.GetOrderList)
+			orderGroup.GET("/detail", auth.AuthMiddleware(), orderController.GetOrderDetail)
+			orderGroup.POST("/create", auth.AuthMiddleware(), orderController.CreateOrder)
+			orderGroup.POST("/delete", auth.AuthMiddleware(), orderController.DeleteOrder)
+			orderGroup.POST("/cancel", auth.AuthMiddleware(), orderController.CancelOrder)
+			orderGroup.POST("/pay", auth.AuthMiddleware(), orderController.PayOrder)
+			orderGroup.POST("/pay_callback", auth.AuthMiddleware(), orderController.PaymentCallback)
 		}
 	}
 

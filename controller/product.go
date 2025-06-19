@@ -35,5 +35,5 @@ func (pc *ProductController) GetProductList(c *gin.Context) {
 		Products:   productMap,
 	}
 
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response) //
 }

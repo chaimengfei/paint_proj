@@ -10,6 +10,7 @@ type ProductRepository interface {
 	GetAllProduct() ([]model.Product, error)                         //  获取所有商品
 
 	GetByID(productID int64) (*model.Product, error)
+	GetByIDs(productIDs []int64) ([]*model.Product, error)
 }
 
 type productRepository struct {
@@ -45,4 +46,9 @@ func (p *productRepository) GetByID(productID int64) (*model.Product, error) {
 	var product model.Product
 	err := p.db.Model(&model.Product{}).First(&product, productID).Error
 	return &product, err
+}
+func (p *productRepository) GetByIDs(productIDs []int64) ([]*model.Product, error) {
+	var products []*model.Product
+	err := p.db.Model(&model.Product{}).Where("id in ?", productIDs).Find(&products).Error
+	return products, err
 }

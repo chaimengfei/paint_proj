@@ -23,3 +23,40 @@ type CartWithProduct struct {
 	ProductSellerPrice float64 `json:"product_seller_price"`
 	ProductUnit        string  `json:"product_unit"`
 }
+
+// 订单类的业务数据
+type CreateOrderRequest struct {
+	UserID      int64
+	CartIDs     []int64       // 购物车ID列表
+	BuyNowItems []*BuyNowItem // 立即购买商品
+	AddressID   int64         // 收货地址ID
+	CouponID    int64         // 优惠券ID
+	Note        string        // 订单备注
+}
+
+type BuyNowItem struct {
+	ProductID int64
+	Quantity  int
+}
+
+type OrderListRequest struct {
+	UserID   int64
+	Status   int32
+	Page     int32
+	PageSize int32
+}
+
+type OrderPaidCallbackRequest struct {
+	OrderNo       string
+	PaymentNo     string
+	PaymentType   int32
+	PaymentTime   int64
+	PaymentAmount float64
+}
+
+type ShipOrderRequest struct {
+	OrderID      int64
+	ShippingNo   string
+	ShippingName string
+	ShippingTime int64
+}

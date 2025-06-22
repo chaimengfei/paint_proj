@@ -64,7 +64,7 @@ func SetupRouter() *gin.Engine {
 			orderGroup.GET("/list", auth.AuthMiddleware(), orderController.GetOrderList)
 			orderGroup.GET("/detail", auth.AuthMiddleware(), orderController.GetOrderDetail)
 			orderGroup.POST("/create", auth.AuthMiddleware(), orderController.CreateOrder)
-			orderGroup.POST("/delete", auth.AuthMiddleware(), orderController.DeleteOrder)
+			orderGroup.DELETE("/delete", auth.AuthMiddleware(), orderController.DeleteOrder)
 			orderGroup.POST("/cancel", auth.AuthMiddleware(), orderController.CancelOrder)
 			orderGroup.POST("/pay", auth.AuthMiddleware(), orderController.PayOrder)
 			orderGroup.POST("/pay_callback", auth.AuthMiddleware(), orderController.PaymentCallback)

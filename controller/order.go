@@ -96,7 +96,7 @@ func (oc *OrderController) GetOrderList(c *gin.Context) {
 // GetOrderDetail 获取订单详情
 func (oc *OrderController) GetOrderDetail(c *gin.Context) {
 	userID := c.GetInt64("user_id")
-	orderIDStr := c.Param("id")
+	orderIDStr := c.Query("id")
 	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "订单ID格式错误"})
@@ -113,7 +113,7 @@ func (oc *OrderController) GetOrderDetail(c *gin.Context) {
 // CancelOrder 取消订单
 func (oc *OrderController) CancelOrder(c *gin.Context) {
 	userID := c.GetInt64("user_id")
-	orderIDStr := c.Param("id")
+	orderIDStr := c.Query("id")
 	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "订单ID格式错误"})
@@ -124,7 +124,7 @@ func (oc *OrderController) CancelOrder(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "查询订单异常:" + err.Error()})
 		return
 	}
-	if err := oc.orderService.CancelOrder(c.Request.Context(), userID, order); err != nil {
+	if err = oc.orderService.CancelOrder(c.Request.Context(), userID, order); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "取消订单失败:" + err.Error()})
 		return
 	}
@@ -134,23 +134,28 @@ func (oc *OrderController) CancelOrder(c *gin.Context) {
 // DeleteOrder 删除订单
 func (oc *OrderController) DeleteOrder(c *gin.Context) {
 	userID := c.GetInt64("user_id")
-	orderIDStr := c.Param("id")
+	orderIDStr := c.Query("id")
 	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "订单ID格式错误"})
 		return
 	}
-	if err := oc.orderService.DeleteOrder(c.Request.Context(), userID, orderID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "取消订单失败:" + err.Error()})
+	order, err := oc.orderService.GetOrderDetail(c.Request.Context(), userID, orderID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "查询订单异常:" + err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "取消订单成功"})
+	if err := oc.orderService.DeleteOrder(c.Request.Context(), userID, order); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "删除订单失败:" + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "删除订单成功"})
 }
 
 // PayOrder 支付订单
 func (oc *OrderController) PayOrder(c *gin.Context) {
 	userID := c.GetInt64("user_id") // 从认证中获取用户ID
-	orderIDStr := c.Param("id")
+	orderIDStr := c.Query("id")
 	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "订单ID格式错误"})

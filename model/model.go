@@ -48,8 +48,14 @@ func (Cart) TableName() string {
 	return "cart"
 }
 
-// 订单状态
+// OrderStatusCode 订单状态
 type OrderStatusCode int8
+
+// PaymentStatusCode 支付状态
+type PaymentStatusCode int8
+
+// PaymentTypeCode 支付方式(1:微信支付,2:支付宝,3:余额支付)
+type PaymentTypeCode int8
 
 const (
 	OrderStatusPendingPayment  OrderStatusCode = 1 // 待付款
@@ -57,23 +63,19 @@ const (
 	OrderStatusPendingReceipt  OrderStatusCode = 3 // 待收货
 	OrderStatusCancelled       OrderStatusCode = 4 // 已取消
 	OrderStatusCompleted       OrderStatusCode = 5 // 已完成
-)
 
-// 支付状态
-
-type PaymentStatusCode int8
-
-const (
 	PaymentStatusUnpaid    PaymentStatusCode = 1 // 未支付
 	PaymentStatusPaying    PaymentStatusCode = 2 // 支付中
 	PaymentStatusPaid      PaymentStatusCode = 3 // 已支付
 	PaymentStatusRefunding PaymentStatusCode = 4 // 退款中
 	PaymentStatusRefunded  PaymentStatusCode = 5 // 已退款
 	PaymentStatusFailed    PaymentStatusCode = 6 // 支付失败
-)
 
-// 操作人类型
-const (
+	PaymentTypeWX      PaymentTypeCode = 1
+	PaymentTypeZFB     PaymentTypeCode = 2
+	PaymentTypeBalance PaymentTypeCode = 3
+
+	//  操作人类型
 	OperatorTypeUser   = 1 // 用户
 	OperatorTypeSystem = 2 // 系统
 	OperatorTypeAdmin  = 3 // 管理员
@@ -89,7 +91,7 @@ type Order struct {
 	ShippingFee     float64           `json:"shipping_fee" gorm:"shipping_fee"`         // 运费
 	DiscountAmount  float64           `json:"discount_amount" gorm:"discount_amount"`   // 优惠金额
 	CouponAmount    float64           `json:"coupon_amount" gorm:"coupon_amount"`       // 优惠券抵扣金额
-	PaymentType     int8              `json:"payment_type" gorm:"payment_type"`         // 支付方式(1:微信支付,2:支付宝,3:余额支付)
+	PaymentType     PaymentTypeCode   `json:"payment_type" gorm:"payment_type"`         // 支付方式(1:微信支付,2:支付宝,3:余额支付)
 	PaymentTime     *time.Time        `json:"payment_time" gorm:"payment_time"`         // 支付时间
 	PaymentStatus   PaymentStatusCode `json:"payment_status" gorm:"payment_status"`     // 支付状态(1:未支付,2:支付中,3:已支付,4:退款中,5:已退款,6:支付失败)
 	OrderStatus     OrderStatusCode   `json:"order_status" gorm:"order_status"`         // 订单状态(1:待付款,2:待发货,3:待收货,4:已取消,5:已完成)

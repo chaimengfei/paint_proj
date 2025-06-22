@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 )
 
 type OrderService interface {
@@ -16,7 +15,7 @@ type OrderService interface {
 	GetOrderDetail(ctx context.Context, userID, orderID int64) (*model.Order, error)              // 获取订单详情
 
 	CancelOrder(ctx context.Context, userID int64, order *model.Order) error // 取消订单
-	DeleteOrder(ctx context.Context, userID, orderID int64) error            // 删除订单
+	DeleteOrder(ctx context.Context, userID int64, order *model.Order) error // 删除订单
 	PayOrder(ctx context.Context, userID, orderID int64, PaymentType int) (map[string]interface{}, error)
 	OrderPaidCallback(ctx context.Context, req *model.OrderPaidCallbackRequest) error // 订单支付成功回调
 	// ConfirmReceipt(ctx context.Context, userID, orderID int64) error    // 确认收货  TODO 用户几乎不会点'收货'(可主动触发'收货')。留着后期看
@@ -191,9 +190,16 @@ func (os *orderService) CancelOrder(ctx context.Context, userID int64, order *mo
 	return err
 }
 
-func (os *orderService) DeleteOrder(ctx context.Context, userID, orderID int64) error {
-	now := time.Now()
-	err := os.orderRepo.UpdateOrder(orderID, &model.Order{DeletedAt: &now})
+func (os *orderService) DeleteOrder(ctx context.Context, userID int64, order *model.Order) error {
+	log := &model.OrderLog{
+		OrderId:      order.ID,
+		OrderNo:      order.OrderNo,
+		Action:       "delete_order",
+		Operator:     fmt.Sprintf("user:%d", userID),
+		OperatorType: model.OperatorTypeUser,
+		Content:      "用户删除订单",
+	}
+	err := os.orderRepo.DeleteOrder(userID, order, log)
 	return err
 }
 func (os *orderService) PayOrder(ctx context.Context, userID, orderID int64, paymentType int) (map[string]interface{}, error) {

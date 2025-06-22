@@ -3,6 +3,7 @@ package repository
 import (
 	"cmf/paint_proj/model"
 	"gorm.io/gorm"
+	"time"
 )
 
 type OrderRepository interface {
@@ -10,6 +11,8 @@ type OrderRepository interface {
 	GetOrderList(req *model.OrderListRequest) ([]*model.Order, int64, error)
 	GetOrderItemList(orderID int64) ([]model.OrderItem, error)
 	GetOrderByIDAndUserID(userID, orderID int64) (*model.Order, error)
+
+	DeleteOrder(orderID int64, order *model.Order, orderLog *model.OrderLog) error
 	CancelOrder(userID int64, order *model.Order, orderLog *model.OrderLog) error
 	UpdateOrder(orderID int64, order *model.Order) error
 }
@@ -68,7 +71,7 @@ func (or *orderRepository) GetOrderList(req *model.OrderListRequest) ([]*model.O
 		page = 1
 	}
 	offset := (page - 1) * pageSize
-	queryDb := or.db.Model(&model.Order{}).Where("user_id = ?", req.UserID)
+	queryDb := or.db.Model(&model.Order{}).Where("user_id = ? and deleted_at is NULL", req.UserID)
 	if req.Status > 0 {
 		queryDb = queryDb.Where("order_status = ?", req.Status)
 	}
@@ -98,6 +101,26 @@ func (or *orderRepository) GetOrderByIDAndUserID(userID, orderID int64) (*model.
 	}
 	return &order, nil
 }
+func (or *orderRepository) DeleteOrder(userID int64, order *model.Order, orderLog *model.OrderLog) error {
+	err := or.db.Transaction(func(tx *gorm.DB) error {
+		// 1.更新订单状态
+		now := time.Now()
+		err := tx.Model(&model.Order{}).Where("id = ?", order.ID).Updates(&model.Order{DeletedAt: &now}).Error
+		if err != nil {
+			return err
+		}
+		// 2. 记录订单日志
+		err = tx.Model(&model.OrderLog{}).Create(orderLog).Error
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func (or *orderRepository) CancelOrder(userID int64, order *model.Order, orderLog *model.OrderLog) error {
 	err := or.db.Transaction(func(tx *gorm.DB) error {
 		// 1.更新订单状态
@@ -123,7 +146,7 @@ func (or *orderRepository) CancelOrder(userID int64, order *model.Order, orderLo
 }
 func (or *orderRepository) UpdateOrder(orderID int64, order *model.Order) error {
 	// 1.更新订单状态
-	err := or.db.Model(&model.Order{}).Where("id = ?", order.ID).Updates(order).Error
+	err := or.db.Model(&model.Order{}).Where("id = ?", orderID).Updates(order).Error
 	if err != nil {
 		return err
 	}

@@ -93,3 +93,26 @@ func (cc *CartController) DeleteCartItem(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "删除成功"})
 }
+
+// CheckoutCart 购物车结算
+func (cc *CartController) CheckoutCart(c *gin.Context) {
+	userID := c.GetInt64("user_id") // 从认证中获取用户ID
+	var req struct {
+		CartIDs []int64 `json:"cart_ids"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
+		return
+	}
+
+	checkoutData, err := cc.cartService.CheckoutCart(userID, req.CartIDs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "购物车结算失败"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": checkoutData,
+	})
+}

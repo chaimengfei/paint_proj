@@ -54,9 +54,9 @@ type OrderPaidCallbackRequest struct {
 	PaymentAmount float64
 }
 
-type ShipOrderRequest struct {
-	OrderID      int64
-	ShippingNo   string
-	ShippingName string
-	ShippingTime int64
+type CheckoutResponse struct {
+	OrderItems    []*OrderItem `json:"order_items"`
+	TotalAmount   float64      `json:"total_amount"`
+	ShippingFee   float64      `json:"shipping_fee"`
+	PaymentAmount float64      `json:"payment_amount"`
 }

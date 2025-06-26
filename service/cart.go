@@ -3,6 +3,8 @@ package service
 import (
 	"cmf/paint_proj/model"
 	"cmf/paint_proj/repository"
+	"errors"
+	"fmt"
 )
 
 type CartService interface {
@@ -10,6 +12,7 @@ type CartService interface {
 	AddToCart(userID, productID int64) error
 	UpdateCartItem(userID, cartID int64, quantity int) error
 	DeleteCartItem(userID, cartID int64) error
+	CheckoutCart(userID int64, cartIDs []int64) (*model.CheckoutResponse, error)
 }
 
 type cartService struct {
@@ -75,4 +78,67 @@ func (cs *cartService) DeleteCartItem(userID, cartID int64) error {
 	}
 
 	return cs.cartRepo.Delete(cartID)
+}
+
+func (cs *cartService) CheckoutCart(userID int64, cartIDs []int64) (*model.CheckoutResponse, error) {
+	// 1. 获取购物车项
+	cartItems, err := cs.cartRepo.GetByIDs(cartIDs)
+	if err != nil {
+		return nil, fmt.Errorf("用户 %v 获取购物车失败: %v", userID, err)
+	}
+	if len(cartItems) == 0 {
+		return nil, errors.New("购物车中没有选中商品")
+	}
+	// 2. 获取商品信息
+	productIDs := make([]int64, len(cartItems))
+	for i, item := range cartItems {
+		productIDs[i] = item.ProductID
+	}
+	products, err := cs.productRepo.GetByIDs(productIDs)
+	if err != nil {
+		return nil, fmt.Errorf("获取商品信息失败: %v", err)
+	}
+	// 3. 构建返回数据
+	var orderItems []*model.OrderItem
+	var totalAmount float64
+	productMap := make(map[int64]*model.Product)
+	for _, p := range products {
+		productMap[p.ID] = p
+	}
+	for _, cartItem := range cartItems {
+		product, exists := productMap[cartItem.ProductID]
+		if !exists {
+			return nil, fmt.Errorf("商品ID %d 不存在", cartItem.ProductID)
+		}
+
+		// 检查库存
+		if product.Stock < cartItem.Quantity {
+			return nil, fmt.Errorf("商品 %s 库存不足", product.Name)
+		}
+
+		itemTotal := product.SellerPrice * float64(cartItem.Quantity)
+		totalAmount += itemTotal
+
+		orderItems = append(orderItems, &model.OrderItem{
+			ProductId:    product.ID,
+			ProductName:  product.Name,
+			ProductImage: product.Image,
+			ProductPrice: product.SellerPrice,
+			Quantity:     cartItem.Quantity,
+			Unit:         product.Unit,
+			TotalPrice:   itemTotal,
+		})
+	}
+	// 4. 计算运费等 (这里简化处理，实际业务需要计算运费、优惠等)
+	shippingFee := 0.0
+	if totalAmount < 100 { // 假设满100免运费
+		shippingFee = 10.0
+	}
+
+	return &model.CheckoutResponse{
+		OrderItems:    orderItems,
+		TotalAmount:   totalAmount,
+		ShippingFee:   shippingFee,
+		PaymentAmount: totalAmount + shippingFee,
+	}, nil
 }

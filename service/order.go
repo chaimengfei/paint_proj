@@ -10,7 +10,7 @@ import (
 )
 
 type OrderService interface {
-	CreateOrder(ctx context.Context, req *model.CreateOrderRequest) (*model.Order, error)         // 创建订单
+	CheckoutOrder(ctx context.Context, userID int64, req *model.CheckoutOrderRequest) (*model.CheckoutResponse, error)
 	GetOrderList(ctx context.Context, req *model.OrderListRequest) ([]*model.Order, int64, error) // 获取订单列表
 	GetOrderDetail(ctx context.Context, userID, orderID int64) (*model.Order, error)              // 获取订单详情
 
@@ -35,7 +35,8 @@ func NewOrderService(or repository.OrderRepository, cr repository.CartRepository
 		productRepo: pr,
 	}
 }
-func (os *orderService) CreateOrder(ctx context.Context, req *model.CreateOrderRequest) (*model.Order, error) {
+
+func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *model.CheckoutOrderRequest) (*model.CheckoutResponse, error) {
 	// 1. 参数校验
 	if len(req.CartIDs) == 0 && len(req.BuyNowItems) == 0 {
 		return nil, errors.New("购物车或立即购买商品不能为空")
@@ -46,10 +47,10 @@ func (os *orderService) CreateOrder(ctx context.Context, req *model.CreateOrderR
 	//if err != nil {
 	//	return nil, err
 	//}
-
 	// 3. 创建订单
+	orderNo := util.GenerateOrderNo(req.UserID)
 	order := &model.Order{
-		OrderNo:         util.GenerateOrderNo(req.UserID),
+		OrderNo:         orderNo,
 		UserId:          req.UserID,
 		OrderStatus:     model.OrderStatusPendingPayment,
 		PaymentStatus:   model.PaymentStatusUnpaid,
@@ -57,9 +58,8 @@ func (os *orderService) CreateOrder(ctx context.Context, req *model.CreateOrderR
 		ReceiverPhone:   "13671210659",                          // TODO 根据 user_id 获取phone  ,还是根据address直接获取phone address.Phone
 		ReceiverAddress: "河北省廊坊市三河市燕郊镇四季花都一期", // TODO 待实现address.FullAddress(),
 	}
-
 	// 4. 获取订单商品
-	var orderItems []model.OrderItem
+	var orderItems []*model.OrderItem
 	var totalAmount float64
 	var err error
 	if len(req.CartIDs) > 0 {
@@ -67,15 +67,20 @@ func (os *orderService) CreateOrder(ctx context.Context, req *model.CreateOrderR
 		orderItems, totalAmount, err = os.getOrderItemsFromCart(ctx, req.UserID, req.CartIDs)
 	} else {
 		// 4.2. 立即购买创建订单
-		//orderItems, totalAmount, err = os.getOrderItemsFromBuyNow(ctx, req.UserID, req.BuyNowItems)
+		orderItems, totalAmount, err = os.getOrderItemsFromBuyNow(ctx, req.UserID, req.BuyNowItems)
 	}
 	if err != nil {
 		return nil, err
 	}
-	//order.OrderItems = orderItems
+	// 4.4. 计算运费等 (这里简化处理，实际业务需要计算运费、优惠等)
+	shippingFee := 0.0
+	if totalAmount < 100 { // 假设满100免运费
+		shippingFee = 10.0
+	}
+	paymentAmount := totalAmount + shippingFee
 	// 4.3. 计算优惠金额等
 	order.TotalAmount = totalAmount
-	order.PaymentAmount = totalAmount // 实付金额(这里简化处理，实际可能有优惠券、运费等)
+	order.PaymentAmount = paymentAmount // 实付金额(这里简化处理，实际可能有优惠券、运费等)
 
 	// 5.记录订单log
 	log := model.OrderLog{
@@ -90,11 +95,19 @@ func (os *orderService) CreateOrder(ctx context.Context, req *model.CreateOrderR
 	if err != nil {
 		return nil, err
 	}
-	return order, nil
+
+	// 6.返回订单信息
+	return &model.CheckoutResponse{
+		OrderItems:    orderItems,
+		OrderNo:       orderNo,
+		TotalAmount:   totalAmount,
+		ShippingFee:   shippingFee,
+		PaymentAmount: paymentAmount,
+	}, nil
 }
 
 // getOrderItemsFromCart 从购物车获取订单商品和总金额
-func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64, cartIDs []int64) ([]model.OrderItem, float64, error) {
+func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64, cartIDs []int64) ([]*model.OrderItem, float64, error) {
 	// 1. 获取购物车项
 	cartItems, err := os.cartRepo.GetByIDs(cartIDs)
 	if err != nil {
@@ -123,7 +136,7 @@ func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64,
 	}
 
 	// 5. 构建订单商品项并计算总金额
-	var orderItems []model.OrderItem
+	var orderItems []*model.OrderItem
 	var totalAmount float64
 
 	for _, cartItem := range cartItems {
@@ -149,12 +162,77 @@ func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64,
 			Unit:         product.Unit,
 			TotalPrice:   itemTotalPrice,
 		}
-		orderItems = append(orderItems, orderItem)
+		orderItems = append(orderItems, &orderItem)
+		totalAmount += itemTotalPrice
+	}
+	return orderItems, totalAmount, nil
+}
+
+// getOrderItemsFromBuyNow 从立即购买获取订单商品和总金额
+func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int64, buyNowItems []*model.BuyNowItem) ([]*model.OrderItem, float64, error) {
+	// 1. 参数校验
+	if len(buyNowItems) == 0 {
+		return nil, 0, errors.New("立即购买商品不能为空")
+	}
+
+	// 2. 获取商品ID列表
+	productIDs := make([]int64, 0, len(buyNowItems))
+	for _, item := range buyNowItems {
+		productIDs = append(productIDs, item.ProductID)
+	}
+
+	// 3. 批量查询商品信息
+	products, err := os.productRepo.GetByIDs(productIDs)
+	if err != nil {
+		return nil, 0, fmt.Errorf("获取商品信息失败: %v", err)
+	}
+
+	// 4. 构建商品ID到商品信息的映射
+	productMap := make(map[int64]*model.Product)
+	for _, product := range products {
+		productMap[product.ID] = product
+	}
+
+	// 5. 构建订单商品项并计算总金额
+	var orderItems []*model.OrderItem
+	var totalAmount float64
+
+	for _, buyNowItem := range buyNowItems {
+		product, exists := productMap[buyNowItem.ProductID]
+		if !exists {
+			return nil, 0, fmt.Errorf("商品ID %d 不存在", buyNowItem.ProductID)
+		}
+
+		// 检查商品库存
+		if product.Stock < buyNowItem.Quantity {
+			return nil, 0, fmt.Errorf("商品 %s 库存不足", product.Name)
+		}
+
+		// 检查购买数量是否合法
+		if buyNowItem.Quantity <= 0 {
+			return nil, 0, fmt.Errorf("商品 %s 购买数量必须大于0", product.Name)
+		}
+
+		// 计算商品总价
+		itemTotalPrice := product.SellerPrice * float64(buyNowItem.Quantity)
+
+		// 构建订单商品项
+		orderItem := model.OrderItem{
+			ProductId:    product.ID,
+			ProductName:  product.Name,
+			ProductImage: product.Image,
+			ProductPrice: product.SellerPrice,
+			Quantity:     buyNowItem.Quantity,
+			Unit:         product.Unit,
+			TotalPrice:   itemTotalPrice,
+		}
+		orderItems = append(orderItems, &orderItem)
 		totalAmount += itemTotalPrice
 	}
 
 	return orderItems, totalAmount, nil
 }
+
 func (os *orderService) GetOrderList(ctx context.Context, req *model.OrderListRequest) ([]*model.Order, int64, error) {
 	orders, total, err := os.orderRepo.GetOrderList(req)
 	if err != nil {

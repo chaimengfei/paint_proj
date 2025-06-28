@@ -58,16 +58,18 @@ func SetupRouter() *gin.Engine {
 			cartGroup.POST("/add", auth.AuthMiddleware(), cartController.AddToCart)
 			cartGroup.POST("/update", auth.AuthMiddleware(), cartController.UpdateCartItem)
 			cartGroup.POST("/delete", auth.AuthMiddleware(), cartController.DeleteCartItem)
-			cartGroup.POST("/checkout", auth.AuthMiddleware(), cartController.CheckoutCart)
 		}
 		orderGroup := api.Group("/order")
 		{
 			orderGroup.GET("/list", auth.AuthMiddleware(), orderController.GetOrderList)
 			orderGroup.GET("/detail", auth.AuthMiddleware(), orderController.GetOrderDetail)
-			orderGroup.POST("/create", auth.AuthMiddleware(), orderController.CreateOrder)
+
+			orderGroup.POST("/checkout", auth.AuthMiddleware(), orderController.CheckoutOrder)
+
 			orderGroup.DELETE("/delete", auth.AuthMiddleware(), orderController.DeleteOrder)
 			orderGroup.POST("/cancel", auth.AuthMiddleware(), orderController.CancelOrder)
 			orderGroup.POST("/pay", auth.AuthMiddleware(), orderController.PayOrder)
+
 			orderGroup.POST("/pay_callback", auth.AuthMiddleware(), orderController.PaymentCallback)
 		}
 	}

@@ -16,8 +16,8 @@ func NewOrderController(s service.OrderService) *OrderController {
 	return &OrderController{orderService: s}
 }
 
-// CreateOrder 创建订单
-func (oc *OrderController) CreateOrder(c *gin.Context) {
+// CheckoutOrder 订单结算
+func (oc *OrderController) CheckoutOrder(c *gin.Context) {
 	userID := c.GetInt64("user_id") // 从认证中获取用户ID
 	var req struct {
 		CartIDs   []int64 `json:"cart_ids"`
@@ -33,7 +33,7 @@ func (oc *OrderController) CreateOrder(c *gin.Context) {
 		return
 	}
 	// 构建服务请求
-	svcReq := &model.CreateOrderRequest{
+	svcReq := &model.CheckoutOrderRequest{
 		UserID:    userID,
 		AddressID: req.AddressID,
 		CouponID:  req.CouponID,
@@ -54,14 +54,16 @@ func (oc *OrderController) CreateOrder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "请选择商品或购物车"})
 		return
 	}
-
-	// 调用服务
-	order, err := oc.orderService.CreateOrder(c.Request.Context(), svcReq)
+	// 真实的业务处理
+	checkoutData, err := oc.orderService.CheckoutOrder(c.Request.Context(), userID, svcReq)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "创建订单失败:" + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "购物车结算失败"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "创建订单成功:" + order.OrderNo})
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": checkoutData,
+	})
 }
 
 // GetOrderList 获取订单列表

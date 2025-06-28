@@ -25,7 +25,7 @@ type CartWithProduct struct {
 }
 
 // 订单类的业务数据
-type CreateOrderRequest struct {
+type CheckoutOrderRequest struct {
 	UserID      int64
 	CartIDs     []int64       // 购物车ID列表
 	BuyNowItems []*BuyNowItem // 立即购买商品
@@ -56,6 +56,7 @@ type OrderPaidCallbackRequest struct {
 
 type CheckoutResponse struct {
 	OrderItems    []*OrderItem `json:"order_items"`
+	OrderNo       string       `json:"order_no"`
 	TotalAmount   float64      `json:"total_amount"`
 	ShippingFee   float64      `json:"shipping_fee"`
 	PaymentAmount float64      `json:"payment_amount"`

@@ -61,3 +61,14 @@ type CheckoutResponse struct {
 	ShippingFee   float64      `json:"shipping_fee"`
 	PaymentAmount float64      `json:"payment_amount"`
 }
+
+type LoginRequest struct {
+	Code     string `json:"code"`
+	Nickname string `json:"nickname"` // 小程序传来的昵称
+	Avatar   string `json:"avatar"`   // 小程序传来的头像
+}
+
+type UpdateUserInfoRequest struct {
+	Nickname string `json:"nickname"`
+	Mobile   string `json:"mobile"`
+}

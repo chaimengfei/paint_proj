@@ -11,6 +11,7 @@ type OrderRepository interface {
 	GetOrderList(req *model.OrderListRequest) ([]*model.Order, int64, error)
 	GetOrderItemList(orderID int64) ([]model.OrderItem, error)
 	GetOrderByIDAndUserID(userID, orderID int64) (*model.Order, error)
+	GetOrderByOrderNo(orderNo string) (*model.Order, error)
 
 	DeleteOrder(orderID int64, order *model.Order, orderLog *model.OrderLog) error
 	CancelOrder(userID int64, order *model.Order, orderLog *model.OrderLog) error
@@ -96,6 +97,14 @@ func (or *orderRepository) GetOrderItemList(orderID int64) ([]model.OrderItem, e
 func (or *orderRepository) GetOrderByIDAndUserID(userID, orderID int64) (*model.Order, error) {
 	var order model.Order
 	err := or.db.Model(&model.Order{}).Where("user_id = ? and id= ?", userID, orderID).First(&order).Error
+	if err != nil {
+		return nil, err
+	}
+	return &order, nil
+}
+func (or *orderRepository) GetOrderByOrderNo(orderNo string) (*model.Order, error) {
+	var order model.Order
+	err := or.db.Model(&model.Order{}).Where("order_no = ? ", orderNo).First(&order).Error
 	if err != nil {
 		return nil, err
 	}

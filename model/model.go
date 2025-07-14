@@ -152,6 +152,7 @@ func (*OrderLog) TableName() string {
 // Payment 支付记录表
 type Payment struct {
 	ID              int64      `json:"id" gorm:"id,primaryKey;autoIncrement"`    // 主键id
+	UserId          int64      `json:"user_id" gorm:"user_id"`                   // 用户ID
 	OrderId         int64      `json:"order_id" gorm:"order_id"`                 // 订单ID
 	OrderNo         string     `json:"order_no" gorm:"order_no"`                 // 订单编号
 	PaymentNo       string     `json:"payment_no" gorm:"payment_no"`             // 支付流水号
@@ -168,4 +169,20 @@ type Payment struct {
 // TableName 表名称
 func (*Payment) TableName() string {
 	return "payment"
+}
+
+// User 小程序用户表
+type User struct {
+	ID          int64     `json:"id" gorm:"id"`                     // 用户ID
+	Openid      string    `json:"openid" gorm:"openid"`             // 微信OpenID
+	Nickname    string    `json:"nickname" gorm:"nickname"`         // 微信昵称
+	Avatar      string    `json:"avatar" gorm:"avatar"`             // 头像
+	MobilePhone string    `json:"mobile_phone" gorm:"mobile_phone"` // 手机号
+	CreatedAt   time.Time `json:"created_at" gorm:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at" gorm:"updated_at"`
+}
+
+// TableName 表名称
+func (*User) TableName() string {
+	return "user"
 }

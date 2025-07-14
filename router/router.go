@@ -34,20 +34,31 @@ func SetupRouter() *gin.Engine {
 	cartRepo := repository.NewCartRepository(db)
 	productRepo := repository.NewProductRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
+	userRepo := repository.NewUserRepository(db)
 
 	// 4.初始化服务层
 	cartService := service.NewCartService(cartRepo, productRepo)
 	productService := service.NewProductService(productRepo)
 	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo)
+	payService := service.NewPayService(orderRepo, cartRepo, productRepo)
+	userService := service.NewUserService(userRepo)
 
 	// 5. 初始化控制器
 	cartController := controller.NewCartController(cartService)
 	productController := controller.NewProductController(productService)
 	orderController := controller.NewOrderController(orderService)
+	payController := controller.NewPayController(payService)
+	userController := controller.NewUserController(userService)
 
 	// API路由
 	api := r.Group("/api")
 	{
+		userGroup := api.Group("/user")
+		{
+			userGroup.POST("/login", userController.Login)                // 首次登陆注册user_id并获取token
+			userGroup.POST("/update/info", userController.UpdateUserInfo) // 首次登陆注册user_id并获取token
+		}
+
 		productGroup := api.Group("/product")
 		{
 			productGroup.GET("/list", productController.GetProductList)
@@ -63,14 +74,16 @@ func SetupRouter() *gin.Engine {
 		{
 			orderGroup.GET("/list", auth.AuthMiddleware(), orderController.GetOrderList)
 			orderGroup.GET("/detail", auth.AuthMiddleware(), orderController.GetOrderDetail)
+			orderGroup.DELETE("/delete", auth.AuthMiddleware(), orderController.DeleteOrder)
 
 			orderGroup.POST("/checkout", auth.AuthMiddleware(), orderController.CheckoutOrder)
-
-			orderGroup.DELETE("/delete", auth.AuthMiddleware(), orderController.DeleteOrder)
 			orderGroup.POST("/cancel", auth.AuthMiddleware(), orderController.CancelOrder)
-			orderGroup.POST("/pay", auth.AuthMiddleware(), orderController.PayOrder)
+		}
+		payGroup := api.Group("/pay")
+		{
 
-			orderGroup.POST("/pay_callback", auth.AuthMiddleware(), orderController.PaymentCallback)
+			payGroup.POST("/data", auth.AuthMiddleware(), payController.PaymentData)
+			payGroup.POST("/callback", auth.AuthMiddleware(), payController.PaymentCallback)
 		}
 	}
 

@@ -16,10 +16,6 @@ type OrderService interface {
 
 	CancelOrder(ctx context.Context, userID int64, order *model.Order) error // 取消订单
 	DeleteOrder(ctx context.Context, userID int64, order *model.Order) error // 删除订单
-	PayOrder(ctx context.Context, userID, orderID int64, PaymentType int) (map[string]interface{}, error)
-	OrderPaidCallback(ctx context.Context, req *model.OrderPaidCallbackRequest) error // 订单支付成功回调
-	// ConfirmReceipt(ctx context.Context, userID, orderID int64) error    // 确认收货  TODO 用户几乎不会点'收货'(可主动触发'收货')。留着后期看
-	// ShipOrder(ctx context.Context, req *model.ShipOrderRequest) error  // 发货 TODO 待不做,因为目前都是一来活就发
 }
 
 type orderService struct {
@@ -279,38 +275,4 @@ func (os *orderService) DeleteOrder(ctx context.Context, userID int64, order *mo
 	}
 	err := os.orderRepo.DeleteOrder(userID, order, log)
 	return err
-}
-func (os *orderService) PayOrder(ctx context.Context, userID, orderID int64, paymentType int) (map[string]interface{}, error) {
-	// 1. 获取订单
-	order, err := os.orderRepo.GetOrderByIDAndUserID(userID, orderID)
-	if err != nil {
-		return nil, err
-	}
-	// 2. 检查订单状态是否可以支付
-	if order.OrderStatus != model.OrderStatusPendingPayment {
-		return nil, errors.New("订单状态异常 无法支付")
-	}
-
-	// 3. 调用支付服务生成支付参数
-	paymentParams, err := os.generatePaymentParams(order, paymentType)
-	if err != nil {
-		return nil, errors.New("generatePaymentParams Error:" + err.Error())
-	}
-	return paymentParams, nil
-}
-
-func (os *orderService) generatePaymentParams(order *model.Order, paymentType int) (map[string]interface{}, error) {
-	// 这里实现具体的支付参数生成逻辑
-	// 根据不同的支付方式(微信、支付宝等)生成不同的支付参数
-	// ...
-	return map[string]interface{}{
-		"order_id":       order.ID,
-		"order_no":       order.OrderNo,
-		"payment_type":   paymentType,
-		"payment_amount": order.PaymentAmount,
-		// 其他支付参数...
-	}, nil
-}
-func (os *orderService) OrderPaidCallback(ctx context.Context, req *model.OrderPaidCallbackRequest) error {
-	panic("implement me")
 }

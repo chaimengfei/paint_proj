@@ -56,7 +56,7 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 	}
 	// 4. 获取订单商品
 	var orderItems []*model.OrderItem
-	var totalAmount float64
+	var totalAmount model.Amount
 	var err error
 	if len(req.CartIDs) > 0 {
 		// 4.1. 从购物车创建订单
@@ -69,9 +69,9 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 		return nil, err
 	}
 	// 4.4. 计算运费等 (这里简化处理，实际业务需要计算运费、优惠等)
-	shippingFee := 0.0
+	shippingFee := model.Amount(0)
 	if totalAmount < 100 { // 假设满100免运费
-		shippingFee = 10.0
+		shippingFee = 1000 //单位:分(10块的运费)
 	}
 	paymentAmount := totalAmount + shippingFee
 	// 4.3. 计算优惠金额等
@@ -103,7 +103,7 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 }
 
 // getOrderItemsFromCart 从购物车获取订单商品和总金额
-func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64, cartIDs []int64) ([]*model.OrderItem, float64, error) {
+func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64, cartIDs []int64) ([]*model.OrderItem, model.Amount, error) {
 	// 1. 获取购物车项
 	cartItems, err := os.cartRepo.GetByIDs(cartIDs)
 	if err != nil {
@@ -133,7 +133,7 @@ func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64,
 
 	// 5. 构建订单商品项并计算总金额
 	var orderItems []*model.OrderItem
-	var totalAmount float64
+	var totalAmount model.Amount
 
 	for _, cartItem := range cartItems {
 		product, exists := productMap[cartItem.ProductID]
@@ -146,7 +146,7 @@ func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64,
 			return nil, 0, fmt.Errorf("商品 %s 库存不足", product.Name)
 		}
 		// 计算商品总价
-		itemTotalPrice := product.SellerPrice * float64(cartItem.Quantity)
+		itemTotalPrice := int64(product.SellerPrice) * int64(cartItem.Quantity)
 
 		// 构建订单商品项
 		orderItem := model.OrderItem{
@@ -156,16 +156,16 @@ func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64,
 			ProductPrice: product.SellerPrice,
 			Quantity:     cartItem.Quantity,
 			Unit:         product.Unit,
-			TotalPrice:   itemTotalPrice,
+			TotalPrice:   model.Amount(itemTotalPrice),
 		}
 		orderItems = append(orderItems, &orderItem)
-		totalAmount += itemTotalPrice
+		totalAmount += model.Amount(itemTotalPrice)
 	}
 	return orderItems, totalAmount, nil
 }
 
 // getOrderItemsFromBuyNow 从立即购买获取订单商品和总金额
-func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int64, buyNowItems []*model.BuyNowItem) ([]*model.OrderItem, float64, error) {
+func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int64, buyNowItems []*model.BuyNowItem) ([]*model.OrderItem, model.Amount, error) {
 	// 1. 参数校验
 	if len(buyNowItems) == 0 {
 		return nil, 0, errors.New("立即购买商品不能为空")
@@ -191,7 +191,7 @@ func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int6
 
 	// 5. 构建订单商品项并计算总金额
 	var orderItems []*model.OrderItem
-	var totalAmount float64
+	var totalAmount model.Amount
 
 	for _, buyNowItem := range buyNowItems {
 		product, exists := productMap[buyNowItem.ProductID]
@@ -210,7 +210,7 @@ func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int6
 		}
 
 		// 计算商品总价
-		itemTotalPrice := product.SellerPrice * float64(buyNowItem.Quantity)
+		itemTotalPrice := int64(product.SellerPrice) * int64(buyNowItem.Quantity)
 
 		// 构建订单商品项
 		orderItem := model.OrderItem{
@@ -220,10 +220,10 @@ func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int6
 			ProductPrice: product.SellerPrice,
 			Quantity:     buyNowItem.Quantity,
 			Unit:         product.Unit,
-			TotalPrice:   itemTotalPrice,
+			TotalPrice:   model.Amount(itemTotalPrice),
 		}
 		orderItems = append(orderItems, &orderItem)
-		totalAmount += itemTotalPrice
+		totalAmount += model.Amount(itemTotalPrice)
 	}
 
 	return orderItems, totalAmount, nil

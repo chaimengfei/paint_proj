@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"cmf/paint_proj/model"
 	"cmf/paint_proj/service"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -31,10 +32,7 @@ func (cc *CartController) GetCartList(c *gin.Context) {
 func (cc *CartController) AddToCart(c *gin.Context) {
 	userID := c.GetInt64("user_id") // 从认证中获取用户ID
 
-	var req struct {
-		ProductID int64 `json:"product_id" binding:"required"`
-	}
-
+	var req model.ProductIdReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
 		return
@@ -52,12 +50,7 @@ func (cc *CartController) AddToCart(c *gin.Context) {
 // UpdateCartItem 更新购物车商品数量
 func (cc *CartController) UpdateCartItem(c *gin.Context) {
 	userID := c.GetInt64("user_id")
-
-	var req struct {
-		CartID   int64 `json:"cart_id" binding:"required"`
-		Quantity int   `json:"quantity" binding:"required,min=1"`
-	}
-
+	var req model.UpdateCartItemReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
 		return
@@ -76,10 +69,7 @@ func (cc *CartController) UpdateCartItem(c *gin.Context) {
 func (cc *CartController) DeleteCartItem(c *gin.Context) {
 	userID := c.GetInt64("user_id")
 
-	var req struct {
-		CartID int64 `json:"cart_id" binding:"required"`
-	}
-
+	var req model.CartIdReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
 		return

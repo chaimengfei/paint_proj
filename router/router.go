@@ -17,6 +17,8 @@ func SetupRouter() *gin.Engine {
 	if err != nil {
 		panic("failed to connect database")
 	}
+	// 1.2 初始化配置文件，放在全局的Cfg
+	configs.InitConfig()
 
 	// 2.添加CORS中间件
 	r.Use(func(c *gin.Context) {

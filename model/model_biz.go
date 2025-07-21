@@ -2,14 +2,14 @@ package model
 
 // ProductSimple simple格式
 type ProductSimple struct {
-	ID           int64   `json:"id"`
-	Name         string  `json:"name"`
-	SellerPrice  float64 `json:"seller_price"`
-	CategoryID   int64   `json:"category_id"`
-	CategoryName string  `json:"category_name"`
-	Image        string  `json:"image"`
-	Unit         string  `json:"unit"`
-	Remark       string  `json:"remark"`
+	ID           int64  `json:"id"`
+	Name         string `json:"name"`
+	SellerPrice  Amount `json:"seller_price"`
+	CategoryID   int64  `json:"category_id"`
+	CategoryName string `json:"category_name"`
+	Image        string `json:"image"`
+	Unit         string `json:"unit"`
+	Remark       string `json:"remark"`
 }
 type ProductListResponse struct {
 	Categories []Category                `json:"categories"`
@@ -18,10 +18,10 @@ type ProductListResponse struct {
 type CartWithProduct struct {
 	Cart
 
-	ProductName        string  `json:"product_name"`
-	ProductImage       string  `json:"product_image"`
-	ProductSellerPrice float64 `json:"product_seller_price"`
-	ProductUnit        string  `json:"product_unit"`
+	ProductName        string `json:"product_name"`
+	ProductImage       string `json:"product_image"`
+	ProductSellerPrice Amount `json:"product_seller_price"`
+	ProductUnit        string `json:"product_unit"`
 }
 
 // 订单类的业务数据
@@ -31,7 +31,6 @@ type CheckoutOrderRequest struct {
 	BuyNowItems []*BuyNowItem // 立即购买商品
 	AddressID   int64         // 收货地址ID
 	CouponID    int64         // 优惠券ID
-	Note        string        // 订单备注
 }
 
 type BuyNowItem struct {
@@ -39,6 +38,44 @@ type BuyNowItem struct {
 	Quantity  int
 }
 
+type ProductIdReq struct {
+	ProductID int64 `json:"product_id" binding:"required"`
+}
+type CartIdReq struct {
+	CartID int64 `json:"cart_id" binding:"required"`
+}
+type UpdateCartItemReq struct {
+	CartID   int64 `json:"cart_id" binding:"required"`
+	Quantity int   `json:"quantity" binding:"required,min=1"`
+}
+type OrderCheckoutReq struct {
+	CartIDs   []int64 `json:"cart_ids"`
+	ProductID int64   `json:"product_id"`
+	Quantity  int     `json:"quantity"`
+	AddressID int64   `json:"address_id"`
+	CouponID  int64   `json:"coupon_id"`
+}
+type PayCallbackReq struct {
+	OrderNo       string `json:"order_no"`
+	PaymentNo     string `json:"payment_no"`
+	PaymentType   int    `json:"payment_type"`
+	PaymentTime   int64  `json:"payment_time"`
+	PaymentAmount Amount `json:"payment_amount"`
+}
+
+type BuildPaymentParam struct {
+	Code    string `json:"code"`     // ，前端通过 wx.login() 获取临时 code，后端就可以使用这个 code 请求微信服务器获取 openid 和 session_key
+	OrderNo string `json:"order_no"` // 订单号
+	Total   Amount `json:"total"`    // 单位：分
+}
+
+type PaidCallbackData struct {
+	OrderNo       string
+	PaymentNo     string
+	PaymentType   int32
+	PaymentTime   int64
+	PaymentAmount Amount
+}
 type OrderListRequest struct {
 	UserID   int64
 	Status   int32
@@ -46,20 +83,12 @@ type OrderListRequest struct {
 	PageSize int32
 }
 
-type OrderPaidCallbackRequest struct {
-	OrderNo       string
-	PaymentNo     string
-	PaymentType   int32
-	PaymentTime   int64
-	PaymentAmount float64
-}
-
 type CheckoutResponse struct {
 	OrderItems    []*OrderItem `json:"order_items"`
 	OrderNo       string       `json:"order_no"`
-	TotalAmount   float64      `json:"total_amount"`
-	ShippingFee   float64      `json:"shipping_fee"`
-	PaymentAmount float64      `json:"payment_amount"`
+	TotalAmount   Amount       `json:"total_amount"`
+	ShippingFee   Amount       `json:"shipping_fee"`
+	PaymentAmount Amount       `json:"payment_amount"`
 }
 
 type LoginRequest struct {

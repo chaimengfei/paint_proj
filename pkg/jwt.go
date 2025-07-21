@@ -23,7 +23,7 @@ func ParseJWTToken(tokenStr string) (int64, error) {
 		return 0, err
 	}
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		if uid, ok := claims["user_id"].(float64); ok {
+		if uid, ok := claims["user_id"].(int64); ok {
 			return int64(uid), nil
 		}
 	}

@@ -1,20 +1,25 @@
 package model
 
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"math"
+	"time"
+)
 
 // Product 油漆表
 type Product struct {
-	ID           int64   `json:"id" gorm:"id,primaryKey;autoIncrement" ` // 分类ID
-	Name         string  `json:"name" gorm:"name"`                       // 商品名
-	SellerPrice  float64 `json:"seller_price" gorm:"seller_price"`       // 卖价
-	Cost         float64 `json:"cost" gorm:"cost"`                       // 成本价(暂不用)
-	ShippingCost float64 `json:"shipping_cost" gorm:"shipping_cost"`     // 运费(暂不用)
-	ProductCost  float64 `json:"product_cost" gorm:"product_cost"`       // 货物成本(暂不用)
-	CategoryId   int64   `json:"category_id" gorm:"category_id"`         // 分类id
-	Stock        int     `json:"stock" gorm:"stock"`                     // 库存
-	Image        string  `json:"image" gorm:"image"`                     // 图片地址
-	Unit         string  `json:"unit" gorm:"unit"`                       // 单位 L/桶/套
-	Remark       string  `json:"remark" gorm:"remark"`                   // 备注
+	ID           int64  `json:"id" gorm:"id,primaryKey;autoIncrement" ` // 分类ID
+	Name         string `json:"name" gorm:"name"`                       // 商品名
+	SellerPrice  Amount `json:"seller_price" gorm:"seller_price"`       // 卖价
+	Cost         Amount `json:"cost" gorm:"cost"`                       // 成本价(暂不用)
+	ShippingCost Amount `json:"shipping_cost" gorm:"shipping_cost"`     // 运费(暂不用)
+	ProductCost  Amount `json:"product_cost" gorm:"product_cost"`       // 货物成本(暂不用)
+	CategoryId   int64  `json:"category_id" gorm:"category_id"`         // 分类id
+	Stock        int    `json:"stock" gorm:"stock"`                     // 库存
+	Image        string `json:"image" gorm:"image"`                     // 图片地址
+	Unit         string `json:"unit" gorm:"unit"`                       // 单位 L/桶/套
+	Remark       string `json:"remark" gorm:"remark"`                   // 备注
 }
 
 // TableName 表名称
@@ -58,11 +63,11 @@ type PaymentStatusCode int8
 type PaymentTypeCode int8
 
 const (
-	OrderStatusPendingPayment  OrderStatusCode = 1 // 待付款
-	OrderStatusPendingShipment OrderStatusCode = 2 // 待发货
-	OrderStatusPendingReceipt  OrderStatusCode = 3 // 待收货
-	OrderStatusCancelled       OrderStatusCode = 4 // 已取消
-	OrderStatusCompleted       OrderStatusCode = 5 // 已完成
+	OrderStatusPendingPayment OrderStatusCode = 1 // 待付款
+	OrderStatusPaymentSuccess OrderStatusCode = 2 // 已付款(待发货)
+	OrderStatusPendingReceipt OrderStatusCode = 3 // 待收货
+	OrderStatusCancelled      OrderStatusCode = 4 // 已取消
+	OrderStatusCompleted      OrderStatusCode = 5 // 已完成
 
 	PaymentStatusUnpaid    PaymentStatusCode = 1 // 未支付
 	PaymentStatusPaying    PaymentStatusCode = 2 // 支付中
@@ -86,11 +91,11 @@ type Order struct {
 	ID              int64             `json:"id" gorm:"id,primaryKey;autoIncrement"`    // 主键id
 	OrderNo         string            `json:"order_no" gorm:"order_no"`                 // 订单编号
 	UserId          int64             `json:"user_id" gorm:"user_id"`                   // 用户ID
-	TotalAmount     float64           `json:"total_amount" gorm:"total_amount"`         // 订单总金额
-	PaymentAmount   float64           `json:"payment_amount" gorm:"payment_amount"`     // 实付金额
-	ShippingFee     float64           `json:"shipping_fee" gorm:"shipping_fee"`         // 运费
-	DiscountAmount  float64           `json:"discount_amount" gorm:"discount_amount"`   // 优惠金额
-	CouponAmount    float64           `json:"coupon_amount" gorm:"coupon_amount"`       // 优惠券抵扣金额
+	TotalAmount     Amount            `json:"total_amount" gorm:"total_amount"`         // 订单总金额
+	PaymentAmount   Amount            `json:"payment_amount" gorm:"payment_amount"`     // 实付金额
+	ShippingFee     Amount            `json:"shipping_fee" gorm:"shipping_fee"`         // 运费
+	DiscountAmount  Amount            `json:"discount_amount" gorm:"discount_amount"`   // 优惠金额
+	CouponAmount    Amount            `json:"coupon_amount" gorm:"coupon_amount"`       // 优惠券抵扣金额
 	PaymentType     PaymentTypeCode   `json:"payment_type" gorm:"payment_type"`         // 支付方式(1:微信支付,2:支付宝,3:余额支付)
 	PaymentTime     *time.Time        `json:"payment_time" gorm:"payment_time"`         // 支付时间
 	PaymentStatus   PaymentStatusCode `json:"payment_status" gorm:"payment_status"`     // 支付状态(1:未支付,2:支付中,3:已支付,4:退款中,5:已退款,6:支付失败)
@@ -119,10 +124,10 @@ type OrderItem struct {
 	ProductId    int64      `json:"product_id" gorm:"product_id"`          // 商品ID
 	ProductName  string     `json:"product_name" gorm:"product_name"`      // 商品名称
 	ProductImage string     `json:"product_image" gorm:"product_image"`    // 商品图片
-	ProductPrice float64    `json:"product_price" gorm:"product_price"`    // 商品单价
+	ProductPrice Amount     `json:"product_price" gorm:"product_price"`    // 商品单价
+	TotalPrice   Amount     `json:"total_price" gorm:"total_price"`        // 商品总价
 	Quantity     int        `json:"quantity" gorm:"quantity"`              // 购买数量
 	Unit         string     `json:"unit" gorm:"unit"`                      // 商品单位
-	TotalPrice   float64    `json:"total_price" gorm:"total_price"`        // 商品总价
 	CreatedAt    *time.Time `json:"created_at" gorm:"created_at"`          // 创建时间
 	UpdatedAt    *time.Time `json:"updated_at" gorm:"updated_at"`          // 更新时间
 }
@@ -157,7 +162,7 @@ type Payment struct {
 	OrderNo         string     `json:"order_no" gorm:"order_no"`                 // 订单编号
 	PaymentNo       string     `json:"payment_no" gorm:"payment_no"`             // 支付流水号
 	PaymentType     int8       `json:"payment_type" gorm:"payment_type"`         // 支付方式(1:微信支付,2:支付宝,3:余额支付)
-	PaymentAmount   float64    `json:"payment_amount" gorm:"payment_amount"`     // 支付金额
+	PaymentAmount   Amount     `json:"payment_amount" gorm:"payment_amount"`     // 支付金额
 	PaymentStatus   int8       `json:"payment_status" gorm:"payment_status"`     // 支付状态(1:未支付,2:支付中,3:已支付,4:退款中,5:已退款,6:支付失败)
 	PaymentTime     *time.Time `json:"payment_time" gorm:"payment_time"`         // 支付时间
 	CallbackTime    *time.Time `json:"callback_time" gorm:"callback_time"`       // 回调时间
@@ -185,4 +190,19 @@ type User struct {
 // TableName 表名称
 func (*User) TableName() string {
 	return "user"
+}
+
+type Amount int64
+
+func (a Amount) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("%.2f", float64(a)/100)), nil
+}
+
+func (a *Amount) UnmarshalJSON(data []byte) error {
+	var f float64
+	if err := json.Unmarshal(data, &f); err != nil {
+		return err
+	}
+	*a = Amount(math.Round(f * 100)) // 四舍五入
+	return nil
 }

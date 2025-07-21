@@ -19,15 +19,7 @@ func NewOrderController(s service.OrderService) *OrderController {
 // CheckoutOrder 订单结算
 func (oc *OrderController) CheckoutOrder(c *gin.Context) {
 	userID := c.GetInt64("user_id") // 从认证中获取用户ID
-	var req struct {
-		CartIDs   []int64 `json:"cart_ids"`
-		ProductID int64   `json:"product_id"`
-		Quantity  int     `json:"quantity"`
-		AddressID int64   `json:"address_id"`
-		CouponID  int64   `json:"coupon_id"`
-		Note      string  `json:"note"`
-	}
-
+	var req model.OrderCheckoutReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
 		return
@@ -37,7 +29,6 @@ func (oc *OrderController) CheckoutOrder(c *gin.Context) {
 		UserID:    userID,
 		AddressID: req.AddressID,
 		CouponID:  req.CouponID,
-		Note:      req.Note,
 	}
 
 	// 判断是购物车下单还是立即购买

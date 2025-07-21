@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"cmf/paint_proj/configs"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,7 +21,7 @@ type WxLoginResp struct {
 func GetOpenIDByCode(code string) (string, error) {
 	url := fmt.Sprintf(
 		"https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code",
-		AppID, AppSecret, code,
+		configs.Cfg.Wechat.AppID, configs.Cfg.Wechat.AppSecret, code,
 	)
 	resp, err := http.Get(url)
 	if err != nil {

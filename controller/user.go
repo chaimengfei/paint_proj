@@ -24,7 +24,7 @@ func (uc *UserController) Login(c *gin.Context) {
 		return
 	}
 
-	/*// 获取或创建用户
+	// 获取或创建用户
 	userId, token, err := uc.userService.LoginHandler(context.Background(), &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "登录失败:" + err.Error()})
@@ -33,17 +33,19 @@ func (uc *UserController) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"user_id": userId,
 		"token":   token,
-	})*/
+	})
 
-	// TODO 柴梦妃 临时测试
+	// TODO 柴梦妃 临时测试，token也用入参
 	c.JSON(http.StatusOK, gin.H{
-		"user_id": 123,
-		"token":   req.Code,
+		"code": 0,
+		"data": gin.H{
+			"user_id": 123,
+			"token":   req.Code,
+		},
 	})
 }
 
 func (uc *UserController) UpdateUserInfo(c *gin.Context) {
-
 	var req model.UpdateUserInfoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, gin.H{"error": "手机号或昵称不能为空"})

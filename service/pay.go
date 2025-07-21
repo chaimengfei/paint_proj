@@ -1,6 +1,7 @@
 package service
 
 import (
+	"cmf/paint_proj/configs"
 	"cmf/paint_proj/model"
 	"cmf/paint_proj/pkg"
 	"cmf/paint_proj/repository"
@@ -13,8 +14,8 @@ import (
 )
 
 type PayService interface {
-	PayOrder(ctx context.Context, openid, orderNo string, total float64) (*jsapi.PrepayWithRequestPaymentResponse, error)
-	PaidCallback(ctx context.Context, req *model.OrderPaidCallbackRequest) error // 订单支付成功回调
+	PayOrder(ctx context.Context, openid, orderNo string, total model.Amount) (*jsapi.PrepayWithRequestPaymentResponse, error)
+	PaidCallback(ctx context.Context, req *model.PaidCallbackData) error // 订单支付成功回调
 }
 
 type payService struct {
@@ -31,7 +32,7 @@ func NewPayService(or repository.OrderRepository, cr repository.CartRepository, 
 	}
 }
 
-func (ps *payService) PayOrder(ctx context.Context, openid, orderNo string, total float64) (*jsapi.PrepayWithRequestPaymentResponse, error) {
+func (ps *payService) PayOrder(ctx context.Context, openid, orderNo string, total model.Amount) (*jsapi.PrepayWithRequestPaymentResponse, error) {
 	// 1. 获取订单
 	order, err := ps.orderRepo.GetOrderByOrderNo(orderNo)
 	if err != nil {
@@ -49,16 +50,16 @@ func (ps *payService) PayOrder(ctx context.Context, openid, orderNo string, tota
 		return nil, err
 	}
 	jsapiService := jsapi.JsapiApiService{Client: client}
-	float64Fen := total * float64(100)
-	totalFen := int32(float64Fen)
+	//float64Fen := total * float64(100)
+	//totalFen := int32(float64Fen)
 	resp, _, _ := jsapiService.PrepayWithRequestPayment(context.Background(), jsapi.PrepayRequest{
-		Appid:       core.String(pkg.AppID),
+		Appid:       core.String(configs.Cfg.Wechat.AppID),
 		Mchid:       core.String(pkg.MchID),
 		Description: core.String("订单支付测试 " + time.Now().String()),
 		OutTradeNo:  core.String(orderNo),
 		NotifyUrl:   core.String("https://your-domain.com/api/pay/notify"), // TODO 待填充
 		Amount: &jsapi.Amount{
-			Total:    core.Int32(totalFen),
+			Total:    core.Int32(int32(total)),
 			Currency: core.String("CNY"),
 		},
 		Payer: &jsapi.Payer{
@@ -68,6 +69,6 @@ func (ps *payService) PayOrder(ctx context.Context, openid, orderNo string, tota
 	return resp, nil
 
 }
-func (ps *payService) PaidCallback(ctx context.Context, req *model.OrderPaidCallbackRequest) error {
+func (ps *payService) PaidCallback(ctx context.Context, req *model.PaidCallbackData) error {
 	panic("implement me")
 }

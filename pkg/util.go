@@ -1,12 +1,8 @@
-package util
+package pkg
 
 import (
 	"fmt"
 	"time"
-)
-
-const (
-	OrderPrefix = "MAOCAI" // 订单前缀
 )
 
 // GenerateOrderNo 生成包含用户ID的订单号

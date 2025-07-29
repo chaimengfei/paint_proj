@@ -2,8 +2,8 @@ package service
 
 import (
 	"cmf/paint_proj/model"
+	"cmf/paint_proj/pkg"
 	"cmf/paint_proj/repository"
-	"cmf/paint_proj/util"
 	"context"
 	"errors"
 	"fmt"
@@ -44,7 +44,7 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 	//	return nil, err
 	//}
 	// 3. 创建订单
-	orderNo := util.GenerateOrderNo(req.UserID)
+	orderNo := pkg.GenerateOrderNo(req.UserID)
 	order := &model.Order{
 		OrderNo:         orderNo,
 		UserId:          req.UserID,

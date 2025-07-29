@@ -101,3 +101,29 @@ type UpdateUserInfoRequest struct {
 	Nickname string `json:"nickname"`
 	Mobile   string `json:"mobile"`
 }
+
+type CreateAddressReq struct {
+	RecipientName  string `json:"recipient_name"`
+	RecipientPhone string `json:"recipient_phone"`
+	Province       string `json:"province"`
+	City           string `json:"city"`
+	District       string `json:"district"`
+	Detail         string `json:"detail"`
+	IsDefault      *bool  `json:"is_default"`
+}
+
+type SetAddressDefaultReq struct {
+	AddressID int64 `json:"address_id" binding:"required"`
+	IsDefault bool  `json:"is_default"`
+}
+
+type UpdateAddressReq struct {
+	AddressID      int64  `json:"address_id" binding:"required"`
+	RecipientName  string `json:"recipient_name"`
+	RecipientPhone string `json:"recipient_phone"`
+	Province       string `json:"province"`
+	City           string `json:"city"`
+	District       string `json:"district"`
+	Detail         string `json:"detail"`
+	IsDefault      *bool  `json:"is_default"`
+}

@@ -37,6 +37,7 @@ func SetupRouter() *gin.Engine {
 	productRepo := repository.NewProductRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
 	userRepo := repository.NewUserRepository(db)
+	addressRepo := repository.NewAddressRepository(db)
 
 	// 4.初始化服务层
 	cartService := service.NewCartService(cartRepo, productRepo)
@@ -44,6 +45,7 @@ func SetupRouter() *gin.Engine {
 	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo)
 	payService := service.NewPayService(orderRepo, cartRepo, productRepo)
 	userService := service.NewUserService(userRepo)
+	addressService := service.NewAddressService(addressRepo)
 
 	// 5. 初始化控制器
 	cartController := controller.NewCartController(cartService)
@@ -51,6 +53,7 @@ func SetupRouter() *gin.Engine {
 	orderController := controller.NewOrderController(orderService)
 	payController := controller.NewPayController(payService)
 	userController := controller.NewUserController(userService)
+	addressController := controller.NewAddressController(addressService)
 
 	// API路由
 	api := r.Group("/api")
@@ -60,7 +63,14 @@ func SetupRouter() *gin.Engine {
 			userGroup.POST("/login", userController.Login)                // 首次登陆注册user_id并获取token
 			userGroup.POST("/update/info", userController.UpdateUserInfo) // 首次登陆注册user_id并获取token
 		}
-
+		addressGroup := api.Group("/address")
+		{
+			addressGroup.GET("/list", auth.AuthMiddleware(), addressController.GetAddressList)
+			addressGroup.POST("/create", auth.AuthMiddleware(), addressController.CreateAddress)
+			addressGroup.POST("/set_default/:id", auth.AuthMiddleware(), addressController.SetDefultAddress)
+			addressGroup.POST("/update", auth.AuthMiddleware(), addressController.UpdateAddress)
+			addressGroup.DELETE("/delete/:id", auth.AuthMiddleware(), addressController.DeleteAddress)
+		}
 		productGroup := api.Group("/product")
 		{
 			productGroup.GET("/list", productController.GetProductList)

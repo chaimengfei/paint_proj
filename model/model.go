@@ -206,3 +206,22 @@ func (a *Amount) UnmarshalJSON(data []byte) error {
 	*a = Amount(math.Round(f * 100)) // 四舍五入
 	return nil
 }
+
+// Address undefined
+type Address struct {
+	ID             int64  `json:"id" gorm:"id"`
+	UserId         int64  `json:"user_id" gorm:"user_id"`
+	RecipientName  string `json:"recipient_name" gorm:"recipient_name"`
+	RecipientPhone string `json:"recipient_phone" gorm:"recipient_phone"`
+	Province       string `json:"province" gorm:"province"`
+	City           string `json:"city" gorm:"city"`
+	District       string `json:"district" gorm:"district"`
+	Detail         string `json:"detail" gorm:"detail"`
+	IsDefault      int8   `json:"is_default" gorm:"is_default"`
+	IsDelete       int8   `json:"is_delete" gorm:"is_delete"`
+}
+
+// TableName 表名称
+func (*Address) TableName() string {
+	return "address"
+}

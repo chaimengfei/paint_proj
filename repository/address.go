@@ -2,12 +2,15 @@ package repository
 
 import (
 	"cmf/paint_proj/model"
+	"errors"
 	"gorm.io/gorm"
 )
 
 type AddressRepository interface {
 	GetById(id int64) (*model.Address, error)
 	GetByUserId(userId int64) ([]*model.Address, error)
+	GetByUserAppointId(userId, id int64) (*model.Address, error)
+	GetDefaultOrFirstAddressID(userId int64) (*model.Address, error)
 
 	Create(data *model.Address) error
 	Update(id int64, data map[string]interface{}) error
@@ -31,8 +34,25 @@ func (ar *addressRepository) GetById(id int64) (*model.Address, error) {
 
 func (ar *addressRepository) GetByUserId(userId int64) ([]*model.Address, error) {
 	var result []*model.Address
-	err := ar.db.Model(&model.Address{}).Where("user_id = ? and is_delete = 0", userId).Order("is_default desc").Find(&result).Error
+	err := ar.db.Model(&model.Address{}).Where("user_id = ? AND is_delete = 0", userId).Order("is_default desc").Find(&result).Error
 	return result, err
+}
+
+func (ar *addressRepository) GetByUserAppointId(userId, id int64) (*model.Address, error) {
+	var address model.Address
+	err := ar.db.Model(&model.Address{}).Where("user_id = ? and id = ?", userId, id).First(&address).Error
+	return &address, err
+}
+
+func (ar *addressRepository) GetDefaultOrFirstAddressID(userId int64) (*model.Address, error) {
+	var address model.Address
+	err := ar.db.Model(&model.Address{}).Where("user_id = ? AND is_default = 1 AND is_delete = 0", userId).First(&address).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = ar.db.Model(&model.Address{}).Where("user_id = ? is_delete = 0", userId).Order("id asc").Limit(1).Scan(&address).Error
+		return &address, err
+	} else {
+		return &address, err
+	}
 }
 
 func (ar *addressRepository) Create(data *model.Address) error {

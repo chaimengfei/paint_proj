@@ -89,6 +89,7 @@ type CheckoutResponse struct {
 	TotalAmount   Amount       `json:"total_amount"`
 	ShippingFee   Amount       `json:"shipping_fee"`
 	PaymentAmount Amount       `json:"payment_amount"`
+	AddressData   *AddressInfo `json:"address_data"`
 }
 
 type LoginRequest struct {
@@ -102,23 +103,13 @@ type UpdateUserInfoRequest struct {
 	Mobile   string `json:"mobile"`
 }
 
-type CreateAddressReq struct {
-	RecipientName  string `json:"recipient_name"`
-	RecipientPhone string `json:"recipient_phone"`
-	Province       string `json:"province"`
-	City           string `json:"city"`
-	District       string `json:"district"`
-	Detail         string `json:"detail"`
-	IsDefault      *bool  `json:"is_default"`
-}
-
 type SetAddressDefaultReq struct {
 	AddressID int64 `json:"address_id" binding:"required"`
 	IsDefault bool  `json:"is_default"`
 }
 
-type UpdateAddressReq struct {
-	AddressID      int64  `json:"address_id" binding:"required"`
+type AddressInfo struct {
+	AddressID      int64  `json:"address_id"`
 	RecipientName  string `json:"recipient_name"`
 	RecipientPhone string `json:"recipient_phone"`
 	Province       string `json:"province"`
@@ -126,4 +117,10 @@ type UpdateAddressReq struct {
 	District       string `json:"district"`
 	Detail         string `json:"detail"`
 	IsDefault      *bool  `json:"is_default"`
+}
+type CreateAddressReq struct {
+	Data AddressInfo `json:"data"`
+}
+type UpdateAddressReq struct {
+	Data AddressInfo `json:"data"`
 }

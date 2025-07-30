@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"gorm.io/gorm"
 )
 
 type OrderService interface {
@@ -22,13 +23,15 @@ type orderService struct {
 	orderRepo   repository.OrderRepository
 	cartRepo    repository.CartRepository
 	productRepo repository.ProductRepository
+	addressRepo repository.AddressRepository
 }
 
-func NewOrderService(or repository.OrderRepository, cr repository.CartRepository, pr repository.ProductRepository) OrderService {
+func NewOrderService(or repository.OrderRepository, cr repository.CartRepository, pr repository.ProductRepository, ar repository.AddressRepository) OrderService {
 	return &orderService{
 		orderRepo:   or,
 		cartRepo:    cr,
 		productRepo: pr,
+		addressRepo: ar,
 	}
 }
 
@@ -38,11 +41,31 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 		return nil, errors.New("购物车或立即购买商品不能为空")
 	}
 
-	// 2. 获取用户收货地址
-	//address, err := os.getUserAddress(ctx, req.UserID, req.AddressID) // TODO 待实现获取收件人信息
-	//if err != nil {
-	//	return nil, err
-	//}
+	//2. 获取用户收货地址
+	var addressDbData *model.Address
+	var err error
+	if req.AddressID == 0 {
+		addressDbData, err = os.addressRepo.GetDefaultOrFirstAddressID(userID)
+	} else {
+		addressDbData, err = os.addressRepo.GetByUserAppointId(req.UserID, req.AddressID)
+	}
+	var addressInfo *model.AddressInfo
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		addressInfo = nil
+	} else if addressDbData != nil {
+		isDefault := addressDbData.IsDefault == 1
+		addressInfo = &model.AddressInfo{
+			AddressID:      addressDbData.ID,
+			RecipientName:  addressDbData.RecipientName,
+			RecipientPhone: addressDbData.RecipientPhone,
+			Province:       addressDbData.Province,
+			City:           addressDbData.City,
+			District:       addressDbData.District,
+			Detail:         addressDbData.Detail,
+			IsDefault:      &isDefault,
+		}
+	}
+
 	// 3. 创建订单
 	orderNo := pkg.GenerateOrderNo(req.UserID)
 	order := &model.Order{
@@ -50,14 +73,13 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 		UserId:          req.UserID,
 		OrderStatus:     model.OrderStatusPendingPayment,
 		PaymentStatus:   model.PaymentStatusUnpaid,
-		ReceiverName:    "柴梦妃",                               // TODO 根据 user_id 获取name  ,还是根据address直接获取name address.Name
-		ReceiverPhone:   "13671210659",                          // TODO 根据 user_id 获取phone  ,还是根据address直接获取phone address.Phone
+		ReceiverName:    "柴梦妃",                               // TODO 根据 user_id 获取name  ,还是根据address直接获取name addressDbData.Name
+		ReceiverPhone:   "13671210659",                          // TODO 根据 user_id 获取phone  ,还是根据address直接获取phone addressDbData.Phone
 		ReceiverAddress: "河北省廊坊市三河市燕郊镇四季花都一期", // TODO 待实现address.FullAddress(),
 	}
 	// 4. 获取订单商品
 	var orderItems []*model.OrderItem
 	var totalAmount model.Amount
-	var err error
 	if len(req.CartIDs) > 0 {
 		// 4.1. 从购物车创建订单
 		orderItems, totalAmount, err = os.getOrderItemsFromCart(ctx, req.UserID, req.CartIDs)
@@ -92,13 +114,14 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 		return nil, err
 	}
 
-	// 6.返回订单信息
+	// 7.返回订单信息
 	return &model.CheckoutResponse{
 		OrderItems:    orderItems,
 		OrderNo:       orderNo,
 		TotalAmount:   totalAmount,
 		ShippingFee:   shippingFee,
 		PaymentAmount: paymentAmount,
+		AddressData:   addressInfo,
 	}, nil
 }
 

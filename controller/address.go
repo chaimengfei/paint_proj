@@ -36,27 +36,7 @@ func (ac *AddressController) CreateAddress(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
 		return
 	}
-	dbData := model.Address{
-		UserId:         userID,
-		RecipientName:  req.RecipientName,
-		RecipientPhone: req.RecipientPhone,
-		Province:       req.Province,
-		City:           req.City,
-		District:       req.District,
-		Detail:         req.Detail,
-	}
-	// 如果设置为默认，则取消用户其他地址的默认状态
-	if req.IsDefault != nil {
-		if *req.IsDefault {
-			dbData.IsDefault = 1 // 设置默认
-		} else {
-			dbData.IsDefault = 0 // 取消默认
-		}
-	} else {
-		dbData.IsDefault = 0 // 忽略默认地址设置
-	}
-
-	err := ac.addressService.CreateAddress(&dbData)
+	err := ac.addressService.CreateAddress(userID, &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "创建地址失败"})
 		return
@@ -86,36 +66,7 @@ func (ac *AddressController) UpdateAddress(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
 		return
 	}
-	dbData := map[string]interface{}{}
-	if req.RecipientName != "" {
-		dbData["recipient_name"] = req.RecipientName
-	}
-	if req.RecipientPhone != "" {
-		dbData["recipient_phone"] = req.RecipientPhone
-	}
-	if req.Province != "" {
-		dbData["province"] = req.Province
-	}
-	if req.City != "" {
-		dbData["city"] = req.City
-	}
-	if req.District != "" {
-		dbData["district"] = req.District
-	}
-	if req.Detail != "" {
-		dbData["detail"] = req.Detail
-	}
-	// 如果设置为默认，则取消用户其他地址的默认状态
-	if req.IsDefault != nil {
-		if *req.IsDefault {
-			dbData["is_default"] = 1 // 设置默认
-		} else {
-			dbData["is_default"] = 0 // 取消默认
-		}
-	} else {
-		dbData["is_default"] = 0 // 忽略默认地址设置
-	}
-	err := ac.addressService.UpdateAddress(userID, req.AddressID, dbData)
+	err := ac.addressService.UpdateAddress(userID, req.Data.AddressID, &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "更新地址失败"})
 		return

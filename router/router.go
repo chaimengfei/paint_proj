@@ -42,7 +42,7 @@ func SetupRouter() *gin.Engine {
 	// 4.初始化服务层
 	cartService := service.NewCartService(cartRepo, productRepo)
 	productService := service.NewProductService(productRepo)
-	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo)
+	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo, addressRepo)
 	payService := service.NewPayService(orderRepo, cartRepo, productRepo)
 	userService := service.NewUserService(userRepo)
 	addressService := service.NewAddressService(addressRepo)

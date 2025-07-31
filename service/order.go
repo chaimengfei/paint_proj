@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 )
 
 type OrderService interface {
@@ -49,10 +48,8 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 	} else {
 		addressDbData, err = os.addressRepo.GetByUserAppointId(req.UserID, req.AddressID)
 	}
-	var addressInfo *model.AddressInfo
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		addressInfo = nil
-	} else if addressDbData != nil {
+	var addressInfo *model.AddressInfo = nil
+	if addressDbData != nil && addressDbData.ID > 0 {
 		isDefault := addressDbData.IsDefault == 1
 		addressInfo = &model.AddressInfo{
 			AddressID:      addressDbData.ID,

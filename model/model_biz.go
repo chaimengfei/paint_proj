@@ -89,7 +89,7 @@ type CheckoutResponse struct {
 	TotalAmount   Amount       `json:"total_amount"`
 	ShippingFee   Amount       `json:"shipping_fee"`
 	PaymentAmount Amount       `json:"payment_amount"`
-	AddressData   *AddressInfo `json:"address_data"`
+	AddressData   *AddressInfo `json:"address_info"`
 }
 
 type LoginRequest struct {

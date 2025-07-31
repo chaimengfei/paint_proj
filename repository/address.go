@@ -48,11 +48,9 @@ func (ar *addressRepository) GetDefaultOrFirstAddressID(userId int64) (*model.Ad
 	var address model.Address
 	err := ar.db.Model(&model.Address{}).Where("user_id = ? AND is_default = 1 AND is_delete = 0", userId).First(&address).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		err = ar.db.Model(&model.Address{}).Where("user_id = ? is_delete = 0", userId).Order("id asc").Limit(1).Scan(&address).Error
-		return &address, err
-	} else {
-		return &address, err
+		err = ar.db.Model(&model.Address{}).Where("user_id = ? AND is_delete = 0", userId).Order("id asc").First(&address).Error
 	}
+	return &address, err
 }
 
 func (ar *addressRepository) Create(data *model.Address) error {

@@ -89,13 +89,8 @@ func (oc *OrderController) GetOrderList(c *gin.Context) {
 // GetOrderDetail 获取订单详情
 func (oc *OrderController) GetOrderDetail(c *gin.Context) {
 	userID := c.GetInt64("user_id")
-	orderIDStr := c.Query("id")
-	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "订单ID格式错误"})
-		return
-	}
-	order, err := oc.orderService.GetOrderDetail(c.Request.Context(), userID, orderID)
+	orderNo := c.Query("order_no")
+	order, err := oc.orderService.GetOrderDetail(c.Request.Context(), userID, orderNo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取订单详情失败:" + err.Error()})
 		return
@@ -106,13 +101,14 @@ func (oc *OrderController) GetOrderDetail(c *gin.Context) {
 // CancelOrder 取消订单
 func (oc *OrderController) CancelOrder(c *gin.Context) {
 	userID := c.GetInt64("user_id")
-	orderIDStr := c.Query("id")
-	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "订单ID格式错误"})
+	var req model.OrderNoReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
 		return
 	}
-	order, err := oc.orderService.GetOrderDetail(c.Request.Context(), userID, orderID)
+
+	orderNo := req.OrderNo
+	order, err := oc.orderService.GetOrderDetail(c.Request.Context(), userID, orderNo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "查询订单异常:" + err.Error()})
 		return
@@ -127,13 +123,8 @@ func (oc *OrderController) CancelOrder(c *gin.Context) {
 // DeleteOrder 删除订单
 func (oc *OrderController) DeleteOrder(c *gin.Context) {
 	userID := c.GetInt64("user_id")
-	orderIDStr := c.Query("id")
-	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "订单ID格式错误"})
-		return
-	}
-	order, err := oc.orderService.GetOrderDetail(c.Request.Context(), userID, orderID)
+	orderNo := c.Query("order_no")
+	order, err := oc.orderService.GetOrderDetail(c.Request.Context(), userID, orderNo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "查询订单异常:" + err.Error()})
 		return

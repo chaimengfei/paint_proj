@@ -41,9 +41,6 @@ type BuyNowItem struct {
 type ProductIdReq struct {
 	ProductID int64 `json:"product_id" binding:"required"`
 }
-type CartIdReq struct {
-	CartID int64 `json:"cart_id" binding:"required"`
-}
 type UpdateCartItemReq struct {
 	CartID   int64 `json:"cart_id" binding:"required"`
 	Quantity int   `json:"quantity" binding:"required,min=1"`
@@ -54,6 +51,9 @@ type OrderCheckoutReq struct {
 	Quantity  int     `json:"quantity"`
 	AddressID int64   `json:"address_id"`
 	CouponID  int64   `json:"coupon_id"`
+}
+type OrderNoReq struct {
+	OrderNo string `json:"order_no"` // 订单号
 }
 type PayCallbackReq struct {
 	OrderNo       string `json:"order_no"`

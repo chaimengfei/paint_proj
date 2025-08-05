@@ -60,42 +60,42 @@ func SetupRouter() *gin.Engine {
 	{
 		userGroup := api.Group("/user")
 		{
-			userGroup.POST("/login", userController.Login)                // 首次登陆注册user_id并获取token
-			userGroup.POST("/update/info", userController.UpdateUserInfo) // 首次登陆注册user_id并获取token
-		}
-		addressGroup := api.Group("/address")
-		{
-			addressGroup.GET("/list", auth.AuthMiddleware(), addressController.GetAddressList)
-			addressGroup.POST("/create", auth.AuthMiddleware(), addressController.CreateAddress)
-			addressGroup.POST("/set_default/:id", auth.AuthMiddleware(), addressController.SetDefultAddress)
-			addressGroup.POST("/update", auth.AuthMiddleware(), addressController.UpdateAddress)
-			addressGroup.DELETE("/delete/:id", auth.AuthMiddleware(), addressController.DeleteAddress)
+			userGroup.POST("/login", userController.Login) // 首次登陆注册user_id并获取token
+			userGroup.POST("/update/info", auth.AuthMiddleware(), userController.UpdateUserInfo)
 		}
 		productGroup := api.Group("/product")
 		{
 			productGroup.GET("/list", productController.GetProductList)
 		}
-		cartGroup := api.Group("/cart")
+		addressGroup := api.Group("/address", auth.AuthMiddleware())
 		{
-			cartGroup.GET("/list", auth.AuthMiddleware(), cartController.GetCartList)
-			cartGroup.POST("/add", auth.AuthMiddleware(), cartController.AddToCart)
-			cartGroup.POST("/update", auth.AuthMiddleware(), cartController.UpdateCartItem)
-			cartGroup.DELETE("/delete/:id", auth.AuthMiddleware(), cartController.DeleteCartItem)
+			addressGroup.GET("/list", addressController.GetAddressList)
+			addressGroup.POST("/create", addressController.CreateAddress)
+			addressGroup.POST("/set_default/:id", addressController.SetDefultAddress)
+			addressGroup.POST("/update", addressController.UpdateAddress)
+			addressGroup.DELETE("/delete/:id", addressController.DeleteAddress)
 		}
-		orderGroup := api.Group("/order")
+		cartGroup := api.Group("/cart", auth.AuthMiddleware())
 		{
-			orderGroup.GET("/list", auth.AuthMiddleware(), orderController.GetOrderList)
-			orderGroup.GET("/detail", auth.AuthMiddleware(), orderController.GetOrderDetail)
-			orderGroup.DELETE("/delete/:id", auth.AuthMiddleware(), orderController.DeleteOrder) // 前端未用到
+			cartGroup.GET("/list", cartController.GetCartList)
+			cartGroup.POST("/add", cartController.AddToCart)
+			cartGroup.POST("/update", cartController.UpdateCartItem)
+			cartGroup.DELETE("/delete/:id", cartController.DeleteCartItem)
+		}
+		orderGroup := api.Group("/order", auth.AuthMiddleware())
+		{
+			orderGroup.GET("/list", orderController.GetOrderList)
+			orderGroup.GET("/detail", orderController.GetOrderDetail)
+			orderGroup.DELETE("/delete/:id", orderController.DeleteOrder) // 前端未用到
 
-			orderGroup.POST("/checkout", auth.AuthMiddleware(), orderController.CheckoutOrder)
-			orderGroup.POST("/cancel", auth.AuthMiddleware(), orderController.CancelOrder)
+			orderGroup.POST("/checkout", orderController.CheckoutOrder)
+			orderGroup.POST("/cancel", orderController.CancelOrder)
 		}
 		payGroup := api.Group("/pay")
 		{
 
 			payGroup.POST("/data", auth.AuthMiddleware(), payController.PaymentData)
-			payGroup.POST("/callback", auth.AuthMiddleware(), payController.PaymentCallback)
+			payGroup.POST("/callback", payController.PaymentCallback)
 		}
 	}
 

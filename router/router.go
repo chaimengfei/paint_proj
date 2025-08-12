@@ -55,7 +55,7 @@ func SetupRouter() *gin.Engine {
 	userController := controller.NewUserController(userService)
 	addressController := controller.NewAddressController(addressService)
 
-	// API路由
+	// API路由 供微信小程序用
 	api := r.Group("/api")
 	{
 		userGroup := api.Group("/user")
@@ -97,6 +97,15 @@ func SetupRouter() *gin.Engine {
 			payGroup.POST("/data", auth.AuthMiddleware(), payController.PaymentData)
 			payGroup.POST("/callback", payController.PaymentCallback)
 		}
+	}
+	// Admin路由 供Web后台管理系统
+	admin := r.Group("/admin")
+	{
+		productGroup := admin.Group("/product")
+		{
+			productGroup.POST("/upload/image", productController.UploadImageForAdmin) // 阿里云OSS上传接口
+		}
+		// ...更多后台接口
 	}
 
 	return r

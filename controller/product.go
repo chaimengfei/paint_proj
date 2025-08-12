@@ -2,6 +2,7 @@ package controller
 
 import (
 	"cmf/paint_proj/model"
+	"cmf/paint_proj/pkg"
 	"cmf/paint_proj/service"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -36,4 +37,13 @@ func (pc *ProductController) GetProductList(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response) //
+}
+
+func (pc *ProductController) UploadImageForAdmin(c *gin.Context) {
+	fileURL, err := pkg.UploadImage(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 0, "data": fileURL})
 }

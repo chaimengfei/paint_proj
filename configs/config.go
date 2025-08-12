@@ -10,9 +10,15 @@ type WechatConfig struct {
 	AppID     string `mapstructure:"app_id"`
 	AppSecret string `mapstructure:"app_secret"`
 }
-
+type OssConfig struct {
+	Endpoint        string `mapstructure:"endpoint"`
+	AccessKeyID     string `mapstructure:"access_key_id"`
+	AccessKeySecret string `mapstructure:"access_key_secret"`
+	BucketName      string `mapstructure:"bucket_name"`
+}
 type Config struct {
 	Wechat WechatConfig `mapstructure:"wechat"`
+	Oss    OssConfig    `mapstructure:"oss"`
 }
 
 var Cfg *Config

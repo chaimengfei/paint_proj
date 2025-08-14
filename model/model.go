@@ -225,3 +225,38 @@ type Address struct {
 func (*Address) TableName() string {
 	return "address"
 }
+
+// StockLog 库存日志表
+type StockLog struct {
+	ID           int64      `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
+	ProductID    int64      `json:"product_id" gorm:"product_id"`          // 商品ID
+	ProductName  string     `json:"product_name" gorm:"product_name"`      // 商品名称
+	Types        int8       `json:"types" gorm:"types"`                    // 操作类型(1:入库,2:出库,3:退货)
+	Quantity     int        `json:"quantity" gorm:"quantity"`              // 操作数量
+	BeforeStock  int        `json:"before_stock" gorm:"before_stock"`      // 操作前库存
+	AfterStock   int        `json:"after_stock" gorm:"after_stock"`        // 操作后库存
+	OrderNo      string     `json:"order_no" gorm:"order_no"`              // 关联订单号(出库/退货时)
+	Remark       string     `json:"remark" gorm:"remark"`                  // 备注
+	Operator     string     `json:"operator" gorm:"operator"`              // 操作人
+	OperatorType int8       `json:"operator_type" gorm:"operator_type"`    // 操作人类型(1:用户,2:系统,3:管理员)
+	CreatedAt    *time.Time `json:"created_at" gorm:"created_at"`          // 创建时间
+}
+
+// TableName 表名称
+func (*StockLog) TableName() string {
+	return "stock_log"
+}
+
+// 库存操作类型常量
+const (
+	StockTypeInbound  = 1 // 入库
+	StockTypeOutbound = 2 // 出库
+	StockTypeReturn   = 3 // 退货
+)
+
+// 库存操作请求结构体
+type StockOperationRequest struct {
+	ProductID int64  `json:"product_id" binding:"required"` // 商品ID
+	Quantity  int    `json:"quantity" binding:"required"`   // 操作数量
+	Remark    string `json:"remark"`                        // 备注
+}

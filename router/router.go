@@ -6,6 +6,7 @@ import (
 	"cmf/paint_proj/controller"
 	"cmf/paint_proj/repository"
 	"cmf/paint_proj/service"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,7 +25,7 @@ func SetupRouter() *gin.Engine {
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Types")
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return
@@ -38,14 +39,16 @@ func SetupRouter() *gin.Engine {
 	orderRepo := repository.NewOrderRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	addressRepo := repository.NewAddressRepository(db)
+	stockRepo := repository.NewStockRepository(db)
 
 	// 4.初始化服务层
 	cartService := service.NewCartService(cartRepo, productRepo)
 	productService := service.NewProductService(productRepo)
-	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo, addressRepo)
+	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo, addressRepo, stockRepo)
 	payService := service.NewPayService(orderRepo, cartRepo, productRepo)
 	userService := service.NewUserService(userRepo)
 	addressService := service.NewAddressService(addressRepo)
+	stockService := service.NewStockService(stockRepo, productRepo)
 
 	// 5. 初始化控制器
 	cartController := controller.NewCartController(cartService)
@@ -54,6 +57,7 @@ func SetupRouter() *gin.Engine {
 	payController := controller.NewPayController(payService)
 	userController := controller.NewUserController(userService)
 	addressController := controller.NewAddressController(addressService)
+	stockController := controller.NewStockController(stockService)
 
 	// API路由 供微信小程序用
 	api := r.Group("/api")
@@ -108,6 +112,14 @@ func SetupRouter() *gin.Engine {
 			productGroup.POST("/add", productController.AddProduct)
 			productGroup.PUT("/edit/:id", productController.EditProduct)
 			productGroup.DELETE("/del/:id", productController.DeleteProduct)
+		}
+
+		stockGroup := admin.Group("/stock")
+		{
+			stockGroup.POST("/inbound", stockController.InboundStock)   // 入库
+			stockGroup.POST("/outbound", stockController.OutboundStock) // 出库
+			stockGroup.POST("/return", stockController.ReturnStock)     // 退货
+			stockGroup.GET("/logs", stockController.GetStockLogs)       // 库存日志
 		}
 	}
 

@@ -4,9 +4,10 @@ import (
 	"cmf/paint_proj/model"
 	"cmf/paint_proj/pkg"
 	"cmf/paint_proj/service"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type ProductController struct {
@@ -81,14 +82,29 @@ func (pc *ProductController) GetAdminProductList(c *gin.Context) {
 
 // AddProduct 新增商品（后台）
 func (pc *ProductController) AddProduct(c *gin.Context) {
-	var req model.Product
+	var req model.AddOrEditSimpleProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误: " + err.Error()})
 		return
 	}
 
-	if err := pc.productService.AddProduct(&req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "添加商品失败"})
+	// 转换为完整的Product结构体
+	product := &model.Product{
+		Name:         req.Name,
+		CategoryId:   req.CategoryId,
+		Image:        req.Image,
+		SellerPrice:  req.SellerPrice,
+		Cost:         req.Cost,
+		ShippingCost: req.ShippingCost,
+		ProductCost:  req.ProductCost,
+		Unit:         req.Unit,
+		Remark:       req.Remark,
+		// TODO 设置默认值
+		Stock: 0,
+	}
+
+	if err := pc.productService.AddProduct(product); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "添加商品失败: " + err.Error()})
 		return
 	}
 
@@ -98,17 +114,34 @@ func (pc *ProductController) AddProduct(c *gin.Context) {
 // EditProduct 编辑商品（后台）
 func (pc *ProductController) EditProduct(c *gin.Context) {
 	idStr := c.Param("id")
-	id, _ := strconv.ParseInt(idStr, 10, 64)
-
-	var req model.Product
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "商品ID格式错误"})
 		return
 	}
-	req.ID = id
 
-	if err := pc.productService.UpdateProduct(&req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "编辑商品失败"})
+	var req model.AddOrEditSimpleProductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误: " + err.Error()})
+		return
+	}
+
+	// 转换为完整的Product结构体
+	product := &model.Product{
+		ID:           id,
+		Name:         req.Name,
+		CategoryId:   req.CategoryId,
+		Image:        req.Image,
+		SellerPrice:  req.SellerPrice,
+		Cost:         req.Cost,
+		ShippingCost: req.ShippingCost,
+		ProductCost:  req.ProductCost,
+		Unit:         req.Unit,
+		Remark:       req.Remark,
+	}
+
+	if err = pc.productService.UpdateProduct(product); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "编辑商品失败: " + err.Error()})
 		return
 	}
 

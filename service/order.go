@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 )
 
 type OrderService interface {
@@ -23,14 +24,16 @@ type orderService struct {
 	cartRepo    repository.CartRepository
 	productRepo repository.ProductRepository
 	addressRepo repository.AddressRepository
+	stockRepo   repository.StockRepository
 }
 
-func NewOrderService(or repository.OrderRepository, cr repository.CartRepository, pr repository.ProductRepository, ar repository.AddressRepository) OrderService {
+func NewOrderService(or repository.OrderRepository, cr repository.CartRepository, pr repository.ProductRepository, ar repository.AddressRepository, sr repository.StockRepository) OrderService {
 	return &orderService{
 		orderRepo:   or,
 		cartRepo:    cr,
 		productRepo: pr,
 		addressRepo: ar,
+		stockRepo:   sr,
 	}
 }
 
@@ -111,6 +114,14 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 		return nil, err
 	}
 
+	// 6.1. 处理库存出库
+	err = os.processStockOutbound(orderItems, order.OrderNo, fmt.Sprintf("user:%d", req.UserID))
+	if err != nil {
+		// 注意：这里如果库存出库失败，订单已经创建成功，实际业务中可能需要回滚订单
+		// 或者记录错误日志，后续手动处理
+		return nil, fmt.Errorf("订单创建成功但库存出库失败: %v", err)
+	}
+
 	// 7.返回订单信息
 	return &model.CheckoutResponse{
 		OrderItems:    orderItems,
@@ -182,6 +193,60 @@ func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64,
 		totalAmount += model.Amount(itemTotalPrice)
 	}
 	return orderItems, totalAmount, nil
+}
+
+// processStockOutbound 处理库存出库
+func (os *orderService) processStockOutbound(orderItems []*model.OrderItem, orderNo string, operator string) error {
+	for _, item := range orderItems {
+		// 获取商品信息
+		product, err := os.productRepo.GetByID(item.ProductId)
+		if err != nil {
+			return fmt.Errorf("获取商品信息失败: %v", err)
+		}
+
+		// 获取操作前库存
+		beforeStock, err := os.stockRepo.GetProductStock(item.ProductId)
+		if err != nil {
+			return fmt.Errorf("获取商品库存失败: %v", err)
+		}
+
+		// 检查库存是否足够
+		if beforeStock < item.Quantity {
+			return fmt.Errorf("商品 %s 库存不足", product.Name)
+		}
+
+		// 更新库存（出库为负数）
+		err = os.stockRepo.UpdateProductStock(item.ProductId, -item.Quantity)
+		if err != nil {
+			return fmt.Errorf("更新商品库存失败: %v", err)
+		}
+
+		// 获取操作后库存
+		afterStock := beforeStock - item.Quantity
+
+		// 创建库存日志
+		now := time.Now()
+		stockLog := &model.StockLog{
+			ProductID:    item.ProductId,
+			ProductName:  product.Name,
+			Types:        model.StockTypeOutbound,
+			Quantity:     item.Quantity,
+			BeforeStock:  beforeStock,
+			AfterStock:   afterStock,
+			OrderNo:      orderNo,
+			Remark:       "小程序用户购买",
+			Operator:     operator,
+			OperatorType: model.OperatorTypeUser,
+			CreatedAt:    &now,
+		}
+
+		err = os.stockRepo.CreateStockLog(stockLog)
+		if err != nil {
+			return fmt.Errorf("创建库存日志失败: %v", err)
+		}
+	}
+
+	return nil
 }
 
 // getOrderItemsFromBuyNow 从立即购买获取订单商品和总金额

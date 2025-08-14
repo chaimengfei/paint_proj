@@ -124,3 +124,16 @@ type CreateAddressReq struct {
 type UpdateAddressReq struct {
 	Data AddressInfo `json:"data"`
 }
+
+// 简化的商品请求结构体
+type AddOrEditSimpleProductRequest struct {
+	Name         string `json:"name" binding:"required"`        // 商品名
+	CategoryId   int64  `json:"category_id" binding:"required"` // 分类ID
+	Image        string `json:"image" binding:"required"`       // 商品图片
+	SellerPrice  Amount `json:"seller_price"`                   // 售价
+	Cost         Amount `json:"cost"`                           // 成本价
+	ShippingCost Amount `json:"shipping_cost"`                  // 运费
+	ProductCost  Amount `json:"product_cost"`                   // 货物成本
+	Unit         string `json:"unit"`                           // 单位（可选）
+	Remark       string `json:"remark"`                         // 备注（可选）
+}

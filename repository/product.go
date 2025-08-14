@@ -11,6 +11,11 @@ type ProductRepository interface {
 
 	GetByID(productID int64) (*model.Product, error)
 	GetByIDs(productIDs []int64) ([]*model.Product, error)
+	GetList(offset, limit int) ([]model.Product, int64, error)
+
+	Create(product *model.Product) error
+	Update(product *model.Product) error
+	Delete(id int64) error
 }
 
 type productRepository struct {
@@ -51,4 +56,28 @@ func (p *productRepository) GetByIDs(productIDs []int64) ([]*model.Product, erro
 	var products []*model.Product
 	err := p.db.Model(&model.Product{}).Where("id in ?", productIDs).Find(&products).Error
 	return products, err
+}
+func (p *productRepository) GetList(offset, limit int) ([]model.Product, int64, error) {
+	var products []model.Product
+	var total int64
+
+	if err := p.db.Model(&model.Product{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := p.db.Offset(offset).Limit(limit).Find(&products).Error; err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
+}
+
+func (p *productRepository) Create(product *model.Product) error {
+	return p.db.Create(product).Error
+}
+
+func (p *productRepository) Update(product *model.Product) error {
+	return p.db.Model(&model.Product{}).Where("id = ?", product.ID).Updates(product).Error
+}
+
+func (p *productRepository) Delete(id int64) error {
+	return p.db.Delete(&model.Product{}, id).Error
 }

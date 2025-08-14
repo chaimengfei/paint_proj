@@ -6,6 +6,7 @@ import (
 	"cmf/paint_proj/service"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
 )
 
 type ProductController struct {
@@ -35,8 +36,7 @@ func (pc *ProductController) GetProductList(c *gin.Context) {
 		Categories: categories,
 		Products:   productMap,
 	}
-
-	c.JSON(http.StatusOK, response) //
+	c.JSON(http.StatusOK, response)
 }
 
 func (pc *ProductController) UploadImageForAdmin(c *gin.Context) {
@@ -46,4 +46,83 @@ func (pc *ProductController) UploadImageForAdmin(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"code": 0, "data": fileURL})
+}
+
+// 管理员分页获取商品列表
+func (pc *ProductController) GetAdminProductList(c *gin.Context) {
+	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("page_size", "10")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil || pageSize < 1 {
+		pageSize = 10
+	}
+
+	products, total, err := pc.productService.GetAdminProductList(page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": gin.H{
+			"list":      products,
+			"total":     total,
+			"page":      page,
+			"page_size": pageSize,
+		},
+	})
+}
+
+// AddProduct 新增商品（后台）
+func (pc *ProductController) AddProduct(c *gin.Context) {
+	var req model.Product
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
+		return
+	}
+
+	if err := pc.productService.AddProduct(&req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "添加商品失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "添加成功"})
+}
+
+// EditProduct 编辑商品（后台）
+func (pc *ProductController) EditProduct(c *gin.Context) {
+	idStr := c.Param("id")
+	id, _ := strconv.ParseInt(idStr, 10, 64)
+
+	var req model.Product
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
+		return
+	}
+	req.ID = id
+
+	if err := pc.productService.UpdateProduct(&req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "编辑商品失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "编辑成功"})
+}
+
+// DeleteProduct 删除商品（后台）
+func (pc *ProductController) DeleteProduct(c *gin.Context) {
+	idStr := c.Param("id")
+	id, _ := strconv.ParseInt(idStr, 10, 64)
+
+	if err := pc.productService.DeleteProduct(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "删除失败"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "删除成功"})
 }

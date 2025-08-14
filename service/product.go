@@ -7,6 +7,11 @@ import (
 
 type ProductService interface {
 	GetProductList() ([]model.Category, map[int64][]model.ProductSimple, error)
+
+	GetAdminProductList(page, pageSize int) ([]model.Product, int64, error)
+	AddProduct(p *model.Product) error
+	UpdateProduct(p *model.Product) error
+	DeleteProduct(id int64) error
 }
 
 type productService struct {
@@ -45,4 +50,21 @@ func (ps *productService) GetProductList() ([]model.Category, map[int64][]model.
 		productMap[p.CategoryId] = append(productMap[p.CategoryId], sp)
 	}
 	return categories, productMap, nil
+}
+
+func (ps *productService) GetAdminProductList(page, pageSize int) ([]model.Product, int64, error) {
+	offset := (page - 1) * pageSize
+	return ps.productRepo.GetList(offset, pageSize)
+}
+
+func (ps *productService) AddProduct(p *model.Product) error {
+	return ps.productRepo.Create(p)
+}
+
+func (ps *productService) UpdateProduct(p *model.Product) error {
+	return ps.productRepo.Update(p)
+}
+
+func (ps *productService) DeleteProduct(id int64) error {
+	return ps.productRepo.Delete(id)
 }

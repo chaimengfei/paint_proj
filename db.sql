@@ -15,4 +15,8 @@ CREATE TABLE IF NOT EXISTS stock_log (
   INDEX idx_product_id (product_id),
   INDEX idx_type (type),
   INDEX idx_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='库存日志表'; 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='库存日志表';
+
+
+
+ALTER TABLE product ADD COLUMN is_on_shelf TINYINT NOT NULL DEFAULT 0 COMMENT '是否上架(1:上架,0:下架)';

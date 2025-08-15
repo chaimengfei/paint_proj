@@ -2,6 +2,7 @@ package repository
 
 import (
 	"cmf/paint_proj/model"
+
 	"gorm.io/gorm"
 )
 
@@ -29,7 +30,11 @@ func NewProductRepository(db *gorm.DB) ProductRepository {
 // GetProductCategory  从product表查分类
 func (p *productRepository) GetProductCategory() ([]model.Category, map[int64]string, error) {
 	var categories []model.Category
-	if err := p.db.Table("product p").Select("distinct p.category_id as id,c.name").Joins("INNER JOIN category c ON p.category_id = c.id").Scan(&categories).Error; err != nil {
+	if err := p.db.Table("product p").
+		Select("distinct p.category_id as id,c.name").
+		Joins("INNER JOIN category c ON p.category_id = c.id").
+		Where("p.is_on_shelf = ?", 1).
+		Scan(&categories).Error; err != nil {
 		return nil, nil, err
 	}
 	var categoryMap = make(map[int64]string)
@@ -42,7 +47,7 @@ func (p *productRepository) GetProductCategory() ([]model.Category, map[int64]st
 // GetAllProduct 获取所有商品
 func (p *productRepository) GetAllProduct() ([]model.Product, error) {
 	var products []model.Product
-	if err := p.db.Model(&model.Product{}).Find(&products).Error; err != nil {
+	if err := p.db.Model(&model.Product{}).Where("is_on_shelf = ?", 1).Find(&products).Error; err != nil {
 		return nil, err
 	}
 	return products, nil

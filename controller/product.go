@@ -99,6 +99,7 @@ func (pc *ProductController) AddProduct(c *gin.Context) {
 		ProductCost:  req.ProductCost,
 		Unit:         req.Unit,
 		Remark:       req.Remark,
+		IsOnShelf:    req.IsOnShelf,
 		// TODO 设置默认值
 		Stock: 0,
 	}
@@ -138,6 +139,7 @@ func (pc *ProductController) EditProduct(c *gin.Context) {
 		ProductCost:  req.ProductCost,
 		Unit:         req.Unit,
 		Remark:       req.Remark,
+		IsOnShelf:    req.IsOnShelf,
 	}
 
 	if err = pc.productService.UpdateProduct(product); err != nil {

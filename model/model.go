@@ -20,6 +20,7 @@ type Product struct {
 	Image        string `json:"image" gorm:"image"`                     // 图片地址
 	Unit         string `json:"unit" gorm:"unit"`                       // 单位 L/桶/套
 	Remark       string `json:"remark" gorm:"remark"`                   // 备注
+	IsOnShelf    int8   `json:"is_on_shelf" gorm:"is_on_shelf"`         // 是否上架(1:上架,0:下架)
 }
 
 // TableName 表名称

@@ -136,4 +136,5 @@ type AddOrEditSimpleProductRequest struct {
 	ProductCost  Amount `json:"product_cost"`                   // 货物成本
 	Unit         string `json:"unit"`                           // 单位（可选）
 	Remark       string `json:"remark"`                         // 备注（可选）
+	IsOnShelf    int8   `json:"is_on_shelf"`                    // 是否上架(1:上架,0:下架)
 }

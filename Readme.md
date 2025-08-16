@@ -41,30 +41,80 @@
   - 记录库存出库日志
 
 #### 2. 管理员后台库存操作
-- **入库操作** (`POST /admin/stock/inbound`)
-  - 管理员可以手动增加商品库存
+- **批量入库操作** (`POST /admin/stock/batch/inbound`)
+  - 管理员可以一次性对多个商品进行入库
+  - 记录操作人和操作人ID
   - 记录入库日志
   
-- **出库操作** (`POST /admin/stock/outbound`)
-  - 管理员可以手动减少商品库存
+- **批量出库操作** (`POST /admin/stock/batch/outbound`)
+  - 管理员可以一次性对多个商品进行出库
+  - 记录用户名称、用户ID、用户账号、购买时间
   - 检查库存是否充足
   - 记录出库日志
-  
-- **退货操作** (`POST /admin/stock/return`)
-  - 管理员可以处理退货，增加商品库存
-  - 记录退货日志
 
-#### 3. 库存日志查询
-- **获取库存日志** (`GET /admin/stock/logs`)
-  - 支持按商品ID筛选
+#### 3. 库存操作查询
+- **获取库存操作列表** (`GET /admin/stock/operations`)
   - 支持分页查询
-  - 记录所有库存操作历史
+  - 显示所有库存操作记录
+  
+- **获取库存操作详情** (`GET /admin/stock/operation/:id`)
+  - 显示操作主表信息
+  - 显示操作子表商品明细
+  - 记录所有库存操作历史（兼容旧版本）
 
-### API接口说明
+## API接口说明
 
-#### 库存管理接口
+### 库存管理接口
 
-##### 入库操作
+##### 批量入库操作
+```http
+POST /admin/stock/batch/inbound
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "product_id": 1,
+      "quantity": 10
+    },
+    {
+      "product_id": 2,
+      "quantity": 20
+    }
+  ],
+  "operator": "张三",
+  "operator_id": 1001,
+  "remark": "新货入库"
+}
+```
+
+##### 批量出库操作
+```http
+POST /admin/stock/batch/outbound
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "product_id": 1,
+      "quantity": 5
+    },
+    {
+      "product_id": 2,
+      "quantity": 8
+    }
+  ],
+  "user_name": "李四",
+  "user_id": 1002,
+  "user_account": "13800138000",
+  "purchase_time": "2024-01-15 14:30:00",
+  "operator": "张三",
+  "operator_id": 1001,
+  "remark": "客户购买"
+}
+```
+
+##### 单个入库操作
 ```http
 POST /admin/stock/inbound
 Content-Type: application/json
@@ -76,7 +126,7 @@ Content-Type: application/json
 }
 ```
 
-##### 出库操作
+##### 单个出库操作
 ```http
 POST /admin/stock/outbound
 Content-Type: application/json
@@ -100,14 +150,62 @@ Content-Type: application/json
 }
 ```
 
+##### 获取库存操作列表
+```http
+GET /admin/stock/operations?page=1&page_size=10
+```
+
+##### 获取库存操作详情
+```http
+GET /admin/stock/operation/1
+```
+
 ##### 获取库存日志
 ```http
 GET /admin/stock/logs?product_id=1&page=1&page_size=10
 ```
 
-### 数据库表结构
+## 数据库表结构
 
-#### stock_log 库存日志表
+### 库存操作
+
+#### stock_operation 库存操作主表
+
+```sql
+CREATE TABLE stock_operation (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  operation_no VARCHAR(64) NOT NULL COMMENT '操作单号',
+  type TINYINT NOT NULL COMMENT '操作类型(1:入库,2:出库,3:退货)',
+  operator VARCHAR(255) NOT NULL COMMENT '操作人',
+  operator_id BIGINT NOT NULL COMMENT '操作人ID',
+  operator_type TINYINT NOT NULL COMMENT '操作人类型(1:用户,2:系统,3:管理员)',
+  user_name VARCHAR(255) COMMENT '用户名称(出库时)',
+  user_id BIGINT COMMENT '用户ID(出库时)',
+  user_account VARCHAR(255) COMMENT '用户账号(出库时)',
+  purchase_time TIMESTAMP COMMENT '购买时间(出库时)',
+  remark VARCHAR(255) COMMENT '备注',
+  total_amount BIGINT NOT NULL DEFAULT 0 COMMENT '总金额(分)',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+);
+```
+
+#### stock_operation_item 库存操作子表
+```sql
+CREATE TABLE stock_operation_item (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  operation_id BIGINT NOT NULL COMMENT '操作主表ID',
+  product_id BIGINT NOT NULL COMMENT '商品ID',
+  product_name VARCHAR(255) NOT NULL COMMENT '商品名称',
+  quantity INT NOT NULL COMMENT '操作数量',
+  unit_price BIGINT NOT NULL DEFAULT 0 COMMENT '单价(分)',
+  total_price BIGINT NOT NULL DEFAULT 0 COMMENT '总价(分)',
+  before_stock INT NOT NULL COMMENT '操作前库存',
+  after_stock INT NOT NULL COMMENT '操作后库存',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+);
+```
+
+#### stock_log 库存日志表（兼容旧版本）
 ```sql
 CREATE TABLE stock_log (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -120,12 +218,16 @@ CREATE TABLE stock_log (
   order_no VARCHAR(64) COMMENT '关联订单号(出库/退货时)',
   remark VARCHAR(255) COMMENT '备注',
   operator VARCHAR(255) NOT NULL COMMENT '操作人',
+  operator_id BIGINT COMMENT '操作人ID',
   operator_type TINYINT NOT NULL COMMENT '操作人类型(1:用户,2:系统,3:管理员)',
+  buyer_name VARCHAR(255) COMMENT '购买者名称(出库时)',
+  buyer_account VARCHAR(255) COMMENT '购买者账号(出库时)',
+  purchase_time TIMESTAMP COMMENT '购买时间(出库时)',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
 );
 ```
 
-### 使用说明
+## 使用说明
 
 1. **小程序购买流程**：
    - 用户选择商品并下单

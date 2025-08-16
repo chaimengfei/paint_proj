@@ -20,3 +20,41 @@ CREATE TABLE IF NOT EXISTS stock_log (
 
 
 ALTER TABLE product ADD COLUMN is_on_shelf TINYINT NOT NULL DEFAULT 0 COMMENT '是否上架(1:上架,0:下架)';
+
+
+
+CREATE TABLE stock_operation (
+     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+     operation_no VARCHAR(64) NOT NULL COMMENT '操作单号',
+     type TINYINT NOT NULL COMMENT '操作类型(1:入库,2:出库,3:退货)',
+     operator VARCHAR(255) NOT NULL COMMENT '操作人',
+     operator_id BIGINT NOT NULL COMMENT '操作人ID',
+     operator_type TINYINT NOT NULL COMMENT '操作人类型(1:用户,2:系统,3:管理员)',
+     user_name VARCHAR(255) COMMENT '用户名称(出库时)',
+     user_id BIGINT COMMENT '用户ID(出库时)',
+     user_account VARCHAR(255) COMMENT '用户账号(出库时)',
+     purchase_time TIMESTAMP COMMENT '购买时间(出库时)',
+     remark VARCHAR(255) COMMENT '备注',
+     total_amount BIGINT NOT NULL DEFAULT 0 COMMENT '总金额(分)',
+     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+) COMMENT '库存操作主表';
+
+
+CREATE TABLE IF NOT EXISTS stock_operation_item (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键id',
+    operation_id BIGINT NOT NULL COMMENT '操作主表ID',
+    product_id BIGINT NOT NULL COMMENT '商品ID',
+    product_name VARCHAR(255) NOT NULL COMMENT '商品名称',
+    quantity INT NOT NULL COMMENT '操作数量',
+    unit_price BIGINT NOT NULL DEFAULT 0 COMMENT '单价(分)',
+    total_price BIGINT NOT NULL DEFAULT 0 COMMENT '总价(分)',
+    before_stock INT NOT NULL COMMENT '操作前库存',
+    after_stock INT NOT NULL COMMENT '操作后库存',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX idx_operation_id (operation_id),
+    INDEX idx_product_id (product_id),
+    FOREIGN KEY (operation_id) REFERENCES stock_operation(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='库存操作子表';
+
+ALTER TABLE stock_operation
+CREATE INDEX idx_user_id ON stock_operation(user_id);

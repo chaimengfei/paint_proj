@@ -138,3 +138,51 @@ type AddOrEditSimpleProductRequest struct {
 	Remark       string `json:"remark"`                         // 备注（可选）
 	IsOnShelf    int8   `json:"is_on_shelf"`                    // 是否上架(1:上架,0:下架)
 }
+
+// 库存操作类型常量
+const (
+	StockTypeInbound  = 1 // 入库
+	StockTypeOutbound = 2 // 出库
+	StockTypeReturn   = 3 // 退货
+)
+
+// 库存操作请求结构体
+type StockOperationRequest struct {
+	ProductID int64  `json:"product_id" binding:"required"` // 商品ID
+	Quantity  int    `json:"quantity" binding:"required"`   // 操作数量
+	Remark    string `json:"remark"`                        // 备注
+}
+
+// 批量入库请求结构体
+type BatchInboundRequest struct {
+	Items      []BatchInboundItem `json:"items" binding:"required"`       // 入库商品列表
+	Operator   string             `json:"operator" binding:"required"`    // 操作人
+	OperatorID int64              `json:"operator_id" binding:"required"` // 操作人ID
+	Remark     string             `json:"remark"`                         // 备注
+}
+
+// 批量入库商品项
+type BatchInboundItem struct {
+	ProductID int64  `json:"product_id" binding:"required"` // 商品ID
+	Quantity  int    `json:"quantity" binding:"required"`   // 入库数量
+	UnitPrice Amount `json:"unit_price"`                    // 单价（可选）
+}
+
+// 批量出库请求结构体
+type BatchOutboundRequest struct {
+	Items        []BatchOutboundItem `json:"items" binding:"required"`         // 出库商品列表
+	UserName     string              `json:"user_name" binding:"required"`     // 用户名称
+	UserID       int64               `json:"user_id" binding:"required"`       // 用户ID
+	UserAccount  string              `json:"user_account" binding:"required"`  // 用户账号
+	PurchaseTime string              `json:"purchase_time" binding:"required"` // 购买时间
+	Operator     string              `json:"operator" binding:"required"`      // 操作人
+	OperatorID   int64               `json:"operator_id" binding:"required"`   // 操作人ID
+	Remark       string              `json:"remark"`                           // 备注
+}
+
+// 批量出库商品项
+type BatchOutboundItem struct {
+	ProductID int64  `json:"product_id" binding:"required"` // 商品ID
+	Quantity  int    `json:"quantity" binding:"required"`   // 出库数量
+	UnitPrice Amount `json:"unit_price"`                    // 单价（可选）
+}

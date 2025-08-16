@@ -11,9 +11,12 @@ type StockRepository interface {
 	UpdateProductStock(productID int64, quantity int) error
 	GetProductStock(productID int64) (int, error)
 
-	// 库存日志
-	CreateStockLog(stockLog *model.StockLog) error
-	GetStockLogs(productID int64, page, pageSize int) ([]model.StockLog, int64, error)
+	// 库存操作主表+子表
+	CreateStockOperation(operation *model.StockOperation) error
+	CreateStockOperationItems(items []*model.StockOperationItem) error
+	GetStockOperations(page, pageSize int) ([]model.StockOperation, int64, error)
+	GetStockOperationByID(operationID int64) (*model.StockOperation, error)
+	GetStockOperationItems(operationID int64) ([]model.StockOperationItem, error)
 }
 
 type stockRepository struct {
@@ -42,34 +45,52 @@ func (sr *stockRepository) GetProductStock(productID int64) (int, error) {
 	return product.Stock, err
 }
 
-// CreateStockLog 创建库存日志
-func (sr *stockRepository) CreateStockLog(stockLog *model.StockLog) error {
-	return sr.db.Create(stockLog).Error
+// CreateStockOperation 创建库存操作主表记录
+func (sr *stockRepository) CreateStockOperation(operation *model.StockOperation) error {
+	return sr.db.Create(operation).Error
 }
 
-// GetStockLogs 获取库存日志列表
-func (sr *stockRepository) GetStockLogs(productID int64, page, pageSize int) ([]model.StockLog, int64, error) {
-	var stockLogs []model.StockLog
+// CreateStockOperationItems 创建库存操作子表记录
+func (sr *stockRepository) CreateStockOperationItems(items []*model.StockOperationItem) error {
+	return sr.db.Create(items).Error
+}
+
+// GetStockOperations 获取库存操作主表列表
+func (sr *stockRepository) GetStockOperations(page, pageSize int) ([]model.StockOperation, int64, error) {
+	var operations []model.StockOperation
 	var total int64
 
-	query := sr.db.Model(&model.StockLog{})
-	if productID > 0 {
-		query = query.Where("product_id = ?", productID)
-	}
-
 	// 获取总数
-	if err := query.Count(&total).Error; err != nil {
+	if err := sr.db.Model(&model.StockOperation{}).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	// 获取分页数据
 	offset := (page - 1) * pageSize
-	if err := query.Order("created_at DESC").
+	if err := sr.db.Order("created_at DESC").
 		Offset(offset).
 		Limit(pageSize).
-		Find(&stockLogs).Error; err != nil {
+		Find(&operations).Error; err != nil {
 		return nil, 0, err
 	}
 
-	return stockLogs, total, nil
+	return operations, total, nil
+}
+
+// GetStockOperationByID 根据ID获取库存操作主表记录
+func (sr *stockRepository) GetStockOperationByID(operationID int64) (*model.StockOperation, error) {
+	var operation model.StockOperation
+	err := sr.db.Model(&model.StockOperation{}).
+		Where("id = ?", operationID).
+		First(&operation).Error
+	return &operation, err
+}
+
+// GetStockOperationItems 获取库存操作子表记录
+func (sr *stockRepository) GetStockOperationItems(operationID int64) ([]model.StockOperationItem, error) {
+	var items []model.StockOperationItem
+	err := sr.db.Model(&model.StockOperationItem{}).
+		Where("operation_id = ?", operationID).
+		Find(&items).Error
+	return items, err
 }

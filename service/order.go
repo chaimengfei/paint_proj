@@ -73,8 +73,8 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 		UserId:          req.UserID,
 		OrderStatus:     model.OrderStatusPendingPayment,
 		PaymentStatus:   model.PaymentStatusUnpaid,
-		ReceiverName:    "柴梦妃",                               // TODO 根据 user_id 获取name  ,还是根据address直接获取name addressDbData.Name
-		ReceiverPhone:   "13671210659",                          // TODO 根据 user_id 获取phone  ,还是根据address直接获取phone addressDbData.Phone
+		ReceiverName:    "柴梦妃",                // TODO 根据 user_id 获取name  ,还是根据address直接获取name addressDbData.Name
+		ReceiverPhone:   "13671210659",        // TODO 根据 user_id 获取phone  ,还是根据address直接获取phone addressDbData.Phone
 		ReceiverAddress: "河北省廊坊市三河市燕郊镇四季花都一期", // TODO 待实现address.FullAddress(),
 	}
 	// 4. 获取订单商品
@@ -114,8 +114,8 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 		return nil, err
 	}
 
-	// 6.1. 处理库存出库
-	err = os.processStockOutbound(orderItems, order.OrderNo, fmt.Sprintf("user:%d", req.UserID))
+	// 6.1. 处理库存出库（使用新的主表+子表结构）
+	err = os.processStockOutboundWithNewStructure(orderItems, order.OrderNo, req.UserID)
 	if err != nil {
 		// 注意：这里如果库存出库失败，订单已经创建成功，实际业务中可能需要回滚订单
 		// 或者记录错误日志，后续手动处理
@@ -195,8 +195,45 @@ func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64,
 	return orderItems, totalAmount, nil
 }
 
-// processStockOutbound 处理库存出库
-func (os *orderService) processStockOutbound(orderItems []*model.OrderItem, orderNo string, operator string) error {
+// processStockOutboundWithNewStructure 处理库存出库（使用新的主表+子表结构）
+func (os *orderService) processStockOutboundWithNewStructure(orderItems []*model.OrderItem, orderNo string, userID int64) error {
+	if len(orderItems) == 0 {
+		return nil
+	}
+
+	// 生成操作单号
+	operationNo := pkg.GenerateOrderNo(userID)
+
+	// 计算总金额
+	var totalAmount model.Amount
+	for _, item := range orderItems {
+		totalAmount += item.TotalPrice
+	}
+
+	// 创建库存操作主表记录
+	now := time.Now()
+	operation := &model.StockOperation{
+		OperationNo:  operationNo,
+		Type:         model.StockTypeOutbound,
+		Operator:     fmt.Sprintf("user:%d", userID),
+		OperatorID:   userID,
+		OperatorType: model.OperatorTypeUser,
+		UserName:     "小程序用户", // 可以从用户表获取真实姓名
+		UserID:       userID,
+		UserAccount:  "", // 可以从用户表获取账号
+		PurchaseTime: &now,
+		Remark:       "小程序用户购买",
+		TotalAmount:  totalAmount,
+		CreatedAt:    &now,
+	}
+
+	err := os.stockRepo.CreateStockOperation(operation)
+	if err != nil {
+		return fmt.Errorf("创建库存操作记录失败: %v", err)
+	}
+
+	// 批量处理出库并创建子表记录
+	var operationItems []*model.StockOperationItem
 	for _, item := range orderItems {
 		// 获取商品信息
 		product, err := os.productRepo.GetByID(item.ProductId)
@@ -224,26 +261,25 @@ func (os *orderService) processStockOutbound(orderItems []*model.OrderItem, orde
 		// 获取操作后库存
 		afterStock := beforeStock - item.Quantity
 
-		// 创建库存日志
-		now := time.Now()
-		stockLog := &model.StockLog{
-			ProductID:    item.ProductId,
-			ProductName:  product.Name,
-			Types:        model.StockTypeOutbound,
-			Quantity:     item.Quantity,
-			BeforeStock:  beforeStock,
-			AfterStock:   afterStock,
-			OrderNo:      orderNo,
-			Remark:       "小程序用户购买",
-			Operator:     operator,
-			OperatorType: model.OperatorTypeUser,
-			CreatedAt:    &now,
+		// 构建子表记录
+		operationItem := &model.StockOperationItem{
+			OperationID: operation.ID,
+			ProductID:   item.ProductId,
+			ProductName: product.Name,
+			Quantity:    item.Quantity,
+			UnitPrice:   item.ProductPrice,
+			TotalPrice:  item.TotalPrice,
+			BeforeStock: beforeStock,
+			AfterStock:  afterStock,
+			CreatedAt:   &now,
 		}
+		operationItems = append(operationItems, operationItem)
+	}
 
-		err = os.stockRepo.CreateStockLog(stockLog)
-		if err != nil {
-			return fmt.Errorf("创建库存日志失败: %v", err)
-		}
+	// 批量创建子表记录
+	err = os.stockRepo.CreateStockOperationItems(operationItems)
+	if err != nil {
+		return fmt.Errorf("创建库存操作明细失败: %v", err)
 	}
 
 	return nil

@@ -2,19 +2,21 @@ package service
 
 import (
 	"cmf/paint_proj/model"
+	"cmf/paint_proj/pkg"
 	"cmf/paint_proj/repository"
 	"errors"
+	"fmt"
 	"time"
 )
 
 type StockService interface {
-	// 库存操作
-	InboundStock(productID int64, quantity int, operator string, remark string) error
-	OutboundStock(productID int64, quantity int, operator string, orderNo string, remark string) error
-	ReturnStock(productID int64, quantity int, operator string, orderNo string, remark string) error
+	// 批量库存操作
+	BatchInboundStock(req *model.BatchInboundRequest) error
+	BatchOutboundStock(req *model.BatchOutboundRequest) error
 
-	// 库存日志
-	GetStockLogs(productID int64, page, pageSize int) ([]model.StockLog, int64, error)
+	// 库存操作查询
+	GetStockOperations(page, pageSize int) ([]model.StockOperation, int64, error)
+	GetStockOperationDetail(operationID int64) (*model.StockOperation, []model.StockOperationItem, error)
 }
 
 type stockService struct {
@@ -29,149 +31,240 @@ func NewStockService(sr repository.StockRepository, pr repository.ProductReposit
 	}
 }
 
-// InboundStock 入库操作
-func (ss *stockService) InboundStock(productID int64, quantity int, operator string, remark string) error {
-	if quantity <= 0 {
-		return errors.New("入库数量必须大于0")
+// BatchInboundStock 批量入库操作（新结构）
+func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error {
+	if len(req.Items) == 0 {
+		return errors.New("入库商品列表不能为空")
 	}
 
-	// 获取商品信息
-	product, err := ss.productRepo.GetByID(productID)
+	// 验证所有商品是否存在
+	for _, item := range req.Items {
+		if item.Quantity <= 0 {
+			return fmt.Errorf("商品ID %d 的入库数量必须大于0", item.ProductID)
+		}
+
+		_, err := ss.productRepo.GetByID(item.ProductID)
+		if err != nil {
+			return fmt.Errorf("商品ID %d 不存在", item.ProductID)
+		}
+	}
+
+	// 生成操作单号
+	operationNo := pkg.GenerateOrderNo(req.OperatorID)
+
+	// 计算总金额
+	var totalAmount model.Amount
+	for _, item := range req.Items {
+		if item.UnitPrice > 0 {
+			totalAmount += model.Amount(int64(item.UnitPrice) * int64(item.Quantity))
+		}
+	}
+
+	// 创建库存操作主表记录
+	now := time.Now()
+	operation := &model.StockOperation{
+		OperationNo:  operationNo,
+		Type:         model.StockTypeInbound,
+		Operator:     req.Operator,
+		OperatorID:   req.OperatorID,
+		OperatorType: model.OperatorTypeAdmin,
+		Remark:       req.Remark,
+		TotalAmount:  totalAmount,
+		CreatedAt:    &now,
+	}
+
+	err := ss.stockRepo.CreateStockOperation(operation)
 	if err != nil {
-		return err
+		return fmt.Errorf("创建库存操作记录失败: %v", err)
 	}
 
-	// 获取操作前库存
-	beforeStock, err := ss.stockRepo.GetProductStock(productID)
+	// 批量处理入库并创建子表记录
+	var operationItems []*model.StockOperationItem
+	for _, item := range req.Items {
+		err := ss.processInboundItemWithNewStructure(item, operation.ID, operationNo)
+		if err != nil {
+			return fmt.Errorf("商品ID %d 入库失败: %v", item.ProductID, err)
+		}
+
+		// 构建子表记录
+		product, _ := ss.productRepo.GetByID(item.ProductID)
+		beforeStock, _ := ss.stockRepo.GetProductStock(item.ProductID)
+		afterStock := beforeStock + item.Quantity
+
+		unitPrice := item.UnitPrice
+		if unitPrice == 0 {
+			unitPrice = product.SellerPrice // 如果没有提供单价，使用商品售价
+		}
+
+		operationItem := &model.StockOperationItem{
+			OperationID: operation.ID,
+			ProductID:   item.ProductID,
+			ProductName: product.Name,
+			Quantity:    item.Quantity,
+			UnitPrice:   unitPrice,
+			TotalPrice:  model.Amount(int64(unitPrice) * int64(item.Quantity)),
+			BeforeStock: beforeStock,
+			AfterStock:  afterStock,
+			CreatedAt:   &now,
+		}
+		operationItems = append(operationItems, operationItem)
+	}
+
+	// 批量创建子表记录
+	err = ss.stockRepo.CreateStockOperationItems(operationItems)
 	if err != nil {
-		return err
+		return fmt.Errorf("创建库存操作明细失败: %v", err)
 	}
 
+	return nil
+}
+
+// BatchOutboundStock 批量出库操作（新结构）
+func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) error {
+	if len(req.Items) == 0 {
+		return errors.New("出库商品列表不能为空")
+	}
+
+	// 解析购买时间
+	purchaseTime, err := time.Parse("2006-01-02 15:04:05", req.PurchaseTime)
+	if err != nil {
+		return errors.New("购买时间格式错误，请使用 YYYY-MM-DD HH:mm:ss 格式")
+	}
+
+	// 验证所有商品是否存在且库存充足
+	for _, item := range req.Items {
+		if item.Quantity <= 0 {
+			return fmt.Errorf("商品ID %d 的出库数量必须大于0", item.ProductID)
+		}
+
+		product, err := ss.productRepo.GetByID(item.ProductID)
+		if err != nil {
+			return fmt.Errorf("商品ID %d 不存在", item.ProductID)
+		}
+
+		// 检查库存是否足够
+		currentStock, err := ss.stockRepo.GetProductStock(item.ProductID)
+		if err != nil {
+			return fmt.Errorf("获取商品ID %d 库存失败", item.ProductID)
+		}
+
+		if currentStock < item.Quantity {
+			return fmt.Errorf("商品 %s 库存不足，当前库存: %d，需要出库: %d", product.Name, currentStock, item.Quantity)
+		}
+	}
+
+	// 生成操作单号
+	operationNo := pkg.GenerateOrderNo(req.OperatorID)
+
+	// 计算总金额
+	var totalAmount model.Amount
+	for _, item := range req.Items {
+		if item.UnitPrice > 0 {
+			totalAmount += model.Amount(int64(item.UnitPrice) * int64(item.Quantity))
+		}
+	}
+
+	// 创建库存操作主表记录
+	now := time.Now()
+	operation := &model.StockOperation{
+		OperationNo:  operationNo,
+		Type:         model.StockTypeOutbound,
+		Operator:     req.Operator,
+		OperatorID:   req.OperatorID,
+		OperatorType: model.OperatorTypeAdmin,
+		UserName:     req.UserName,
+		UserID:       req.UserID,
+		UserAccount:  req.UserAccount,
+		PurchaseTime: &purchaseTime,
+		Remark:       req.Remark,
+		TotalAmount:  totalAmount,
+		CreatedAt:    &now,
+	}
+
+	err = ss.stockRepo.CreateStockOperation(operation)
+	if err != nil {
+		return fmt.Errorf("创建库存操作记录失败: %v", err)
+	}
+
+	// 批量处理出库并创建子表记录
+	var operationItems []*model.StockOperationItem
+	for _, item := range req.Items {
+		err := ss.processOutboundItemWithNewStructure(item, operation.ID, operationNo)
+		if err != nil {
+			return fmt.Errorf("商品ID %d 出库失败: %v", item.ProductID, err)
+		}
+
+		// 构建子表记录
+		product, _ := ss.productRepo.GetByID(item.ProductID)
+		beforeStock, _ := ss.stockRepo.GetProductStock(item.ProductID)
+		afterStock := beforeStock - item.Quantity
+
+		unitPrice := item.UnitPrice
+		if unitPrice == 0 {
+			unitPrice = product.SellerPrice // 如果没有提供单价，使用商品售价
+		}
+
+		operationItem := &model.StockOperationItem{
+			OperationID: operation.ID,
+			ProductID:   item.ProductID,
+			ProductName: product.Name,
+			Quantity:    item.Quantity,
+			UnitPrice:   unitPrice,
+			TotalPrice:  model.Amount(int64(unitPrice) * int64(item.Quantity)),
+			BeforeStock: beforeStock,
+			AfterStock:  afterStock,
+			CreatedAt:   &now,
+		}
+		operationItems = append(operationItems, operationItem)
+	}
+
+	// 批量创建子表记录
+	err = ss.stockRepo.CreateStockOperationItems(operationItems)
+	if err != nil {
+		return fmt.Errorf("创建库存操作明细失败: %v", err)
+	}
+
+	return nil
+}
+
+// processInboundItemWithNewStructure 处理单个入库商品（新结构）
+func (ss *stockService) processInboundItemWithNewStructure(item model.BatchInboundItem, operationID int64, operationNo string) error {
 	// 更新库存
-	err = ss.stockRepo.UpdateProductStock(productID, quantity)
+	err := ss.stockRepo.UpdateProductStock(item.ProductID, item.Quantity)
 	if err != nil {
 		return err
 	}
 
-	// 获取操作后库存
-	afterStock := beforeStock + quantity
-
-	// 创建库存日志
-	now := time.Now()
-	stockLog := &model.StockLog{
-		ProductID:    productID,
-		ProductName:  product.Name,
-		Types:        model.StockTypeInbound,
-		Quantity:     quantity,
-		BeforeStock:  beforeStock,
-		AfterStock:   afterStock,
-		Remark:       remark,
-		Operator:     operator,
-		OperatorType: model.OperatorTypeAdmin,
-		CreatedAt:    &now,
-	}
-
-	return ss.stockRepo.CreateStockLog(stockLog)
+	return nil
 }
 
-// OutboundStock 出库操作
-func (ss *stockService) OutboundStock(productID int64, quantity int, operator string, orderNo string, remark string) error {
-	if quantity <= 0 {
-		return errors.New("出库数量必须大于0")
-	}
-
-	// 获取商品信息
-	product, err := ss.productRepo.GetByID(productID)
-	if err != nil {
-		return err
-	}
-
-	// 获取操作前库存
-	beforeStock, err := ss.stockRepo.GetProductStock(productID)
-	if err != nil {
-		return err
-	}
-
-	// 检查库存是否足够
-	if beforeStock < quantity {
-		return errors.New("库存不足")
-	}
-
+// processOutboundItemWithNewStructure 处理单个出库商品（新结构）
+func (ss *stockService) processOutboundItemWithNewStructure(item model.BatchOutboundItem, operationID int64, operationNo string) error {
 	// 更新库存（出库为负数）
-	err = ss.stockRepo.UpdateProductStock(productID, -quantity)
+	err := ss.stockRepo.UpdateProductStock(item.ProductID, -item.Quantity)
 	if err != nil {
 		return err
 	}
 
-	// 获取操作后库存
-	afterStock := beforeStock - quantity
-
-	// 创建库存日志
-	now := time.Now()
-	stockLog := &model.StockLog{
-		ProductID:    productID,
-		ProductName:  product.Name,
-		Types:        model.StockTypeOutbound,
-		Quantity:     quantity,
-		BeforeStock:  beforeStock,
-		AfterStock:   afterStock,
-		OrderNo:      orderNo,
-		Remark:       remark,
-		Operator:     operator,
-		OperatorType: model.OperatorTypeAdmin,
-		CreatedAt:    &now,
-	}
-
-	return ss.stockRepo.CreateStockLog(stockLog)
+	return nil
 }
 
-// ReturnStock 退货操作
-func (ss *stockService) ReturnStock(productID int64, quantity int, operator string, orderNo string, remark string) error {
-	if quantity <= 0 {
-		return errors.New("退货数量必须大于0")
-	}
-
-	// 获取商品信息
-	product, err := ss.productRepo.GetByID(productID)
-	if err != nil {
-		return err
-	}
-
-	// 获取操作前库存
-	beforeStock, err := ss.stockRepo.GetProductStock(productID)
-	if err != nil {
-		return err
-	}
-
-	// 更新库存（退货为正数，增加库存）
-	err = ss.stockRepo.UpdateProductStock(productID, quantity)
-	if err != nil {
-		return err
-	}
-
-	// 获取操作后库存
-	afterStock := beforeStock + quantity
-
-	// 创建库存日志
-	now := time.Now()
-	stockLog := &model.StockLog{
-		ProductID:    productID,
-		ProductName:  product.Name,
-		Types:        model.StockTypeReturn,
-		Quantity:     quantity,
-		BeforeStock:  beforeStock,
-		AfterStock:   afterStock,
-		OrderNo:      orderNo,
-		Remark:       remark,
-		Operator:     operator,
-		OperatorType: model.OperatorTypeAdmin,
-		CreatedAt:    &now,
-	}
-
-	return ss.stockRepo.CreateStockLog(stockLog)
+// GetStockOperations 获取库存操作列表
+func (ss *stockService) GetStockOperations(page, pageSize int) ([]model.StockOperation, int64, error) {
+	return ss.stockRepo.GetStockOperations(page, pageSize)
 }
 
-// GetStockLogs 获取库存日志
-func (ss *stockService) GetStockLogs(productID int64, page, pageSize int) ([]model.StockLog, int64, error) {
-	return ss.stockRepo.GetStockLogs(productID, page, pageSize)
+// GetStockOperationDetail 获取库存操作详情
+func (ss *stockService) GetStockOperationDetail(operationID int64) (*model.StockOperation, []model.StockOperationItem, error) {
+	operation, err := ss.stockRepo.GetStockOperationByID(operationID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	items, err := ss.stockRepo.GetStockOperationItems(operationID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return operation, items, nil
 }

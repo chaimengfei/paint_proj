@@ -163,3 +163,24 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "删除成功"})
 }
+
+// GetProductByID 根据ID获取商品信息（后台）
+func (pc *ProductController) GetProductByID(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "商品ID格式错误"})
+		return
+	}
+
+	product, err := pc.productService.GetProductByID(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取商品信息失败: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": product,
+	})
+}

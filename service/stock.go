@@ -52,12 +52,23 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 	// 生成操作单号
 	operationNo := pkg.GenerateOrderNo(pkg.StockPrefix, req.OperatorID)
 
-	// 计算总金额
-	var totalAmount model.Amount
+	// 验证前端计算的总金额是否正确
+	var calculatedTotalAmount model.Amount
 	for _, item := range req.Items {
 		if item.UnitPrice > 0 {
-			totalAmount += model.Amount(int64(item.UnitPrice) * int64(item.Quantity))
+			calculatedTotalAmount += model.Amount(int64(item.UnitPrice) * int64(item.Quantity))
 		}
+	}
+
+	// 如果前端提供了总金额，验证是否与计算值一致
+	if req.TotalAmount > 0 && req.TotalAmount != calculatedTotalAmount {
+		return fmt.Errorf("总金额计算错误，前端计算: %d，后端计算: %d", req.TotalAmount, calculatedTotalAmount)
+	}
+
+	// 使用前端提供的总金额，如果没有提供则使用计算值
+	totalAmount := req.TotalAmount
+	if totalAmount == 0 {
+		totalAmount = calculatedTotalAmount
 	}
 
 	// 创建库存操作主表记录
@@ -110,6 +121,12 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 			CreatedAt:     &now,
 		}
 		operationItems = append(operationItems, operationItem)
+
+		// 自动补齐商品信息到请求项中（用于前端显示）
+		item.ProductName = product.Name
+		item.Specification = product.Specification
+		item.Unit = product.Unit
+		item.TotalPrice = model.Amount(int64(unitPrice) * int64(item.Quantity))
 	}
 
 	// 批量创建子表记录
@@ -158,12 +175,23 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 	// 生成操作单号
 	operationNo := pkg.GenerateOrderNo(pkg.StockPrefix, req.OperatorID)
 
-	// 计算总金额
-	var totalAmount model.Amount
+	// 验证前端计算的总金额是否正确
+	var calculatedTotalAmount model.Amount
 	for _, item := range req.Items {
 		if item.UnitPrice > 0 {
-			totalAmount += model.Amount(int64(item.UnitPrice) * int64(item.Quantity))
+			calculatedTotalAmount += model.Amount(int64(item.UnitPrice) * int64(item.Quantity))
 		}
+	}
+
+	// 如果前端提供了总金额，验证是否与计算值一致
+	if req.TotalAmount > 0 && req.TotalAmount != calculatedTotalAmount {
+		return fmt.Errorf("总金额计算错误，前端计算: %d，后端计算: %d", req.TotalAmount, calculatedTotalAmount)
+	}
+
+	// 使用前端提供的总金额，如果没有提供则使用计算值
+	totalAmount := req.TotalAmount
+	if totalAmount == 0 {
+		totalAmount = calculatedTotalAmount
 	}
 
 	// 创建库存操作主表记录
@@ -220,6 +248,12 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 			CreatedAt:     &now,
 		}
 		operationItems = append(operationItems, operationItem)
+
+		// 自动补齐商品信息到请求项中（用于前端显示）
+		item.ProductName = product.Name
+		item.Specification = product.Specification
+		item.Unit = product.Unit
+		item.TotalPrice = model.Amount(int64(unitPrice) * int64(item.Quantity))
 	}
 
 	// 批量创建子表记录

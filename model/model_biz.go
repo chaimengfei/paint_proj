@@ -156,23 +156,29 @@ type StockOperationRequest struct {
 
 // 批量入库请求结构体
 type BatchInboundRequest struct {
-	Items      []BatchInboundItem `json:"items" binding:"required"`       // 入库商品列表
-	Operator   string             `json:"operator" binding:"required"`    // 操作人
-	OperatorID int64              `json:"operator_id" binding:"required"` // 操作人ID
-	Remark     string             `json:"remark"`                         // 备注
+	Items       []BatchInboundItem `json:"items" binding:"required"`       // 入库商品列表
+	TotalAmount Amount             `json:"total_amount"`                   // 总金额（前端计算）
+	Operator    string             `json:"operator" binding:"required"`    // 操作人
+	OperatorID  int64              `json:"operator_id" binding:"required"` // 操作人ID
+	Remark      string             `json:"remark"`                         // 备注
 }
 
 // 批量入库商品项
 type BatchInboundItem struct {
-	ProductID int64  `json:"product_id" binding:"required"` // 商品ID
-	Quantity  int    `json:"quantity" binding:"required"`   // 入库数量
-	UnitPrice Amount `json:"unit_price"`                    // 单价（可选）
-	Remark    string `json:"remark"`                        // 备注（可选）
+	ProductID     int64  `json:"product_id" binding:"required"` // 商品ID
+	Quantity      int    `json:"quantity" binding:"required"`   // 入库数量
+	UnitPrice     Amount `json:"unit_price"`                    // 单价（可选）
+	Remark        string `json:"remark"`                        // 备注（可选）
+	ProductName   string `json:"product_name"`                  // 商品全名（自动补齐）
+	Specification string `json:"specification"`                 // 规格（自动补齐）
+	Unit          string `json:"unit"`                          // 单位（自动补齐）
+	TotalPrice    Amount `json:"total_price"`                   // 总金额（自动计算）
 }
 
 // 批量出库请求结构体
 type BatchOutboundRequest struct {
 	Items        []BatchOutboundItem `json:"items" binding:"required"`         // 出库商品列表
+	TotalAmount  Amount              `json:"total_amount"`                     // 总金额（前端计算）
 	UserName     string              `json:"user_name" binding:"required"`     // 用户名称
 	UserID       int64               `json:"user_id" binding:"required"`       // 用户ID
 	UserAccount  string              `json:"user_account" binding:"required"`  // 用户账号
@@ -184,8 +190,12 @@ type BatchOutboundRequest struct {
 
 // 批量出库商品项
 type BatchOutboundItem struct {
-	ProductID int64  `json:"product_id" binding:"required"` // 商品ID
-	Quantity  int    `json:"quantity" binding:"required"`   // 出库数量
-	UnitPrice Amount `json:"unit_price"`                    // 单价（可选）
-	Remark    string `json:"remark"`                        // 备注（可选）
+	ProductID     int64  `json:"product_id" binding:"required"` // 商品ID
+	Quantity      int    `json:"quantity" binding:"required"`   // 出库数量
+	UnitPrice     Amount `json:"unit_price"`                    // 单价（可选）
+	Remark        string `json:"remark"`                        // 备注（可选）
+	ProductName   string `json:"product_name"`                  // 商品全名（自动补齐）
+	Specification string `json:"specification"`                 // 规格（自动补齐）
+	Unit          string `json:"unit"`                          // 单位（自动补齐）
+	TotalPrice    Amount `json:"total_price"`                   // 总金额（自动计算）
 }

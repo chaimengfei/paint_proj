@@ -67,4 +67,4 @@ ALTER TABLE product ADD COLUMN specification VARCHAR(200) DEFAULT '' COMMENT '�
 ALTER TABLE stock_operation_item ADD COLUMN specification VARCHAR(200) DEFAULT '' COMMENT '规格';
 
 -- 为stock_operation_item表添加remark字段
-ALTER TABLE stock_operation_item ADD COLUMN remark VARCHAR(500) DEFAULT '' COMMENT '备注'; 
+ALTER TABLE stock_operation_item ADD COLUMN remark VARCHAR(500) DEFAULT '' COMMENT '备注';

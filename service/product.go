@@ -9,6 +9,7 @@ type ProductService interface {
 	GetProductList() ([]model.Category, map[int64][]model.ProductSimple, error)
 
 	GetAdminProductList(page, pageSize int) ([]model.Product, int64, error)
+	GetProductByID(id int64) (*model.Product, error)
 	AddProduct(p *model.Product) error
 	UpdateProduct(p *model.Product) error
 	DeleteProduct(id int64) error
@@ -63,6 +64,10 @@ func (ps *productService) AddProduct(p *model.Product) error {
 
 func (ps *productService) UpdateProduct(p *model.Product) error {
 	return ps.productRepo.Update(p)
+}
+
+func (ps *productService) GetProductByID(id int64) (*model.Product, error) {
+	return ps.productRepo.GetByID(id)
 }
 
 func (ps *productService) DeleteProduct(id int64) error {

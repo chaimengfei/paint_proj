@@ -116,6 +116,35 @@ DELETE /admin/product/delete/1
 GET /admin/product/list?page=1&page_size=10
 ```
 
+##### 根据ID获取商品信息
+```http
+GET /admin/product/1
+```
+
+响应示例：
+```json
+{
+  "code": 0,
+  "data": {
+    "id": 1,
+    "name": "调和漆",
+    "category_id": 1,
+    "image": "https://example.com/paint.jpg",
+    "seller_price": 5000,
+    "cost": 3000,
+    "shipping_cost": 500,
+    "product_cost": 2500,
+    "specification": "3kg*4",
+    "unit": "L",
+    "remark": "优质调和漆",
+    "stock": 100,
+    "is_on_shelf": 1,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
 ### 库存管理接口
 
 ##### 批量入库操作
@@ -138,11 +167,14 @@ Content-Type: application/json
       "remark": "标准规格"
     }
   ],
+  "total_amount": 80000,
   "operator": "张三",
   "operator_id": 1001,
   "remark": "新货入库"
 }
 ```
+
+**说明**：后端会自动补齐每个商品的 `product_name`、`specification`、`unit` 和 `total_price` 字段。
 
 ##### 批量出库操作
 ```http
@@ -164,6 +196,7 @@ Content-Type: application/json
       "remark": "调耳朵"
     }
   ],
+  "total_amount": 70000,
     },
     {
       "product_id": 2,
@@ -178,31 +211,8 @@ Content-Type: application/json
   "operator_id": 1001,
   "remark": "客户购买"
 }
-```
 
-##### 单个入库操作
-```http
-POST /admin/stock/inbound
-Content-Type: application/json
-
-{
-  "product_id": 1,
-  "quantity": 10,
-  "remark": "新货入库"
-}
-```
-
-##### 单个出库操作
-```http
-POST /admin/stock/outbound
-Content-Type: application/json
-
-{
-  "product_id": 1,
-  "quantity": 5,
-  "remark": "手动出库"
-}
-```
+**说明**：后端会自动补齐每个商品的 `product_name`、`specification`、`unit` 和 `total_price` 字段。
 
 ##### 退货操作
 ```http

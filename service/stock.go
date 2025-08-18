@@ -106,6 +106,7 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 			TotalPrice:    model.Amount(int64(unitPrice) * int64(item.Quantity)),
 			BeforeStock:   beforeStock,
 			AfterStock:    afterStock,
+			Remark:        item.Remark,
 			CreatedAt:     &now,
 		}
 		operationItems = append(operationItems, operationItem)
@@ -215,6 +216,7 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 			TotalPrice:    model.Amount(int64(unitPrice) * int64(item.Quantity)),
 			BeforeStock:   beforeStock,
 			AfterStock:    afterStock,
+			Remark:        item.Remark,
 			CreatedAt:     &now,
 		}
 		operationItems = append(operationItems, operationItem)
@@ -253,7 +255,21 @@ func (ss *stockService) processOutboundItemWithNewStructure(item model.BatchOutb
 
 // GetStockOperations 获取库存操作列表
 func (ss *stockService) GetStockOperations(page, pageSize int) ([]model.StockOperation, int64, error) {
-	return ss.stockRepo.GetStockOperations(page, pageSize)
+	operations, total, err := ss.stockRepo.GetStockOperations(page, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 为每个操作填充Items字段
+	for i := range operations {
+		items, err := ss.stockRepo.GetStockOperationItems(operations[i].ID)
+		if err != nil {
+			return nil, 0, fmt.Errorf("获取操作ID %d 的明细失败: %v", operations[i].ID, err)
+		}
+		operations[i].Items = items
+	}
+
+	return operations, total, nil
 }
 
 // GetStockOperationDetail 获取库存操作详情

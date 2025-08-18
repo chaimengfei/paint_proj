@@ -58,3 +58,13 @@ CREATE TABLE IF NOT EXISTS stock_operation_item (
 
 ALTER TABLE stock_operation
 CREATE INDEX idx_user_id ON stock_operation(user_id);
+
+
+-- 为product表添加specification字段
+ALTER TABLE product ADD COLUMN specification VARCHAR(200) DEFAULT '' COMMENT '规格';
+
+-- 为stock_operation_item表添加specification字段
+ALTER TABLE stock_operation_item ADD COLUMN specification VARCHAR(200) DEFAULT '' COMMENT '规格';
+
+-- 为stock_operation_item表添加remark字段
+ALTER TABLE stock_operation_item ADD COLUMN remark VARCHAR(500) DEFAULT '' COMMENT '备注'; 

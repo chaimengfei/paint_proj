@@ -127,11 +127,15 @@ Content-Type: application/json
   "items": [
     {
       "product_id": 1,
-      "quantity": 10
+      "quantity": 10,
+      "unit_price": 3000,
+      "remark": "优质调和漆"
     },
     {
       "product_id": 2,
-      "quantity": 20
+      "quantity": 20,
+      "unit_price": 2500,
+      "remark": "标准规格"
     }
   ],
   "operator": "张三",
@@ -149,7 +153,17 @@ Content-Type: application/json
   "items": [
     {
       "product_id": 1,
-      "quantity": 5
+      "quantity": 5,
+      "unit_price": 5000,
+      "remark": "调鼻尖"
+    },
+    {
+      "product_id": 2,
+      "quantity": 10,
+      "unit_price": 4500,
+      "remark": "调耳朵"
+    }
+  ],
     },
     {
       "product_id": 2,
@@ -277,6 +291,7 @@ CREATE TABLE stock_operation_item (
   total_price BIGINT NOT NULL DEFAULT 0 COMMENT '总价(分)',
   before_stock INT NOT NULL COMMENT '操作前库存',
   after_stock INT NOT NULL COMMENT '操作后库存',
+  remark VARCHAR(500) DEFAULT '' COMMENT '备注',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
 );
 ```

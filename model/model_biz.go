@@ -167,6 +167,7 @@ type BatchInboundItem struct {
 	ProductID int64  `json:"product_id" binding:"required"` // 商品ID
 	Quantity  int    `json:"quantity" binding:"required"`   // 入库数量
 	UnitPrice Amount `json:"unit_price"`                    // 单价（可选）
+	Remark    string `json:"remark"`                        // 备注（可选）
 }
 
 // 批量出库请求结构体
@@ -186,4 +187,5 @@ type BatchOutboundItem struct {
 	ProductID int64  `json:"product_id" binding:"required"` // 商品ID
 	Quantity  int    `json:"quantity" binding:"required"`   // 出库数量
 	UnitPrice Amount `json:"unit_price"`                    // 单价（可选）
+	Remark    string `json:"remark"`                        // 备注（可选）
 }

@@ -67,14 +67,14 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 	}
 
 	// 3. 创建订单
-	orderNo := pkg.GenerateOrderNo(req.UserID)
+	orderNo := pkg.GenerateOrderNo(pkg.OrderPrefix, req.UserID)
 	order := &model.Order{
 		OrderNo:         orderNo,
 		UserId:          req.UserID,
 		OrderStatus:     model.OrderStatusPendingPayment,
 		PaymentStatus:   model.PaymentStatusUnpaid,
-		ReceiverName:    "柴梦妃",                // TODO 根据 user_id 获取name  ,还是根据address直接获取name addressDbData.Name
-		ReceiverPhone:   "13671210659",        // TODO 根据 user_id 获取phone  ,还是根据address直接获取phone addressDbData.Phone
+		ReceiverName:    "柴梦妃",                               // TODO 根据 user_id 获取name  ,还是根据address直接获取name addressDbData.Name
+		ReceiverPhone:   "13671210659",                          // TODO 根据 user_id 获取phone  ,还是根据address直接获取phone addressDbData.Phone
 		ReceiverAddress: "河北省廊坊市三河市燕郊镇四季花都一期", // TODO 待实现address.FullAddress(),
 	}
 	// 4. 获取订单商品
@@ -202,7 +202,7 @@ func (os *orderService) processStockOutboundWithNewStructure(orderItems []*model
 	}
 
 	// 生成操作单号
-	operationNo := pkg.GenerateOrderNo(userID)
+	operationNo := pkg.GenerateOrderNo(pkg.StockPrefix, userID)
 
 	// 计算总金额
 	var totalAmount model.Amount

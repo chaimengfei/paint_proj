@@ -50,7 +50,7 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 	}
 
 	// 生成操作单号
-	operationNo := pkg.GenerateOrderNo(req.OperatorID)
+	operationNo := pkg.GenerateOrderNo(pkg.StockPrefix, req.OperatorID)
 
 	// 计算总金额
 	var totalAmount model.Amount
@@ -155,7 +155,7 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 	}
 
 	// 生成操作单号
-	operationNo := pkg.GenerateOrderNo(req.OperatorID)
+	operationNo := pkg.GenerateOrderNo(pkg.StockPrefix, req.OperatorID)
 
 	// 计算总金额
 	var totalAmount model.Amount

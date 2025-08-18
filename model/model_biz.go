@@ -177,15 +177,14 @@ type BatchInboundItem struct {
 
 // 批量出库请求结构体
 type BatchOutboundRequest struct {
-	Items        []BatchOutboundItem `json:"items" binding:"required"`         // 出库商品列表
-	TotalAmount  Amount              `json:"total_amount"`                     // 总金额（前端计算）
-	UserName     string              `json:"user_name" binding:"required"`     // 用户名称
-	UserID       int64               `json:"user_id" binding:"required"`       // 用户ID
-	UserAccount  string              `json:"user_account" binding:"required"`  // 用户账号
-	PurchaseTime string              `json:"purchase_time" binding:"required"` // 购买时间
-	Operator     string              `json:"operator" binding:"required"`      // 操作人
-	OperatorID   int64               `json:"operator_id" binding:"required"`   // 操作人ID
-	Remark       string              `json:"remark"`                           // 备注
+	Items       []BatchOutboundItem `json:"items" binding:"required"`        // 出库商品列表
+	TotalAmount Amount              `json:"total_amount"`                    // 总金额（前端计算）
+	UserName    string              `json:"user_name" binding:"required"`    // 用户名称
+	UserID      int64               `json:"user_id" binding:"required"`      // 用户ID
+	UserAccount string              `json:"user_account" binding:"required"` // 用户账号
+	Operator    string              `json:"operator" binding:"required"`     // 操作人
+	OperatorID  int64               `json:"operator_id" binding:"required"`  // 操作人ID
+	Remark      string              `json:"remark"`                          // 备注
 }
 
 // 批量出库商品项

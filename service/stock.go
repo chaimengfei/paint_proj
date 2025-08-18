@@ -144,12 +144,6 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 		return errors.New("出库商品列表不能为空")
 	}
 
-	// 解析购买时间
-	purchaseTime, err := time.Parse("2006-01-02 15:04:05", req.PurchaseTime)
-	if err != nil {
-		return errors.New("购买时间格式错误，请使用 YYYY-MM-DD HH:mm:ss 格式")
-	}
-
 	// 验证所有商品是否存在且库存充足
 	for _, item := range req.Items {
 		if item.Quantity <= 0 {
@@ -205,13 +199,13 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 		UserName:     req.UserName,
 		UserID:       req.UserID,
 		UserAccount:  req.UserAccount,
-		PurchaseTime: &purchaseTime,
+		PurchaseTime: &now,
 		Remark:       req.Remark,
 		TotalAmount:  totalAmount,
 		CreatedAt:    &now,
 	}
 
-	err = ss.stockRepo.CreateStockOperation(operation)
+	err := ss.stockRepo.CreateStockOperation(operation)
 	if err != nil {
 		return fmt.Errorf("创建库存操作记录失败: %v", err)
 	}

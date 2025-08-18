@@ -197,16 +197,9 @@ Content-Type: application/json
     }
   ],
   "total_amount": 70000,
-    },
-    {
-      "product_id": 2,
-      "quantity": 8
-    }
-  ],
   "user_name": "李四",
   "user_id": 1002,
   "user_account": "13800138000",
-  "purchase_time": "2024-01-15 14:30:00",
   "operator": "张三",
   "operator_id": 1001,
   "remark": "客户购买"

@@ -97,15 +97,16 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 		}
 
 		operationItem := &model.StockOperationItem{
-			OperationID: operation.ID,
-			ProductID:   item.ProductID,
-			ProductName: product.Name,
-			Quantity:    item.Quantity,
-			UnitPrice:   unitPrice,
-			TotalPrice:  model.Amount(int64(unitPrice) * int64(item.Quantity)),
-			BeforeStock: beforeStock,
-			AfterStock:  afterStock,
-			CreatedAt:   &now,
+			OperationID:   operation.ID,
+			ProductID:     item.ProductID,
+			ProductName:   product.Name,
+			Specification: product.Specification,
+			Quantity:      item.Quantity,
+			UnitPrice:     unitPrice,
+			TotalPrice:    model.Amount(int64(unitPrice) * int64(item.Quantity)),
+			BeforeStock:   beforeStock,
+			AfterStock:    afterStock,
+			CreatedAt:     &now,
 		}
 		operationItems = append(operationItems, operationItem)
 	}
@@ -205,15 +206,16 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 		}
 
 		operationItem := &model.StockOperationItem{
-			OperationID: operation.ID,
-			ProductID:   item.ProductID,
-			ProductName: product.Name,
-			Quantity:    item.Quantity,
-			UnitPrice:   unitPrice,
-			TotalPrice:  model.Amount(int64(unitPrice) * int64(item.Quantity)),
-			BeforeStock: beforeStock,
-			AfterStock:  afterStock,
-			CreatedAt:   &now,
+			OperationID:   operation.ID,
+			ProductID:     item.ProductID,
+			ProductName:   product.Name,
+			Specification: product.Specification,
+			Quantity:      item.Quantity,
+			UnitPrice:     unitPrice,
+			TotalPrice:    model.Amount(int64(unitPrice) * int64(item.Quantity)),
+			BeforeStock:   beforeStock,
+			AfterStock:    afterStock,
+			CreatedAt:     &now,
 		}
 		operationItems = append(operationItems, operationItem)
 	}

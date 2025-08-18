@@ -64,6 +64,58 @@
 
 ## API接口说明
 
+### 商品管理接口
+
+##### 新增商品
+```http
+POST /admin/product/add
+Content-Type: application/json
+
+{
+  "name": "调和漆",
+  "category_id": 1,
+  "image": "https://example.com/paint.jpg",
+  "seller_price": 5000,
+  "cost": 3000,
+  "shipping_cost": 500,
+  "product_cost": 2500,
+  "specification": "3kg*4",
+  "unit": "L",
+  "remark": "优质调和漆",
+  "is_on_shelf": 1
+}
+```
+
+##### 编辑商品
+```http
+PUT /admin/product/edit/1
+Content-Type: application/json
+
+{
+  "name": "调和漆",
+  "category_id": 1,
+  "image": "https://example.com/paint.jpg",
+  "seller_price": 5500,
+  "cost": 3000,
+  "shipping_cost": 500,
+  "product_cost": 2500,
+  "specification": "3kg*4",
+  "unit": "L",
+  "remark": "优质调和漆",
+  "is_on_shelf": 1
+}
+```
+
+##### 删除商品
+```http
+DELETE /admin/product/delete/1
+```
+
+##### 获取商品列表
+```http
+GET /admin/product/list?page=1&page_size=10
+```
+
 ### 库存管理接口
 
 ##### 批量入库操作
@@ -167,6 +219,29 @@ GET /admin/stock/logs?product_id=1&page=1&page_size=10
 
 ## 数据库表结构
 
+### 商品表
+
+#### product 商品表
+```sql
+CREATE TABLE product (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL COMMENT '商品全名',
+  category_id BIGINT NOT NULL COMMENT '分类ID',
+  image VARCHAR(500) COMMENT '商品图片',
+  seller_price BIGINT NOT NULL DEFAULT 0 COMMENT '单价(分)',
+  cost BIGINT DEFAULT 0 COMMENT '成本(分)',
+  shipping_cost BIGINT DEFAULT 0 COMMENT '运费(分)',
+  product_cost BIGINT DEFAULT 0 COMMENT '货物成本(分)',
+  specification VARCHAR(200) DEFAULT '' COMMENT '规格',
+  unit VARCHAR(50) DEFAULT '' COMMENT '单位',
+  remark VARCHAR(500) COMMENT '备注',
+  stock INT NOT NULL DEFAULT 0 COMMENT '库存',
+  is_on_shelf TINYINT NOT NULL DEFAULT 1 COMMENT '是否上架(1:上架,0:下架)',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+);
+```
+
 ### 库存操作
 
 #### stock_operation 库存操作主表
@@ -195,7 +270,8 @@ CREATE TABLE stock_operation_item (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   operation_id BIGINT NOT NULL COMMENT '操作主表ID',
   product_id BIGINT NOT NULL COMMENT '商品ID',
-  product_name VARCHAR(255) NOT NULL COMMENT '商品名称',
+  product_name VARCHAR(255) NOT NULL COMMENT '商品全名',
+  specification VARCHAR(200) DEFAULT '' COMMENT '规格',
   quantity INT NOT NULL COMMENT '操作数量',
   unit_price BIGINT NOT NULL DEFAULT 0 COMMENT '单价(分)',
   total_price BIGINT NOT NULL DEFAULT 0 COMMENT '总价(分)',

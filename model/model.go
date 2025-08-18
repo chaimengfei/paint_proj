@@ -7,20 +7,21 @@ import (
 	"time"
 )
 
-// Product 油漆表
+// Product 商品表
 type Product struct {
-	ID           int64  `json:"id" gorm:"id,primaryKey;autoIncrement" ` // 分类ID
-	Name         string `json:"name" gorm:"name"`                       // 商品名
-	SellerPrice  Amount `json:"seller_price" gorm:"seller_price"`       // 卖价
-	Cost         Amount `json:"cost" gorm:"cost"`                       // 成本价(暂不用)
-	ShippingCost Amount `json:"shipping_cost" gorm:"shipping_cost"`     // 运费(暂不用)
-	ProductCost  Amount `json:"product_cost" gorm:"product_cost"`       // 货物成本(暂不用)
-	CategoryId   int64  `json:"category_id" gorm:"category_id"`         // 分类id
-	Stock        int    `json:"stock" gorm:"stock"`                     // 库存
-	Image        string `json:"image" gorm:"image"`                     // 图片地址
-	Unit         string `json:"unit" gorm:"unit"`                       // 单位 L/桶/套
-	Remark       string `json:"remark" gorm:"remark"`                   // 备注
-	IsOnShelf    int8   `json:"is_on_shelf" gorm:"is_on_shelf"`         // 是否上架(1:上架,0:下架)
+	ID            int64  `json:"id" gorm:"id,primaryKey;autoIncrement" ` // 主键ID
+	Name          string `json:"name" gorm:"name"`                       // 商品全名
+	SellerPrice   Amount `json:"seller_price" gorm:"seller_price"`       // 单价
+	Cost          Amount `json:"cost" gorm:"cost"`                       // 成本价
+	ShippingCost  Amount `json:"shipping_cost" gorm:"shipping_cost"`     // 运费
+	ProductCost   Amount `json:"product_cost" gorm:"product_cost"`       // 货物成本
+	CategoryId    int64  `json:"category_id" gorm:"category_id"`         // 分类ID
+	Stock         int    `json:"stock" gorm:"stock"`                     // 库存
+	Image         string `json:"image" gorm:"image"`                     // 图片地址
+	Specification string `json:"specification" gorm:"specification"`     // 规格
+	Unit          string `json:"unit" gorm:"unit"`                       // 单位
+	Remark        string `json:"remark" gorm:"remark"`                   // 备注
+	IsOnShelf     int8   `json:"is_on_shelf" gorm:"is_on_shelf"`         // 是否上架(1:上架,0:下架)
 }
 
 // TableName 表名称
@@ -251,16 +252,17 @@ func (*StockOperation) TableName() string {
 
 // 库存操作子表
 type StockOperationItem struct {
-	ID          int64      `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
-	OperationID int64      `json:"operation_id" gorm:"operation_id"`      // 操作主表ID
-	ProductID   int64      `json:"product_id" gorm:"product_id"`          // 商品ID
-	ProductName string     `json:"product_name" gorm:"product_name"`      // 商品名称
-	Quantity    int        `json:"quantity" gorm:"quantity"`              // 操作数量
-	UnitPrice   Amount     `json:"unit_price" gorm:"unit_price"`          // 单价
-	TotalPrice  Amount     `json:"total_price" gorm:"total_price"`        // 总价
-	BeforeStock int        `json:"before_stock" gorm:"before_stock"`      // 操作前库存
-	AfterStock  int        `json:"after_stock" gorm:"after_stock"`        // 操作后库存
-	CreatedAt   *time.Time `json:"created_at" gorm:"created_at"`          // 创建时间
+	ID            int64      `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
+	OperationID   int64      `json:"operation_id" gorm:"operation_id"`      // 操作主表ID
+	ProductID     int64      `json:"product_id" gorm:"product_id"`          // 商品ID
+	ProductName   string     `json:"product_name" gorm:"product_name"`      // 商品全名
+	Specification string     `json:"specification" gorm:"specification"`    // 规格
+	Quantity      int        `json:"quantity" gorm:"quantity"`              // 操作数量
+	UnitPrice     Amount     `json:"unit_price" gorm:"unit_price"`          // 单价
+	TotalPrice    Amount     `json:"total_price" gorm:"total_price"`        // 总价
+	BeforeStock   int        `json:"before_stock" gorm:"before_stock"`      // 操作前库存
+	AfterStock    int        `json:"after_stock" gorm:"after_stock"`        // 操作后库存
+	CreatedAt     *time.Time `json:"created_at" gorm:"created_at"`          // 创建时间
 }
 
 // TableName 表名称

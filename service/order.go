@@ -263,15 +263,16 @@ func (os *orderService) processStockOutboundWithNewStructure(orderItems []*model
 
 		// 构建子表记录
 		operationItem := &model.StockOperationItem{
-			OperationID: operation.ID,
-			ProductID:   item.ProductId,
-			ProductName: product.Name,
-			Quantity:    item.Quantity,
-			UnitPrice:   item.ProductPrice,
-			TotalPrice:  item.TotalPrice,
-			BeforeStock: beforeStock,
-			AfterStock:  afterStock,
-			CreatedAt:   &now,
+			OperationID:   operation.ID,
+			ProductID:     item.ProductId,
+			ProductName:   product.Name,
+			Specification: product.Specification,
+			Quantity:      item.Quantity,
+			UnitPrice:     item.ProductPrice,
+			TotalPrice:    item.TotalPrice,
+			BeforeStock:   beforeStock,
+			AfterStock:    afterStock,
+			CreatedAt:     &now,
 		}
 		operationItems = append(operationItems, operationItem)
 	}

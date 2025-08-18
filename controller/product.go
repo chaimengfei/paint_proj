@@ -90,16 +90,17 @@ func (pc *ProductController) AddProduct(c *gin.Context) {
 
 	// 转换为完整的Product结构体
 	product := &model.Product{
-		Name:         req.Name,
-		CategoryId:   req.CategoryId,
-		Image:        req.Image,
-		SellerPrice:  req.SellerPrice,
-		Cost:         req.Cost,
-		ShippingCost: req.ShippingCost,
-		ProductCost:  req.ProductCost,
-		Unit:         req.Unit,
-		Remark:       req.Remark,
-		IsOnShelf:    req.IsOnShelf,
+		Name:          req.Name,
+		CategoryId:    req.CategoryId,
+		Image:         req.Image,
+		SellerPrice:   req.SellerPrice,
+		Cost:          req.Cost,
+		ShippingCost:  req.ShippingCost,
+		ProductCost:   req.ProductCost,
+		Specification: req.Specification,
+		Unit:          req.Unit,
+		Remark:        req.Remark,
+		IsOnShelf:     req.IsOnShelf,
 		// TODO 设置默认值
 		Stock: 0,
 	}
@@ -129,17 +130,18 @@ func (pc *ProductController) EditProduct(c *gin.Context) {
 
 	// 转换为完整的Product结构体
 	product := &model.Product{
-		ID:           id,
-		Name:         req.Name,
-		CategoryId:   req.CategoryId,
-		Image:        req.Image,
-		SellerPrice:  req.SellerPrice,
-		Cost:         req.Cost,
-		ShippingCost: req.ShippingCost,
-		ProductCost:  req.ProductCost,
-		Unit:         req.Unit,
-		Remark:       req.Remark,
-		IsOnShelf:    req.IsOnShelf,
+		ID:            id,
+		Name:          req.Name,
+		CategoryId:    req.CategoryId,
+		Image:         req.Image,
+		SellerPrice:   req.SellerPrice,
+		Cost:          req.Cost,
+		ShippingCost:  req.ShippingCost,
+		ProductCost:   req.ProductCost,
+		Specification: req.Specification,
+		Unit:          req.Unit,
+		Remark:        req.Remark,
+		IsOnShelf:     req.IsOnShelf,
 	}
 
 	if err = pc.productService.UpdateProduct(product); err != nil {

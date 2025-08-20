@@ -81,7 +81,6 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 		OperatorType: model.OperatorTypeAdmin,
 		Remark:       req.Remark,
 		TotalAmount:  totalAmount,
-		CreatedAt:    &now,
 	}
 
 	err := ss.stockRepo.CreateStockOperation(operation)
@@ -154,21 +153,11 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 		if err != nil {
 			return fmt.Errorf("商品ID %d 不存在", item.ProductID)
 		}
-
 		// 检查库存是否足够
-		currentStock, err := ss.stockRepo.GetProductStock(item.ProductID)
-		if err != nil {
-			return fmt.Errorf("获取商品ID %d 库存失败", item.ProductID)
-		}
-
-		if currentStock < item.Quantity {
-			return fmt.Errorf("商品 %s 库存不足，当前库存: %d，需要出库: %d", product.Name, currentStock, item.Quantity)
+		if product.Stock < item.Quantity {
+			return fmt.Errorf("商品 %s 库存不足，当前库存: %d，需要出库: %d", product.Name, product.Stock, item.Quantity)
 		}
 	}
-
-	// 生成操作单号
-	operationNo := pkg.GenerateOrderNo(pkg.StockPrefix, req.OperatorID)
-
 	// 验证前端计算的总金额是否正确
 	var calculatedTotalAmount model.Amount
 	for _, item := range req.Items {
@@ -176,11 +165,12 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 			calculatedTotalAmount += model.Amount(int64(item.UnitPrice) * int64(item.Quantity))
 		}
 	}
-
-	// 如果前端提供了总金额，验证是否与计算值一致
 	if req.TotalAmount > 0 && req.TotalAmount != calculatedTotalAmount {
 		return fmt.Errorf("总金额计算错误，前端计算: %d，后端计算: %d", req.TotalAmount, calculatedTotalAmount)
 	}
+
+	// 生成操作单号
+	operationNo := pkg.GenerateOrderNo(pkg.StockPrefix, req.OperatorID)
 
 	// 使用前端提供的总金额，如果没有提供则使用计算值
 	totalAmount := req.TotalAmount
@@ -189,7 +179,6 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 	}
 
 	// 创建库存操作主表记录
-	now := time.Now()
 	operation := &model.StockOperation{
 		OperationNo:  operationNo,
 		Type:         model.StockTypeOutbound,
@@ -199,10 +188,9 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 		UserName:     req.UserName,
 		UserID:       req.UserID,
 		UserAccount:  req.UserAccount,
-		PurchaseTime: &now,
 		Remark:       req.Remark,
 		TotalAmount:  totalAmount,
-		CreatedAt:    &now,
+		Items:        nil, // TODO 填充子表
 	}
 
 	err := ss.stockRepo.CreateStockOperation(operation)
@@ -213,14 +201,14 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 	// 批量处理出库并创建子表记录
 	var operationItems []*model.StockOperationItem
 	for _, item := range req.Items {
-		err := ss.processOutboundItemWithNewStructure(item, operation.ID, operationNo)
+		err = ss.processOutboundItemWithNewStructure(item, operation.ID, operationNo)
 		if err != nil {
 			return fmt.Errorf("商品ID %d 出库失败: %v", item.ProductID, err)
 		}
 
 		// 构建子表记录
 		product, _ := ss.productRepo.GetByID(item.ProductID)
-		beforeStock, _ := ss.stockRepo.GetProductStock(item.ProductID)
+		beforeStock := product.Stock
 		afterStock := beforeStock - item.Quantity
 
 		unitPrice := item.UnitPrice
@@ -239,7 +227,6 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 			BeforeStock:   beforeStock,
 			AfterStock:    afterStock,
 			Remark:        item.Remark,
-			CreatedAt:     &now,
 		}
 		operationItems = append(operationItems, operationItem)
 

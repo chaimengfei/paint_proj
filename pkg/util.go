@@ -13,5 +13,5 @@ func GenerateOrderNo(prefix string, userID int64) string {
 	datePart := now.Format("20060102")
 	userPart := fmt.Sprintf("%04d", userID%10000)
 	randomPart := fmt.Sprintf("%06d", now.Nanosecond()/100000%10000)
-	return OrderPrefix + datePart + userPart + randomPart
+	return prefix + datePart + userPart + randomPart
 }

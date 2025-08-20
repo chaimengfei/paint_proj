@@ -33,7 +33,6 @@ CREATE TABLE stock_operation (
      user_name VARCHAR(255) COMMENT '用户名称(出库时)',
      user_id BIGINT COMMENT '用户ID(出库时)',
      user_account VARCHAR(255) COMMENT '用户账号(出库时)',
-     purchase_time TIMESTAMP COMMENT '购买时间(出库时)',
      remark VARCHAR(255) COMMENT '备注',
      total_amount BIGINT NOT NULL DEFAULT 0 COMMENT '总金额(分)',
      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'

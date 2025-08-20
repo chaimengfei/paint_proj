@@ -239,7 +239,6 @@ type StockOperation struct {
 	UserName     string               `json:"user_name" gorm:"user_name"`            // 用户名称(出库时)
 	UserID       int64                `json:"user_id" gorm:"user_id"`                // 用户ID(出库时)
 	UserAccount  string               `json:"user_account" gorm:"user_account"`      // 用户账号(出库时)
-	PurchaseTime *time.Time           `json:"purchase_time" gorm:"purchase_time"`    // 购买时间(出库时)
 	Remark       string               `json:"remark" gorm:"remark"`                  // 备注
 	TotalAmount  Amount               `json:"total_amount" gorm:"total_amount"`      // 总金额
 	CreatedAt    *time.Time           `json:"created_at" gorm:"created_at"`          // 创建时间

@@ -147,7 +147,7 @@ GET /admin/product/1
 
 ### 库存管理接口
 
-##### 批量入库操作
+#### 1. 批量入库操作
 ```http
 POST /admin/stock/batch/inbound
 Content-Type: application/json
@@ -158,13 +158,21 @@ Content-Type: application/json
       "product_id": 1,
       "quantity": 10,
       "unit_price": 3000,
-      "remark": "优质调和漆"
+      "remark": "优质调和漆",
+      "product_name": "",
+      "specification": "",
+      "unit": "",
+      "total_price": 0
     },
     {
       "product_id": 2,
       "quantity": 20,
       "unit_price": 2500,
-      "remark": "标准规格"
+      "remark": "标准规格",
+      "product_name": "",
+      "specification": "",
+      "unit": "",
+      "total_price": 0
     }
   ],
   "total_amount": 80000,
@@ -174,9 +182,15 @@ Content-Type: application/json
 }
 ```
 
-**说明**：后端会自动补齐每个商品的 `product_name`、`specification`、`unit` 和 `total_price` 字段。
+**响应示例：**
+```json
+{
+  "code": 0,
+  "message": "批量入库成功"
+}
+```
 
-##### 批量出库操作
+#### 2. 批量出库操作
 ```http
 POST /admin/stock/batch/outbound
 Content-Type: application/json
@@ -187,13 +201,21 @@ Content-Type: application/json
       "product_id": 1,
       "quantity": 5,
       "unit_price": 5000,
-      "remark": "调鼻尖"
+      "remark": "调鼻尖",
+      "product_name": "",
+      "specification": "",
+      "unit": "",
+      "total_price": 0
     },
     {
       "product_id": 2,
       "quantity": 10,
       "unit_price": 4500,
-      "remark": "调耳朵"
+      "remark": "调耳朵",
+      "product_name": "",
+      "specification": "",
+      "unit": "",
+      "total_price": 0
     }
   ],
   "total_amount": 70000,
@@ -204,35 +226,155 @@ Content-Type: application/json
   "operator_id": 1001,
   "remark": "客户购买"
 }
+```
 
-**说明**：后端会自动补齐每个商品的 `product_name`、`specification`、`unit` 和 `total_price` 字段。
-
-##### 退货操作
-```http
-POST /admin/stock/return
-Content-Type: application/json
-
+**响应示例：**
+```json
 {
-  "product_id": 1,
-  "quantity": 2,
-  "remark": "客户退货"
+  "code": 0,
+  "message": "批量出库成功"
 }
 ```
 
-##### 获取库存操作列表
+#### 3. 获取库存操作列表
 ```http
 GET /admin/stock/operations?page=1&page_size=10
 ```
 
-##### 获取库存操作详情
-```http
-GET /admin/stock/operation/1
+**响应示例：**
+```json
+{
+  "code": 0,
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "operation_no": "STK202401150001",
+        "type": 1,
+        "operator": "张三",
+        "operator_id": 1001,
+        "operator_type": 3,
+        "user_name": "",
+        "user_id": 0,
+        "user_account": "",
+        "purchase_time": null,
+        "remark": "新货入库",
+        "total_amount": 80000,
+        "created_at": "2024-01-15T10:30:00Z",
+        "items": [
+          {
+            "id": 1,
+            "operation_id": 1,
+            "product_id": 1,
+            "product_name": "优质调和漆",
+            "specification": "5L",
+            "quantity": 10,
+            "unit_price": 3000,
+            "total_price": 30000,
+            "before_stock": 50,
+            "after_stock": 60,
+            "remark": "优质调和漆",
+            "created_at": "2024-01-15T10:30:00Z"
+          }
+        ]
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "page_size": 10
+  }
+}
 ```
 
-##### 获取库存日志
+#### 4. 获取库存操作详情
 ```http
-GET /admin/stock/logs?product_id=1&page=1&page_size=10
+GET /admin/stock/operation/123
 ```
+
+**响应示例：**
+```json
+{
+  "code": 0,
+  "data": {
+    "operation": {
+      "id": 123,
+      "operation_no": "STK202401150001",
+      "type": 1,
+      "operator": "张三",
+      "operator_id": 1001,
+      "operator_type": 3,
+      "user_name": "",
+      "user_id": 0,
+      "user_account": "",
+      "purchase_time": null,
+      "remark": "新货入库",
+      "total_amount": 80000,
+      "created_at": "2024-01-15T10:30:00Z"
+    },
+    "items": [
+      {
+        "id": 1,
+        "operation_id": 123,
+        "product_id": 1,
+        "product_name": "优质调和漆",
+        "specification": "5L",
+        "quantity": 10,
+        "unit_price": 3000,
+        "total_price": 30000,
+        "before_stock": 50,
+        "after_stock": 60,
+        "remark": "优质调和漆",
+        "created_at": "2024-01-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+
+#### 字段说明
+
+**批量入库请求字段：**
+- `items`: 入库商品列表
+  - `product_id`: 商品ID（必填）
+  - `quantity`: 入库数量（必填）
+  - `unit_price`: 单价（可选，单位：分）
+  - `remark`: 备注（可选）
+  - `product_name`: 商品全名（自动补齐，前端可传空字符串）
+  - `specification`: 规格（自动补齐，前端可传空字符串）
+  - `unit`: 单位（自动补齐，前端可传空字符串）
+  - `total_price`: 总金额（自动计算，前端可传0）
+- `total_amount`: 总金额（前端计算，单位：分）
+- `operator`: 操作人姓名（必填）
+- `operator_id`: 操作人ID（必填）
+- `remark`: 操作备注（可选）
+
+**批量出库请求字段：**
+- `items`: 出库商品列表
+  - `product_id`: 商品ID（必填）
+  - `quantity`: 出库数量（必填）
+  - `unit_price`: 单价（可选，单位：分）
+  - `remark`: 备注（可选）
+  - `product_name`: 商品全名（自动补齐，前端可传空字符串）
+  - `specification`: 规格（自动补齐，前端可传空字符串）
+  - `unit`: 单位（自动补齐，前端可传空字符串）
+  - `total_price`: 总金额（自动计算，前端可传0）
+- `total_amount`: 总金额（前端计算，单位：分）
+- `user_name`: 用户名称（必填）
+- `user_id`: 用户ID（必填）
+- `user_account`: 用户账号（必填）
+- `operator`: 操作人姓名（必填）
+- `operator_id`: 操作人ID（必填）
+- `remark`: 操作备注（可选）
+
+**操作类型说明：**
+- `type`: 1-入库, 2-出库, 3-退货
+- `operator_type`: 1-用户, 2-系统, 3-管理员
+
+**说明：**
+- 后端会自动补齐商品信息（`product_name`, `specification`, `unit`, `total_price`）
+- 前端在items中传入这些字段时可以使用空字符串或0，后端会自动填充
+- 如果没有提供 `unit_price`，会使用商品的 `seller_price`
+- 时间字段由后端自动记录，无需前端传入
 
 ## 数据库表结构
 

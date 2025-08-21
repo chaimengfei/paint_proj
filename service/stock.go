@@ -87,7 +87,7 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 	}
 
 	// 批量处理入库并创建子表记录
-	var operationItems []*model.StockOperationItem
+	var operationItems []model.StockOperationItem
 	for _, item := range req.Items {
 		err := ss.processInboundItemWithNewStructure(item, operation.ID, operationNo)
 		if err != nil {
@@ -104,7 +104,7 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 			unitPrice = product.SellerPrice // 如果没有提供单价，使用商品售价
 		}
 
-		operationItem := &model.StockOperationItem{
+		operationItem := model.StockOperationItem{
 			OperationID:   operation.ID,
 			ProductID:     item.ProductID,
 			ProductName:   product.Name,
@@ -166,7 +166,7 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 	}
 
 	// 构建子表记录
-	var operationItems []*model.StockOperationItem
+	var operationItems []model.StockOperationItem
 	for _, item := range req.Items {
 		// 获取当前库存
 		beforeStock, err := ss.stockRepo.GetProductStock(item.ProductID)
@@ -185,7 +185,7 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 
 		afterStock := beforeStock - item.Quantity
 
-		operationItem := &model.StockOperationItem{
+		operationItem := model.StockOperationItem{
 			OperationID:   operation.ID,
 			ProductID:     item.ProductID,
 			ProductName:   item.ProductName,   // 使用前端传入的商品名称
@@ -199,11 +199,8 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 		}
 		operationItems = append(operationItems, operationItem)
 	}
+	operation.Items = operationItems
 
-	// 将子表记录放入主表记录中
-	for _, item := range operationItems {
-		operation.Items = append(operation.Items, *item)
-	}
 	// 执行事务：创建主表记录、子表记录、更新库存
 	err := ss.stockRepo.ProcessOutboundTransaction(operation)
 	if err != nil {

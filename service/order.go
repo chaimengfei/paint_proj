@@ -11,8 +11,8 @@ import (
 
 type OrderService interface {
 	CheckoutOrder(ctx context.Context, userID int64, req *model.CheckoutOrderRequest) (*model.CheckoutResponse, error)
-	GetOrderList(ctx context.Context, req *model.OrderListRequest) ([]*model.Order, int64, error) // 获取订单列表
-	GetOrderDetail(ctx context.Context, userID int64, orderNo string) (*model.Order, error)       // 获取订单详情
+	GetOrderList(ctx context.Context, req *model.OrderListRequest) ([]model.Order, int64, error) // 获取订单列表
+	GetOrderDetail(ctx context.Context, userID int64, orderNo string) (*model.Order, error)      // 获取订单详情
 
 	CancelOrder(ctx context.Context, userID int64, order *model.Order) error // 取消订单
 	DeleteOrder(ctx context.Context, userID int64, order *model.Order) error // 删除订单
@@ -72,8 +72,8 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 		UserId:          req.UserID,
 		OrderStatus:     model.OrderStatusPendingPayment,
 		PaymentStatus:   model.PaymentStatusUnpaid,
-		ReceiverName:    "柴梦妃",                               // TODO 根据 user_id 获取name  ,还是根据address直接获取name addressDbData.Name
-		ReceiverPhone:   "13671210659",                          // TODO 根据 user_id 获取phone  ,还是根据address直接获取phone addressDbData.Phone
+		ReceiverName:    "柴梦妃",                // TODO 根据 user_id 获取name  ,还是根据address直接获取name addressDbData.Name
+		ReceiverPhone:   "13671210659",        // TODO 根据 user_id 获取phone  ,还是根据address直接获取phone addressDbData.Phone
 		ReceiverAddress: "河北省廊坊市三河市燕郊镇四季花都一期", // TODO 待实现address.FullAddress(),
 	}
 	// 4. 获取订单商品
@@ -156,7 +156,7 @@ func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64,
 	}
 
 	// 4. 构建商品ID到商品信息的映射
-	productMap := make(map[int64]*model.Product)
+	productMap := make(map[int64]model.Product)
 	for _, product := range products {
 		productMap[product.ID] = product
 	}
@@ -229,7 +229,7 @@ func (os *orderService) processStockOutboundWithNewStructure(orderItems []*model
 	}
 
 	// 批量处理出库并创建子表记录
-	var operationItems []*model.StockOperationItem
+	var operationItems []model.StockOperationItem
 	for _, item := range orderItems {
 		// 获取商品信息
 		product, err := os.productRepo.GetByID(item.ProductId)
@@ -258,7 +258,7 @@ func (os *orderService) processStockOutboundWithNewStructure(orderItems []*model
 		afterStock := beforeStock - item.Quantity
 
 		// 构建子表记录
-		operationItem := &model.StockOperationItem{
+		operationItem := model.StockOperationItem{
 			OperationID:   operation.ID,
 			ProductID:     item.ProductId,
 			ProductName:   product.Name,
@@ -302,7 +302,7 @@ func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int6
 	}
 
 	// 4. 构建商品ID到商品信息的映射
-	productMap := make(map[int64]*model.Product)
+	productMap := make(map[int64]model.Product)
 	for _, product := range products {
 		productMap[product.ID] = product
 	}
@@ -347,18 +347,18 @@ func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int6
 	return orderItems, totalAmount, nil
 }
 
-func (os *orderService) GetOrderList(ctx context.Context, req *model.OrderListRequest) ([]*model.Order, int64, error) {
+func (os *orderService) GetOrderList(ctx context.Context, req *model.OrderListRequest) ([]model.Order, int64, error) {
 	orders, total, err := os.orderRepo.GetOrderList(req)
 	if err != nil {
 		return nil, 0, err
 	}
 	// 查询每个订单的商品
-	for _, order := range orders {
-		items, err := os.orderRepo.GetOrderItemList(order.ID)
+	for i := range orders {
+		items, err := os.orderRepo.GetOrderItemList(orders[i].ID)
 		if err != nil {
 			return nil, 0, err
 		}
-		order.OrderItems = items
+		orders[i].OrderItems = items
 	}
 	return orders, total, nil
 }

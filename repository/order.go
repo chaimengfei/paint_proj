@@ -2,13 +2,14 @@ package repository
 
 import (
 	"cmf/paint_proj/model"
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type OrderRepository interface {
 	CreateOrder(order *model.Order, cartIDs []int64, orderItems []*model.OrderItem, orderLog *model.OrderLog) error
-	GetOrderList(req *model.OrderListRequest) ([]*model.Order, int64, error)
+	GetOrderList(req *model.OrderListRequest) ([]model.Order, int64, error)
 	GetOrderItemList(orderID int64) ([]model.OrderItem, error)
 	GetOrderByNo(userID int64, orderNo string) (*model.Order, error)
 	GetOrderByOrderNo(orderNo string) (*model.Order, error)
@@ -62,8 +63,8 @@ func (or *orderRepository) CreateOrder(order *model.Order, cartIDs []int64, orde
 	}
 	return nil
 }
-func (or *orderRepository) GetOrderList(req *model.OrderListRequest) ([]*model.Order, int64, error) {
-	orders := make([]*model.Order, 0)
+func (or *orderRepository) GetOrderList(req *model.OrderListRequest) ([]model.Order, int64, error) {
+	orders := make([]model.Order, 0)
 	count := int64(0)
 
 	page := int(req.Page)

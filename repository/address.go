@@ -8,7 +8,7 @@ import (
 
 type AddressRepository interface {
 	GetById(id int64) (*model.Address, error)
-	GetByUserId(userId int64) ([]*model.Address, error)
+	GetByUserId(userId int64) ([]model.Address, error)
 	GetByUserAppointId(userId, id int64) (*model.Address, error)
 	GetDefaultOrFirstAddressID(userId int64) (*model.Address, error)
 
@@ -32,8 +32,8 @@ func (ar *addressRepository) GetById(id int64) (*model.Address, error) {
 	return &address, err
 }
 
-func (ar *addressRepository) GetByUserId(userId int64) ([]*model.Address, error) {
-	var result []*model.Address
+func (ar *addressRepository) GetByUserId(userId int64) ([]model.Address, error) {
+	var result []model.Address
 	err := ar.db.Model(&model.Address{}).Where("user_id = ? AND is_delete = 0", userId).Order("is_default desc").Find(&result).Error
 	return result, err
 }

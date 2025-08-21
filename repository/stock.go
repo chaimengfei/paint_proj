@@ -13,7 +13,7 @@ type StockRepository interface {
 
 	// 库存操作主表+子表
 	CreateStockOperation(operation *model.StockOperation) error
-	CreateStockOperationItems(items []*model.StockOperationItem) error
+	CreateStockOperationItems(items []model.StockOperationItem) error
 	GetStockOperations(page, pageSize int) ([]model.StockOperation, int64, error)
 	GetStockOperationByID(operationID int64) (*model.StockOperation, error)
 	GetStockOperationItems(operationID int64) ([]model.StockOperationItem, error)
@@ -54,8 +54,8 @@ func (sr *stockRepository) CreateStockOperation(operation *model.StockOperation)
 }
 
 // CreateStockOperationItems 创建库存操作子表记录
-func (sr *stockRepository) CreateStockOperationItems(items []*model.StockOperationItem) error {
-	return sr.db.Create(items).Error
+func (sr *stockRepository) CreateStockOperationItems(items []model.StockOperationItem) error {
+	return sr.db.Create(&items).Error
 }
 
 // GetStockOperations 获取库存操作主表列表

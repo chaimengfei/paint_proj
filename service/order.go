@@ -208,7 +208,7 @@ func (os *orderService) processStockOutboundWithNewStructure(orderItems []model.
 	// 创建库存操作主表记录
 	operation := &model.StockOperation{
 		OperationNo:  operationNo,
-		Type:         model.StockTypeOutbound,
+		Types:        model.StockTypeOutbound,
 		Operator:     fmt.Sprintf("user:%d", userID),
 		OperatorID:   userID,
 		OperatorType: model.OperatorTypeUser,

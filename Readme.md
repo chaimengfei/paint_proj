@@ -196,35 +196,26 @@ POST /admin/stock/batch/outbound
 Content-Type: application/json
 
 {
-  "items": [
-    {
-      "product_id": 1,
-      "quantity": 5,
-      "unit_price": 5000,
-      "remark": "调鼻尖",
-      "product_name": "",
-      "specification": "",
-      "unit": "",
-      "total_price": 0
-    },
-    {
-      "product_id": 2,
-      "quantity": 10,
-      "unit_price": 4500,
-      "remark": "调耳朵",
-      "product_name": "",
-      "specification": "",
-      "unit": "",
-      "total_price": 0
-    }
-  ],
-  "total_amount": 70000,
-  "user_name": "李四",
-  "user_id": 1002,
-  "user_account": "13800138000",
-  "operator": "张三",
-  "operator_id": 1001,
-  "remark": "客户购买"
+    "items": [
+        {
+            "product_id": 3,
+            "quantity": 2,
+            "unit_price": 85,
+            "total_price": 170,
+            "product_name": "固态灰",
+            "unit": "箱",
+            "specification": "3KG*4",
+            "remark": "调鼻尖"
+            
+        }
+    ],
+    "total_amount": 170,
+    "user_name": "李四",
+    "user_id": 1002,
+    "user_account": "13671210659",
+    "operator": "张三",
+    "operator_id": 1001,
+    "remark": "后台操作"
 }
 ```
 
@@ -249,39 +240,36 @@ GET /admin/stock/operations?page=1&page_size=10
     "list": [
       {
         "id": 1,
-        "operation_no": "STK202401150001",
-        "type": 1,
+        "operation_no": "STOCK202508211002009854",
+        "types": 2,
         "operator": "张三",
         "operator_id": 1001,
-        "operator_type": 3,
-        "user_name": "",
-        "user_id": 0,
-        "user_account": "",
-        "purchase_time": null,
-        "remark": "新货入库",
-        "total_amount": 80000,
-        "created_at": "2024-01-15T10:30:00Z",
+        "operator_type": 2,
+        "user_name": "李四",
+        "user_id": 1002,
+        "user_account": "13671210659",
+        "remark": "后台操作",
+        "total_amount": 170.00,
         "items": [
           {
             "id": 1,
             "operation_id": 1,
-            "product_id": 1,
-            "product_name": "优质调和漆",
-            "specification": "5L",
-            "quantity": 10,
-            "unit_price": 3000,
-            "total_price": 30000,
-            "before_stock": 50,
-            "after_stock": 60,
-            "remark": "优质调和漆",
-            "created_at": "2024-01-15T10:30:00Z"
+            "product_id": 3,
+            "product_name": "固态灰",
+            "specification": "3KG*4",
+            "quantity": 2,
+            "unit_price": 85.00,
+            "total_price": 170.00,
+            "before_stock": 100,
+            "after_stock": 98,
+            "remark": "调鼻尖"
           }
         ]
       }
     ],
-    "total": 1,
     "page": 1,
-    "page_size": 10
+    "page_size": 10,
+    "total": 1
   }
 }
 ```
@@ -296,37 +284,35 @@ GET /admin/stock/operation/123
 {
   "code": 0,
   "data": {
-    "operation": {
-      "id": 123,
-      "operation_no": "STK202401150001",
-      "type": 1,
-      "operator": "张三",
-      "operator_id": 1001,
-      "operator_type": 3,
-      "user_name": "",
-      "user_id": 0,
-      "user_account": "",
-      "purchase_time": null,
-      "remark": "新货入库",
-      "total_amount": 80000,
-      "created_at": "2024-01-15T10:30:00Z"
-    },
     "items": [
       {
         "id": 1,
-        "operation_id": 123,
-        "product_id": 1,
-        "product_name": "优质调和漆",
-        "specification": "5L",
-        "quantity": 10,
-        "unit_price": 3000,
-        "total_price": 30000,
-        "before_stock": 50,
-        "after_stock": 60,
-        "remark": "优质调和漆",
-        "created_at": "2024-01-15T10:30:00Z"
+        "operation_id": 1,
+        "product_id": 3,
+        "product_name": "固态灰",
+        "specification": "3KG*4",
+        "quantity": 2,
+        "unit_price": 85.00,
+        "total_price": 170.00,
+        "before_stock": 100,
+        "after_stock": 98,
+        "remark": "调鼻尖"
       }
-    ]
+    ],
+    "operation": {
+      "id": 1,
+      "operation_no": "STOCK202508211002009854",
+      "types": 2,
+      "operator": "张三",
+      "operator_id": 1001,
+      "operator_type": 2,
+      "user_name": "李四",
+      "user_id": 1002,
+      "user_account": "13671210659",
+      "remark": "后台操作",
+      "total_amount": 170.00,
+      "items": null
+    }
   }
 }
 ```

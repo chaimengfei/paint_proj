@@ -231,7 +231,7 @@ func (*Address) TableName() string {
 type StockOperation struct {
 	ID           int64  `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
 	OperationNo  string `json:"operation_no" gorm:"operation_no"`      // 操作单号
-	Type         int8   `json:"type" gorm:"type"`                      // 操作类型(1:入库,2:出库,3:退货)
+	Types        int8   `json:"types" gorm:"types"`                    // 操作类型(1:入库,2:出库,3:退货)
 	Operator     string `json:"operator" gorm:"operator"`              // 操作人
 	OperatorID   int64  `json:"operator_id" gorm:"operator_id"`        // 操作人ID
 	OperatorType int8   `json:"operator_type" gorm:"operator_type"`    // 操作人类型(1:用户,2:系统,3:管理员)

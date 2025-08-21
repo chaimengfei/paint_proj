@@ -73,7 +73,7 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 	// 创建库存操作主表记录
 	operation := &model.StockOperation{
 		OperationNo:  operationNo,
-		Type:         model.StockTypeInbound,
+		Types:        model.StockTypeInbound,
 		Operator:     req.Operator,
 		OperatorID:   req.OperatorID,
 		OperatorType: model.OperatorTypeAdmin,
@@ -154,7 +154,7 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 	// 创建库存操作主表记录
 	operation := &model.StockOperation{
 		OperationNo:  operationNo,
-		Type:         model.StockTypeOutbound,
+		Types:        model.StockTypeOutbound,
 		Operator:     req.Operator,
 		OperatorID:   req.OperatorID,
 		OperatorType: model.OperatorTypeAdmin,

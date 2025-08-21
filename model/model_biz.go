@@ -167,12 +167,14 @@ type BatchInboundRequest struct {
 type BatchInboundItem struct {
 	ProductID     int64  `json:"product_id" binding:"required"` // 商品ID
 	Quantity      int    `json:"quantity" binding:"required"`   // 入库数量
-	UnitPrice     Amount `json:"unit_price"`                    // 单价（可选）
+	Cost          Amount `json:"cost"`                          // 成本价=运费成本+货物成本
+	ShippingCost  Amount `json:"shipping_cost"`                 // 运费成本
+	ProductCost   Amount `json:"product_cost"`                  // 货物成本
 	Remark        string `json:"remark"`                        // 备注（可选）
 	ProductName   string `json:"product_name"`                  // 商品全名（自动补齐）
 	Specification string `json:"specification"`                 // 规格（自动补齐）
 	Unit          string `json:"unit"`                          // 单位（自动补齐）
-	TotalPrice    Amount `json:"total_price"`                   // 总金额（自动计算）
+	TotalAmount   Amount `json:"total_amount"`                  // 总金额（自动计算）
 }
 
 // 批量出库请求结构体

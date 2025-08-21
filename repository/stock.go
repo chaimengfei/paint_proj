@@ -20,6 +20,7 @@ type StockRepository interface {
 
 	// 事务处理
 	ProcessOutboundTransaction(operation *model.StockOperation) error
+	ProcessInboundTransaction(operation *model.StockOperation) error
 }
 
 type stockRepository struct {
@@ -119,6 +120,35 @@ func (sr *stockRepository) ProcessOutboundTransaction(operation *model.StockOper
 			if err := tx.Model(&model.Product{}).
 				Where("id = ?", item.ProductID).
 				Update("stock", gorm.Expr("stock - ?", item.Quantity)).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+// ProcessInboundTransaction 处理入库事务：创建主表记录、子表记录、更新库存
+func (sr *stockRepository) ProcessInboundTransaction(operation *model.StockOperation) error {
+	return sr.db.Transaction(func(tx *gorm.DB) error {
+		// 1. 创建主表记录
+		if err := tx.Create(operation).Error; err != nil {
+			return err
+		}
+
+		// 2. 创建子表记录
+		for i := range operation.Items {
+			operation.Items[i].OperationID = operation.ID
+		}
+		if err := tx.Create(&operation.Items).Error; err != nil {
+			return err
+		}
+
+		// 3. 更新库存
+		for _, item := range operation.Items {
+			if err := tx.Model(&model.Product{}).
+				Where("id = ?", item.ProductID).
+				Update("stock", gorm.Expr("stock + ?", item.Quantity)).Error; err != nil {
 				return err
 			}
 		}

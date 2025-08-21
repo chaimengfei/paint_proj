@@ -28,6 +28,12 @@ func (sc *StockController) BatchInboundStock(c *gin.Context) {
 		return
 	}
 
+	// 验证请求
+	if err := sc.validateBatchInboundRequest(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "验证失败: " + err.Error()})
+		return
+	}
+
 	err := sc.stockService.BatchInboundStock(&req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "批量入库失败: " + err.Error()})
@@ -143,6 +149,36 @@ func (sc *StockController) validateBatchOutboundRequest(req *model.BatchOutbound
 		if item.UnitPrice > 0 {
 			calculatedTotalAmount += model.Amount(int64(item.UnitPrice) * int64(item.Quantity))
 		}
+	}
+	if req.TotalAmount > 0 && req.TotalAmount != calculatedTotalAmount {
+		return fmt.Errorf("总金额计算错误，前端计算: %d，后端计算: %d", req.TotalAmount, calculatedTotalAmount)
+	}
+
+	return nil
+}
+
+// validateBatchInboundRequest 验证批量入库请求
+func (sc *StockController) validateBatchInboundRequest(req *model.BatchInboundRequest) error {
+	if len(req.Items) == 0 {
+		return errors.New("入库商品列表不能为空")
+	}
+
+	// 验证所有商品是否存在
+	for _, item := range req.Items {
+		if item.Quantity <= 0 {
+			return fmt.Errorf("商品ID %d 的入库数量必须大于0", item.ProductID)
+		}
+
+		_, err := sc.productService.GetProductByID(item.ProductID)
+		if err != nil {
+			return fmt.Errorf("商品ID %d 不存在", item.ProductID)
+		}
+	}
+
+	// 验证前端计算的总金额是否正确
+	var calculatedTotalAmount model.Amount
+	for _, item := range req.Items {
+		calculatedTotalAmount += model.Amount(int64(item.Cost) * int64(item.Quantity))
 	}
 	if req.TotalAmount > 0 && req.TotalAmount != calculatedTotalAmount {
 		return fmt.Errorf("总金额计算错误，前端计算: %d，后端计算: %d", req.TotalAmount, calculatedTotalAmount)

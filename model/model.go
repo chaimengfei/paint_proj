@@ -12,8 +12,8 @@ type Product struct {
 	ID            int64  `json:"id" gorm:"id,primaryKey;autoIncrement" ` // 主键ID
 	Name          string `json:"name" gorm:"name"`                       // 商品全名
 	SellerPrice   Amount `json:"seller_price" gorm:"seller_price"`       // 单价
-	Cost          Amount `json:"cost" gorm:"cost"`                       // 成本价
-	ShippingCost  Amount `json:"shipping_cost" gorm:"shipping_cost"`     // 运费
+	Cost          Amount `json:"cost" gorm:"cost"`                       // 成本价=运费成本+货物成本
+	ShippingCost  Amount `json:"shipping_cost" gorm:"shipping_cost"`     // 运费成本
 	ProductCost   Amount `json:"product_cost" gorm:"product_cost"`       // 货物成本
 	CategoryId    int64  `json:"category_id" gorm:"category_id"`         // 分类ID
 	Stock         int    `json:"stock" gorm:"stock"`                     // 库存

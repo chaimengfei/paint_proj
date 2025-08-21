@@ -83,9 +83,8 @@ const (
 	PaymentTypeBalance PaymentTypeCode = 3
 
 	//  操作人类型
-	OperatorTypeUser   = 1 // 用户
-	OperatorTypeSystem = 2 // 系统
-	OperatorTypeAdmin  = 3 // 管理员
+	OperatorTypeUser  = 1 // 用户
+	OperatorTypeAdmin = 2 // 管理员
 )
 
 // Order 订单表
@@ -230,19 +229,19 @@ func (*Address) TableName() string {
 
 // 库存操作主表
 type StockOperation struct {
-	ID           int64                `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
-	OperationNo  string               `json:"operation_no" gorm:"operation_no"`      // 操作单号
-	Type         int8                 `json:"type" gorm:"type"`                      // 操作类型(1:入库,2:出库,3:退货)
-	Operator     string               `json:"operator" gorm:"operator"`              // 操作人
-	OperatorID   int64                `json:"operator_id" gorm:"operator_id"`        // 操作人ID
-	OperatorType int8                 `json:"operator_type" gorm:"operator_type"`    // 操作人类型(1:用户,2:系统,3:管理员)
-	UserName     string               `json:"user_name" gorm:"user_name"`            // 用户名称(出库时)
-	UserID       int64                `json:"user_id" gorm:"user_id"`                // 用户ID(出库时)
-	UserAccount  string               `json:"user_account" gorm:"user_account"`      // 用户账号(出库时)
-	Remark       string               `json:"remark" gorm:"remark"`                  // 备注
-	TotalAmount  Amount               `json:"total_amount" gorm:"total_amount"`      // 总金额
-	CreatedAt    *time.Time           `json:"created_at" gorm:"created_at"`          // 创建时间
-	Items        []StockOperationItem `json:"items" gorm:"-"`                        // 关联的子表数据（不映射到数据库）
+	ID           int64  `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
+	OperationNo  string `json:"operation_no" gorm:"operation_no"`      // 操作单号
+	Type         int8   `json:"type" gorm:"type"`                      // 操作类型(1:入库,2:出库,3:退货)
+	Operator     string `json:"operator" gorm:"operator"`              // 操作人
+	OperatorID   int64  `json:"operator_id" gorm:"operator_id"`        // 操作人ID
+	OperatorType int8   `json:"operator_type" gorm:"operator_type"`    // 操作人类型(1:用户,2:系统,3:管理员)
+	UserName     string `json:"user_name" gorm:"user_name"`            // 用户名称(出库时)
+	UserID       int64  `json:"user_id" gorm:"user_id"`                // 用户ID(出库时)
+	UserAccount  string `json:"user_account" gorm:"user_account"`      // 用户账号(出库时)
+	Remark       string `json:"remark" gorm:"remark"`                  // 备注
+	TotalAmount  Amount `json:"total_amount" gorm:"total_amount"`      // 总金额
+
+	Items []StockOperationItem `json:"items" gorm:"-"` // 关联的子表数据（不映射到数据库）
 }
 
 // TableName 表名称
@@ -252,18 +251,17 @@ func (*StockOperation) TableName() string {
 
 // 库存操作子表
 type StockOperationItem struct {
-	ID            int64      `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
-	OperationID   int64      `json:"operation_id" gorm:"operation_id"`      // 操作主表ID
-	ProductID     int64      `json:"product_id" gorm:"product_id"`          // 商品ID
-	ProductName   string     `json:"product_name" gorm:"product_name"`      // 商品全名
-	Specification string     `json:"specification" gorm:"specification"`    // 规格
-	Quantity      int        `json:"quantity" gorm:"quantity"`              // 操作数量
-	UnitPrice     Amount     `json:"unit_price" gorm:"unit_price"`          // 单价
-	TotalPrice    Amount     `json:"total_price" gorm:"total_price"`        // 总价
-	BeforeStock   int        `json:"before_stock" gorm:"before_stock"`      // 操作前库存
-	AfterStock    int        `json:"after_stock" gorm:"after_stock"`        // 操作后库存
-	Remark        string     `json:"remark" gorm:"remark"`                  // 备注
-	CreatedAt     *time.Time `json:"created_at" gorm:"created_at"`          // 创建时间
+	ID            int64  `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
+	OperationID   int64  `json:"operation_id" gorm:"operation_id"`      // 操作主表ID
+	ProductID     int64  `json:"product_id" gorm:"product_id"`          // 商品ID
+	ProductName   string `json:"product_name" gorm:"product_name"`      // 商品全名
+	Specification string `json:"specification" gorm:"specification"`    // 规格
+	Quantity      int    `json:"quantity" gorm:"quantity"`              // 操作数量
+	UnitPrice     Amount `json:"unit_price" gorm:"unit_price"`          // 单价
+	TotalPrice    Amount `json:"total_price" gorm:"total_price"`        // 总价
+	BeforeStock   int    `json:"before_stock" gorm:"before_stock"`      // 操作前库存
+	AfterStock    int    `json:"after_stock" gorm:"after_stock"`        // 操作后库存
+	Remark        string `json:"remark" gorm:"remark"`                  // 备注
 }
 
 // TableName 表名称

@@ -6,7 +6,6 @@ import (
 	"cmf/paint_proj/repository"
 	"errors"
 	"fmt"
-	"time"
 )
 
 type StockService interface {
@@ -72,7 +71,6 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 	}
 
 	// 创建库存操作主表记录
-	now := time.Now()
 	operation := &model.StockOperation{
 		OperationNo:  operationNo,
 		Type:         model.StockTypeInbound,
@@ -117,7 +115,6 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 			BeforeStock:   beforeStock,
 			AfterStock:    afterStock,
 			Remark:        item.Remark,
-			CreatedAt:     &now,
 		}
 		operationItems = append(operationItems, operationItem)
 
@@ -139,44 +136,20 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 
 // BatchOutboundStock 批量出库操作（新结构）
 func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) error {
-	if len(req.Items) == 0 {
-		return errors.New("出库商品列表不能为空")
-	}
-
-	// 验证所有商品是否存在且库存充足
-	for _, item := range req.Items {
-		if item.Quantity <= 0 {
-			return fmt.Errorf("商品ID %d 的出库数量必须大于0", item.ProductID)
-		}
-
-		product, err := ss.productRepo.GetByID(item.ProductID)
-		if err != nil {
-			return fmt.Errorf("商品ID %d 不存在", item.ProductID)
-		}
-		// 检查库存是否足够
-		if product.Stock < item.Quantity {
-			return fmt.Errorf("商品 %s 库存不足，当前库存: %d，需要出库: %d", product.Name, product.Stock, item.Quantity)
-		}
-	}
-	// 验证前端计算的总金额是否正确
-	var calculatedTotalAmount model.Amount
-	for _, item := range req.Items {
-		if item.UnitPrice > 0 {
-			calculatedTotalAmount += model.Amount(int64(item.UnitPrice) * int64(item.Quantity))
-		}
-	}
-	if req.TotalAmount > 0 && req.TotalAmount != calculatedTotalAmount {
-		return fmt.Errorf("总金额计算错误，前端计算: %d，后端计算: %d", req.TotalAmount, calculatedTotalAmount)
-	}
-
-	// 生成操作单号
-	operationNo := pkg.GenerateOrderNo(pkg.StockPrefix, req.OperatorID)
-
 	// 使用前端提供的总金额，如果没有提供则使用计算值
 	totalAmount := req.TotalAmount
 	if totalAmount == 0 {
+		var calculatedTotalAmount model.Amount
+		for _, item := range req.Items {
+			if item.UnitPrice > 0 {
+				calculatedTotalAmount += model.Amount(int64(item.UnitPrice) * int64(item.Quantity))
+			}
+		}
 		totalAmount = calculatedTotalAmount
 	}
+
+	// 生成操作单号
+	operationNo := pkg.GenerateOrderNo(pkg.StockPrefix, req.UserID)
 
 	// 创建库存操作主表记录
 	operation := &model.StockOperation{
@@ -190,37 +163,33 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 		UserAccount:  req.UserAccount,
 		Remark:       req.Remark,
 		TotalAmount:  totalAmount,
-		Items:        nil, // TODO 填充子表
 	}
 
-	err := ss.stockRepo.CreateStockOperation(operation)
-	if err != nil {
-		return fmt.Errorf("创建库存操作记录失败: %v", err)
-	}
-
-	// 批量处理出库并创建子表记录
+	// 构建子表记录
 	var operationItems []*model.StockOperationItem
 	for _, item := range req.Items {
-		err = ss.processOutboundItemWithNewStructure(item, operation.ID, operationNo)
+		// 获取当前库存
+		beforeStock, err := ss.stockRepo.GetProductStock(item.ProductID)
 		if err != nil {
-			return fmt.Errorf("商品ID %d 出库失败: %v", item.ProductID, err)
+			return fmt.Errorf("获取商品ID %d 库存失败: %v", item.ProductID, err)
 		}
-
-		// 构建子表记录
-		product, _ := ss.productRepo.GetByID(item.ProductID)
-		beforeStock := product.Stock
-		afterStock := beforeStock - item.Quantity
-
 		unitPrice := item.UnitPrice
 		if unitPrice == 0 {
-			unitPrice = product.SellerPrice // 如果没有提供单价，使用商品售价
+			// 如果没有提供单价，获取商品售价
+			product, err := ss.productRepo.GetByID(item.ProductID)
+			if err != nil {
+				return fmt.Errorf("获取商品ID %d 信息失败: %v", item.ProductID, err)
+			}
+			unitPrice = product.SellerPrice
 		}
+
+		afterStock := beforeStock - item.Quantity
 
 		operationItem := &model.StockOperationItem{
 			OperationID:   operation.ID,
 			ProductID:     item.ProductID,
-			ProductName:   product.Name,
-			Specification: product.Specification,
+			ProductName:   item.ProductName,   // 使用前端传入的商品名称
+			Specification: item.Specification, // 使用前端传入的规格
 			Quantity:      item.Quantity,
 			UnitPrice:     unitPrice,
 			TotalPrice:    model.Amount(int64(unitPrice) * int64(item.Quantity)),
@@ -229,18 +198,16 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 			Remark:        item.Remark,
 		}
 		operationItems = append(operationItems, operationItem)
-
-		// 自动补齐商品信息到请求项中（用于前端显示）
-		item.ProductName = product.Name
-		item.Specification = product.Specification
-		item.Unit = product.Unit
-		item.TotalPrice = model.Amount(int64(unitPrice) * int64(item.Quantity))
 	}
 
-	// 批量创建子表记录
-	err = ss.stockRepo.CreateStockOperationItems(operationItems)
+	// 将子表记录放入主表记录中
+	for _, item := range operationItems {
+		operation.Items = append(operation.Items, *item)
+	}
+	// 执行事务：创建主表记录、子表记录、更新库存
+	err := ss.stockRepo.ProcessOutboundTransaction(operation)
 	if err != nil {
-		return fmt.Errorf("创建库存操作明细失败: %v", err)
+		return fmt.Errorf("批量出库事务失败: %v", err)
 	}
 
 	return nil

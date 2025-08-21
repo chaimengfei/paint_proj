@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 )
 
 type OrderService interface {
@@ -211,7 +210,6 @@ func (os *orderService) processStockOutboundWithNewStructure(orderItems []*model
 	}
 
 	// 创建库存操作主表记录
-	now := time.Now()
 	operation := &model.StockOperation{
 		OperationNo:  operationNo,
 		Type:         model.StockTypeOutbound,
@@ -271,7 +269,6 @@ func (os *orderService) processStockOutboundWithNewStructure(orderItems []*model
 			BeforeStock:   beforeStock,
 			AfterStock:    afterStock,
 			Remark:        "小程序用户购买",
-			CreatedAt:     &now,
 		}
 		operationItems = append(operationItems, operationItem)
 	}

@@ -57,7 +57,7 @@ func SetupRouter() *gin.Engine {
 	payController := controller.NewPayController(payService)
 	userController := controller.NewUserController(userService)
 	addressController := controller.NewAddressController(addressService)
-	stockController := controller.NewStockController(stockService)
+	stockController := controller.NewStockController(stockService, productService)
 
 	// API路由 供微信小程序用
 	api := r.Group("/api")

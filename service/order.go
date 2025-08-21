@@ -37,12 +37,7 @@ func NewOrderService(or repository.OrderRepository, cr repository.CartRepository
 }
 
 func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *model.CheckoutOrderRequest) (*model.CheckoutResponse, error) {
-	// 1. 参数校验
-	if len(req.CartIDs) == 0 && len(req.BuyNowItems) == 0 {
-		return nil, errors.New("购物车或立即购买商品不能为空")
-	}
-
-	//2. 获取用户收货地址
+	//1. 获取用户收货地址
 	var addressDbData *model.Address
 	var err error
 	if req.AddressID == 0 {
@@ -50,7 +45,7 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 	} else {
 		addressDbData, err = os.addressRepo.GetByUserAppointId(req.UserID, req.AddressID)
 	}
-	var addressInfo *model.AddressInfo = nil
+	var addressInfo *model.AddressInfo
 	if addressDbData != nil && addressDbData.ID > 0 {
 		isDefault := addressDbData.IsDefault == 1
 		addressInfo = &model.AddressInfo{
@@ -72,12 +67,12 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 		UserId:          req.UserID,
 		OrderStatus:     model.OrderStatusPendingPayment,
 		PaymentStatus:   model.PaymentStatusUnpaid,
-		ReceiverName:    "柴梦妃",                // TODO 根据 user_id 获取name  ,还是根据address直接获取name addressDbData.Name
-		ReceiverPhone:   "13671210659",        // TODO 根据 user_id 获取phone  ,还是根据address直接获取phone addressDbData.Phone
+		ReceiverName:    "柴梦妃",                               // TODO 根据 user_id 获取name  ,还是根据address直接获取name addressDbData.Name
+		ReceiverPhone:   "13671210659",                          // TODO 根据 user_id 获取phone  ,还是根据address直接获取phone addressDbData.Phone
 		ReceiverAddress: "河北省廊坊市三河市燕郊镇四季花都一期", // TODO 待实现address.FullAddress(),
 	}
 	// 4. 获取订单商品
-	var orderItems []*model.OrderItem
+	var orderItems []model.OrderItem
 	var totalAmount model.Amount
 	if len(req.CartIDs) > 0 {
 		// 4.1. 从购物车创建订单
@@ -89,6 +84,8 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 	if err != nil {
 		return nil, err
 	}
+	order.OrderItems = orderItems // 将orderItems设置到order中
+
 	// 4.4. 计算运费等 (这里简化处理，实际业务需要计算运费、优惠等)
 	shippingFee := model.Amount(0)
 	if totalAmount < 100 { // 假设满100免运费
@@ -98,7 +95,6 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 	// 4.3. 计算优惠金额等
 	order.TotalAmount = totalAmount
 	order.PaymentAmount = paymentAmount // 实付金额(这里简化处理，实际可能有优惠券、运费等)
-
 	// 5.记录订单log
 	log := model.OrderLog{
 		OrderNo:      order.OrderNo,
@@ -108,7 +104,7 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 		Content:      "用户创建订单",
 	}
 	// 6.真正的业务处理
-	err = os.orderRepo.CreateOrder(order, req.CartIDs, orderItems, &log)
+	err = os.orderRepo.CreateOrder(order, req.CartIDs, &log)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +129,7 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 }
 
 // getOrderItemsFromCart 从购物车获取订单商品和总金额
-func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64, cartIDs []int64) ([]*model.OrderItem, model.Amount, error) {
+func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64, cartIDs []int64) ([]model.OrderItem, model.Amount, error) {
 	// 1. 获取购物车项
 	cartItems, err := os.cartRepo.GetByIDs(cartIDs)
 	if err != nil {
@@ -162,7 +158,7 @@ func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64,
 	}
 
 	// 5. 构建订单商品项并计算总金额
-	var orderItems []*model.OrderItem
+	var orderItems []model.OrderItem
 	var totalAmount model.Amount
 
 	for _, cartItem := range cartItems {
@@ -188,14 +184,14 @@ func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64,
 			Unit:         product.Unit,
 			TotalPrice:   model.Amount(itemTotalPrice),
 		}
-		orderItems = append(orderItems, &orderItem)
+		orderItems = append(orderItems, orderItem)
 		totalAmount += model.Amount(itemTotalPrice)
 	}
 	return orderItems, totalAmount, nil
 }
 
 // processStockOutboundWithNewStructure 处理库存出库（使用新的主表+子表结构）
-func (os *orderService) processStockOutboundWithNewStructure(orderItems []*model.OrderItem, orderNo string, userID int64) error {
+func (os *orderService) processStockOutboundWithNewStructure(orderItems []model.OrderItem, orderNo string, userID int64) error {
 	if len(orderItems) == 0 {
 		return nil
 	}
@@ -283,7 +279,7 @@ func (os *orderService) processStockOutboundWithNewStructure(orderItems []*model
 }
 
 // getOrderItemsFromBuyNow 从立即购买获取订单商品和总金额
-func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int64, buyNowItems []*model.BuyNowItem) ([]*model.OrderItem, model.Amount, error) {
+func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int64, buyNowItems []*model.BuyNowItem) ([]model.OrderItem, model.Amount, error) {
 	// 1. 参数校验
 	if len(buyNowItems) == 0 {
 		return nil, 0, errors.New("立即购买商品不能为空")
@@ -308,7 +304,7 @@ func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int6
 	}
 
 	// 5. 构建订单商品项并计算总金额
-	var orderItems []*model.OrderItem
+	var orderItems []model.OrderItem
 	var totalAmount model.Amount
 
 	for _, buyNowItem := range buyNowItems {
@@ -340,7 +336,7 @@ func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int6
 			Unit:         product.Unit,
 			TotalPrice:   model.Amount(itemTotalPrice),
 		}
-		orderItems = append(orderItems, &orderItem)
+		orderItems = append(orderItems, orderItem)
 		totalAmount += model.Amount(itemTotalPrice)
 	}
 

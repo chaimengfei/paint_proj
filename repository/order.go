@@ -8,7 +8,7 @@ import (
 )
 
 type OrderRepository interface {
-	CreateOrder(order *model.Order, cartIDs []int64, orderItems []*model.OrderItem, orderLog *model.OrderLog) error
+	CreateOrder(order *model.Order, cartIDs []int64, orderLog *model.OrderLog) error
 	GetOrderList(req *model.OrderListRequest) ([]model.Order, int64, error)
 	GetOrderItemList(orderID int64) ([]model.OrderItem, error)
 	GetOrderByNo(userID int64, orderNo string) (*model.Order, error)
@@ -27,7 +27,7 @@ func NewOrderRepository(db *gorm.DB) OrderRepository {
 	return &orderRepository{db: db}
 }
 
-func (or *orderRepository) CreateOrder(order *model.Order, cartIDs []int64, orderItems []*model.OrderItem, orderLog *model.OrderLog) error {
+func (or *orderRepository) CreateOrder(order *model.Order, cartIDs []int64, orderLog *model.OrderLog) error {
 	err := or.db.Transaction(func(tx *gorm.DB) error {
 		// 1.创建订单
 		err := tx.Model(&model.Order{}).Create(order).Error
@@ -35,11 +35,11 @@ func (or *orderRepository) CreateOrder(order *model.Order, cartIDs []int64, orde
 			return err
 		}
 		// 2.创建订单商品
-		for i := range orderItems {
-			orderItems[i].OrderNo = order.OrderNo
-			orderItems[i].OrderId = order.ID
+		for i := range order.OrderItems {
+			order.OrderItems[i].OrderNo = order.OrderNo
+			order.OrderItems[i].OrderId = order.ID
 		}
-		err = tx.Model(&model.OrderItem{}).Create(orderItems).Error
+		err = tx.Model(&model.OrderItem{}).Create(&order.OrderItems).Error
 		if err != nil {
 			return err
 		}

@@ -45,6 +45,11 @@ func (oc *OrderController) CheckoutOrder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "请选择商品或购物车"})
 		return
 	}
+	// 参数校验
+	if len(req.CartIDs) == 0 && (req.ProductID == 0 || req.Quantity == 0) {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "购物车或立即购买商品不能为空"})
+		return
+	}
 	// 真实的业务处理
 	checkoutData, err := oc.orderService.CheckoutOrder(c.Request.Context(), userID, svcReq)
 	if err != nil {

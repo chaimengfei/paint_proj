@@ -84,7 +84,7 @@ type OrderListRequest struct {
 }
 
 type CheckoutResponse struct {
-	OrderItems    []*OrderItem `json:"order_items"`
+	OrderItems    []OrderItem  `json:"order_items"`
 	OrderNo       string       `json:"order_no"`
 	TotalAmount   Amount       `json:"total_amount"`
 	ShippingFee   Amount       `json:"shipping_fee"`

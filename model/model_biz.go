@@ -147,6 +147,12 @@ const (
 	StockTypeReturn   = 3 // 退货
 )
 
+// 出库类型常量
+const (
+	OutboundTypeMiniProgram = 1 // 小程序购买
+	OutboundTypeAdmin       = 2 // admin后台操作
+)
+
 // 库存操作请求结构体
 type StockOperationRequest struct {
 	ProductID int64  `json:"product_id" binding:"required"` // 商品ID

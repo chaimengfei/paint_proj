@@ -157,22 +157,26 @@ Content-Type: application/json
     {
       "product_id": 1,
       "quantity": 10,
-      "unit_price": 3000,
+      "cost": 3000,
+      "shipping_cost": 500,
+      "product_cost": 2500,
       "remark": "优质调和漆",
       "product_name": "",
       "specification": "",
       "unit": "",
-      "total_price": 0
+      "total_amount": 0
     },
     {
       "product_id": 2,
       "quantity": 20,
-      "unit_price": 2500,
+      "cost": 2500,
+      "shipping_cost": 400,
+      "product_cost": 2100,
       "remark": "标准规格",
       "product_name": "",
       "specification": "",
       "unit": "",
-      "total_price": 0
+      "total_amount": 0
     }
   ],
   "total_amount": 80000,
@@ -323,12 +327,14 @@ GET /admin/stock/operation/123
 - `items`: 入库商品列表
   - `product_id`: 商品ID（必填）
   - `quantity`: 入库数量（必填）
-  - `unit_price`: 单价（可选，单位：分）
+  - `cost`: 成本价（必填，单位：分）
+  - `shipping_cost`: 运费成本（必填，单位：分）
+  - `product_cost`: 货物成本（必填，单位：分）
   - `remark`: 备注（可选）
   - `product_name`: 商品全名（自动补齐，前端可传空字符串）
   - `specification`: 规格（自动补齐，前端可传空字符串）
   - `unit`: 单位（自动补齐，前端可传空字符串）
-  - `total_price`: 总金额（自动计算，前端可传0）
+  - `total_amount`: 总金额（自动计算，前端可传0）
 - `total_amount`: 总金额（前端计算，单位：分）
 - `operator`: 操作人姓名（必填）
 - `operator_id`: 操作人ID（必填）
@@ -353,13 +359,15 @@ GET /admin/stock/operation/123
 - `remark`: 操作备注（可选）
 
 **操作类型说明：**
-- `type`: 1-入库, 2-出库, 3-退货
+- `types`: 1-入库, 2-出库, 3-退货
+- `outbound_type`: 1-小程序购买, 2-admin后台操作（仅出库时有效）
 - `operator_type`: 1-用户, 2-系统, 3-管理员
 
 **说明：**
 - 后端会自动补齐商品信息（`product_name`, `specification`, `unit`, `total_price`）
 - 前端在items中传入这些字段时可以使用空字符串或0，后端会自动填充
-- 如果没有提供 `unit_price`，会使用商品的 `seller_price`
+- 入库时：如果没有提供 `unit_price`，会使用商品的 `seller_price`；如果新成本价更低，会自动更新商品成本价并记录变更
+- 出库时：`unit_price` 为售价
 - 时间字段由后端自动记录，无需前端传入
 
 ## 数据库表结构

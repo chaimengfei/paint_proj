@@ -232,6 +232,7 @@ type StockOperation struct {
 	ID           int64  `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
 	OperationNo  string `json:"operation_no" gorm:"operation_no"`      // 操作单号
 	Types        int8   `json:"types" gorm:"types"`                    // 操作类型(1:入库,2:出库,3:退货)
+	OutboundType int8   `json:"outbound_type" gorm:"outbound_type"`    // 出库类型(1:小程序购买,2:admin后台操作)
 	Operator     string `json:"operator" gorm:"operator"`              // 操作人
 	OperatorID   int64  `json:"operator_id" gorm:"operator_id"`        // 操作人ID
 	OperatorType int8   `json:"operator_type" gorm:"operator_type"`    // 操作人类型(1:用户,2:系统,3:管理员)
@@ -261,12 +262,34 @@ type StockOperationItem struct {
 	TotalPrice    Amount `json:"total_price" gorm:"total_price"`        // 总价
 	BeforeStock   int    `json:"before_stock" gorm:"before_stock"`      // 操作前库存
 	AfterStock    int    `json:"after_stock" gorm:"after_stock"`        // 操作后库存
+	Cost          Amount `json:"cost" gorm:"cost"`                      // 成本价(暂不用) 单位:分
+	ShippingCost  Amount `json:"shipping_cost" gorm:"shipping_cost"`    // 运费(暂不用) 单位:分
+	ProductCost   Amount `json:"product_cost" gorm:"product_cost"`      // 货物成本(暂不用) 单位:分
 	Remark        string `json:"remark" gorm:"remark"`                  // 备注
 }
 
 // TableName 表名称
 func (*StockOperationItem) TableName() string {
 	return "stock_operation_item"
+}
+
+// 入库成本变更记录表
+type InboundCostChange struct {
+	ID           int64      `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
+	OperationID  int64      `json:"operation_id" gorm:"operation_id"`      // 入库操作ID
+	ProductID    int64      `json:"product_id" gorm:"product_id"`          // 商品ID
+	ProductName  string     `json:"product_name" gorm:"product_name"`      // 商品名称
+	OldCost      Amount     `json:"old_cost" gorm:"old_cost"`              // 原成本价
+	NewCost      Amount     `json:"new_cost" gorm:"new_cost"`              // 新成本价
+	ChangeReason string     `json:"change_reason" gorm:"change_reason"`    // 变更原因
+	Operator     string     `json:"operator" gorm:"operator"`              // 操作人
+	OperatorID   int64      `json:"operator_id" gorm:"operator_id"`        // 操作人ID
+	CreatedAt    *time.Time `json:"created_at" gorm:"created_at"`          // 创建时间
+}
+
+// TableName 表名称
+func (*InboundCostChange) TableName() string {
+	return "inbound_cost_change"
 }
 
 // 库存日志表（保留兼容性，后续可考虑迁移）

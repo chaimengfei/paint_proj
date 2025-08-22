@@ -10,6 +10,8 @@ type StockRepository interface {
 	// 库存操作
 	UpdateProductStock(productID int64, quantity int) error
 	GetProductStock(productID int64) (int, error)
+	UpdateProductCost(productID int64, newCost model.Amount) error
+	GetProductCost(productID int64) (model.Amount, error)
 
 	// 库存操作主表+子表
 	CreateStockOperation(operation *model.StockOperation) error
@@ -17,6 +19,9 @@ type StockRepository interface {
 	GetStockOperations(page, pageSize int) ([]model.StockOperation, int64, error)
 	GetStockOperationByID(operationID int64) (*model.StockOperation, error)
 	GetStockOperationItems(operationID int64) ([]model.StockOperationItem, error)
+
+	// 入库成本变更记录
+	CreateInboundCostChange(change *model.InboundCostChange) error
 
 	// 事务处理
 	ProcessOutboundTransaction(operation *model.StockOperation) error
@@ -128,7 +133,7 @@ func (sr *stockRepository) ProcessOutboundTransaction(operation *model.StockOper
 	})
 }
 
-// ProcessInboundTransaction 处理入库事务：创建主表记录、子表记录、更新库存
+// ProcessInboundTransaction 处理入库事务：创建主表记录、子表记录、更新库存和成本价
 func (sr *stockRepository) ProcessInboundTransaction(operation *model.StockOperation) error {
 	return sr.db.Transaction(func(tx *gorm.DB) error {
 		// 1. 创建主表记录
@@ -144,15 +149,72 @@ func (sr *stockRepository) ProcessInboundTransaction(operation *model.StockOpera
 			return err
 		}
 
-		// 3. 更新库存
+		// 3. 更新库存和成本价
 		for _, item := range operation.Items {
+			// 更新库存
 			if err := tx.Model(&model.Product{}).
 				Where("id = ?", item.ProductID).
 				Update("stock", gorm.Expr("stock + ?", item.Quantity)).Error; err != nil {
 				return err
 			}
+
+			// 检查是否需要更新成本价
+			var product model.Product
+			if err := tx.Model(&model.Product{}).
+				Select("cost, name").
+				Where("id = ?", item.ProductID).
+				First(&product).Error; err != nil {
+				return err
+			}
+
+			// 如果新成本价更低，则更新成本价并记录变更
+			if item.Cost < product.Cost {
+				// 更新成本价
+				if err := tx.Model(&model.Product{}).
+					Where("id = ?", item.ProductID).
+					Update("cost", item.Cost).Error; err != nil {
+					return err
+				}
+
+				// 创建成本变更记录
+				costChange := &model.InboundCostChange{
+					OperationID:  operation.ID,
+					ProductID:    item.ProductID,
+					ProductName:  product.Name,
+					OldCost:      product.Cost,
+					NewCost:      item.Cost,
+					ChangeReason: "入库成本价降低",
+					Operator:     operation.Operator,
+					OperatorID:   operation.OperatorID,
+				}
+				if err := tx.Create(costChange).Error; err != nil {
+					return err
+				}
+			}
 		}
 
 		return nil
 	})
+}
+
+// UpdateProductCost 更新商品成本价
+func (sr *stockRepository) UpdateProductCost(productID int64, newCost model.Amount) error {
+	return sr.db.Model(&model.Product{}).
+		Where("id = ?", productID).
+		Update("cost", newCost).Error
+}
+
+// GetProductCost 获取商品成本价
+func (sr *stockRepository) GetProductCost(productID int64) (model.Amount, error) {
+	var product model.Product
+	err := sr.db.Model(&model.Product{}).
+		Select("cost").
+		Where("id = ?", productID).
+		First(&product).Error
+	return product.Cost, err
+}
+
+// CreateInboundCostChange 创建入库成本变更记录
+func (sr *stockRepository) CreateInboundCostChange(change *model.InboundCostChange) error {
+	return sr.db.Create(change).Error
 }

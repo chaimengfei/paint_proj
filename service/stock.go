@@ -81,6 +81,9 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 			TotalPrice:    model.Amount(int64(item.Cost) * int64(item.Quantity)),
 			BeforeStock:   beforeStock,
 			AfterStock:    afterStock,
+			Cost:          item.Cost,         // 成本价
+			ShippingCost:  item.ShippingCost, // 运费成本
+			ProductCost:   item.ProductCost,  // 货物成本
 			Remark:        item.Remark,
 		}
 		operationItems = append(operationItems, operationItem)
@@ -121,6 +124,7 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 	operation := &model.StockOperation{
 		OperationNo:  operationNo,
 		Types:        model.StockTypeOutbound,
+		OutboundType: model.OutboundTypeAdmin, // admin后台操作出库
 		Operator:     req.Operator,
 		OperatorID:   req.OperatorID,
 		OperatorType: model.OperatorTypeAdmin,

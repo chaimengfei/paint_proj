@@ -209,6 +209,7 @@ func (os *orderService) processStockOutboundWithNewStructure(orderItems []model.
 	operation := &model.StockOperation{
 		OperationNo:  operationNo,
 		Types:        model.StockTypeOutbound,
+		OutboundType: model.OutboundTypeMiniProgram, // 小程序购买出库
 		Operator:     fmt.Sprintf("user:%d", userID),
 		OperatorID:   userID,
 		OperatorType: model.OperatorTypeUser,

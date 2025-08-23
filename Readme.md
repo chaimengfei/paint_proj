@@ -430,9 +430,31 @@ CREATE TABLE stock_operation_item (
   total_price BIGINT NOT NULL DEFAULT 0 COMMENT '总价(分)',
   before_stock INT NOT NULL COMMENT '操作前库存',
   after_stock INT NOT NULL COMMENT '操作后库存',
+  cost BIGINT NOT NULL DEFAULT 0 COMMENT '成本价(暂不用) 单位:分',
+  shipping_cost BIGINT NOT NULL DEFAULT 0 COMMENT '运费(暂不用) 单位:分',
+  product_cost BIGINT NOT NULL DEFAULT 0 COMMENT '货物成本(暂不用) 单位:分',
   remark VARCHAR(500) DEFAULT '' COMMENT '备注',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
 );
+```
+
+#### inbound_cost_change 入库成本变更记录表
+```sql
+CREATE TABLE inbound_cost_change (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键id',
+  operation_id BIGINT NOT NULL COMMENT '入库操作ID',
+  product_id BIGINT NOT NULL COMMENT '商品ID',
+  product_name VARCHAR(255) NOT NULL COMMENT '商品名称',
+  old_cost BIGINT NOT NULL DEFAULT 0 COMMENT '原成本价(分)',
+  new_cost BIGINT NOT NULL DEFAULT 0 COMMENT '新成本价(分)',
+  change_reason VARCHAR(500) DEFAULT '' COMMENT '变更原因',
+  operator VARCHAR(100) NOT NULL COMMENT '操作人',
+  operator_id BIGINT NOT NULL COMMENT '操作人ID',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  INDEX idx_operation_id (operation_id),
+  INDEX idx_product_id (product_id),
+  INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='入库成本变更记录表';
 ```
 
 #### stock_log 库存日志表（兼容旧版本）

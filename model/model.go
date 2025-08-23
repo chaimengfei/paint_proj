@@ -262,8 +262,8 @@ type StockOperationItem struct {
 	TotalPrice    Amount `json:"total_price" gorm:"total_price"`        // 总价
 	BeforeStock   int    `json:"before_stock" gorm:"before_stock"`      // 操作前库存
 	AfterStock    int    `json:"after_stock" gorm:"after_stock"`        // 操作后库存
-	Cost          Amount `json:"cost" gorm:"cost"`                      // 成本价(暂不用) 单位:分
-	ShippingCost  Amount `json:"shipping_cost" gorm:"shipping_cost"`    // 运费(暂不用) 单位:分
+	Cost          Amount `json:"cost" gorm:"cost"`                      // 成本价=运费成本+货物成本 单位:分
+	ShippingCost  Amount `json:"shipping_cost" gorm:"shipping_cost"`    // 运费成本 单位:分
 	ProductCost   Amount `json:"product_cost" gorm:"product_cost"`      // 货物成本(暂不用) 单位:分
 	Remark        string `json:"remark" gorm:"remark"`                  // 备注
 }

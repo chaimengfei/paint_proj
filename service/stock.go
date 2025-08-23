@@ -77,7 +77,7 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 			ProductName:   item.ProductName,   // 使用前端传入的商品名称
 			Specification: item.Specification, // 使用前端传入的规格
 			Quantity:      item.Quantity,
-			UnitPrice:     item.Cost, // 使用成本价作为单价
+			UnitPrice:     0, // 入库时不记录单价
 			TotalPrice:    model.Amount(int64(item.Cost) * int64(item.Quantity)),
 			BeforeStock:   beforeStock,
 			AfterStock:    afterStock,
@@ -165,6 +165,9 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 			TotalPrice:    model.Amount(int64(unitPrice) * int64(item.Quantity)),
 			BeforeStock:   beforeStock,
 			AfterStock:    afterStock,
+			Cost:          0, // 出库时不记录成本价
+			ShippingCost:  0, // 出库时不记录运费
+			ProductCost:   0, // 出库时不记录货物成本
 			Remark:        item.Remark,
 		}
 		operationItems = append(operationItems, operationItem)

@@ -87,3 +87,9 @@ CREATE TABLE inbound_cost_change (
 -- 为stock_operation表添加outbound_type字段
 ALTER TABLE stock_operation
     ADD COLUMN outbound_type TINYINT DEFAULT NULL COMMENT '出库类型(1:小程序购买,2:admin后台操作)' AFTER types;
+
+-- 为stock_operation_item表添加成本相关字段
+ALTER TABLE stock_operation_item
+    ADD COLUMN cost BIGINT NOT NULL DEFAULT 0 COMMENT '成本价(暂不用) 单位:分' AFTER after_stock,
+    ADD COLUMN shipping_cost BIGINT NOT NULL DEFAULT 0 COMMENT '运费(暂不用) 单位:分' AFTER cost,
+    ADD COLUMN product_cost BIGINT NOT NULL DEFAULT 0 COMMENT '货物成本(暂不用) 单位:分' AFTER shipping_cost;

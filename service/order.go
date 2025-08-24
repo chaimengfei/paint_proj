@@ -37,7 +37,8 @@ func NewOrderService(or repository.OrderRepository, cr repository.CartRepository
 }
 
 func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *model.CheckoutOrderRequest) (*model.CheckoutResponse, error) {
-	//1. 获取用户收货地址
+	// 1. 数据校验和准备阶段
+	// 1.1 获取用户收货地址
 	var addressDbData *model.Address
 	var err error
 	if req.AddressID == 0 {
@@ -60,7 +61,28 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 		}
 	}
 
-	// 3. 创建订单
+	// 1.2 获取订单商品并校验库存
+	var items []model.StockOperationItem
+	var totalAmount model.Amount
+	if len(req.CartIDs) > 0 {
+		// 从购物车创建订单
+		items, totalAmount, err = os.getOrderItemsFromCart(ctx, req.UserID, req.CartIDs)
+	} else {
+		// 立即购买创建订单
+		items, totalAmount, err = os.getOrderItemsFromBuyNow(ctx, req.UserID, req.BuyNowItems)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// 1.3 计算订单金额
+	shippingFee := model.Amount(0)
+	if totalAmount < 100 { // 假设满100免运费
+		shippingFee = 1000 //单位:分(10块的运费)
+	}
+	paymentAmount := totalAmount + shippingFee
+
+	// 1.4 准备订单数据
 	orderNo := pkg.GenerateOrderNo(pkg.OrderPrefix, req.UserID)
 	order := &model.Order{
 		OrderNo:         orderNo,
@@ -70,56 +92,78 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 		ReceiverName:    "柴梦妃",                // TODO 根据 user_id 获取name  ,还是根据address直接获取name addressDbData.Name
 		ReceiverPhone:   "13671210659",        // TODO 根据 user_id 获取phone  ,还是根据address直接获取phone addressDbData.Phone
 		ReceiverAddress: "河北省廊坊市三河市燕郊镇四季花都一期", // TODO 待实现address.FullAddress(),
+		TotalAmount:     totalAmount,
+		PaymentAmount:   paymentAmount,
+		Items:           items,
 	}
-	// 4. 获取订单商品
-	var orderItems []model.OrderItem
-	var totalAmount model.Amount
-	if len(req.CartIDs) > 0 {
-		// 4.1. 从购物车创建订单
-		orderItems, totalAmount, err = os.getOrderItemsFromCart(ctx, req.UserID, req.CartIDs)
-	} else {
-		// 4.2. 立即购买创建订单
-		orderItems, totalAmount, err = os.getOrderItemsFromBuyNow(ctx, req.UserID, req.BuyNowItems)
-	}
-	if err != nil {
-		return nil, err
-	}
-	order.OrderItems = orderItems // 将orderItems设置到order中
 
-	// 4.4. 计算运费等 (这里简化处理，实际业务需要计算运费、优惠等)
-	shippingFee := model.Amount(0)
-	if totalAmount < 100 { // 假设满100免运费
-		shippingFee = 1000 //单位:分(10块的运费)
-	}
-	paymentAmount := totalAmount + shippingFee
-	// 4.3. 计算优惠金额等
-	order.TotalAmount = totalAmount
-	order.PaymentAmount = paymentAmount // 实付金额(这里简化处理，实际可能有优惠券、运费等)
-	// 5.记录订单log
+	// 1.5 准备订单日志数据
 	log := model.OrderLog{
 		OrderNo:      order.OrderNo,
 		Action:       "create_order",
 		Operator:     fmt.Sprintf("user:%d", req.UserID),
+		OperatorID:   req.UserID,
 		OperatorType: model.OperatorTypeUser,
 		Content:      "用户创建订单",
 	}
-	// 6.真正的业务处理
-	err = os.orderRepo.CreateOrder(order, req.CartIDs, &log)
+
+	// 1.6 准备库存操作数据
+	operationNo := pkg.GenerateOrderNo(pkg.StockPrefix, req.UserID)
+	operation := &model.StockOperation{
+		OperationNo:  operationNo,
+		Types:        model.StockTypeOutbound,
+		OutboundType: model.OutboundTypeMiniProgram, // 小程序购买出库
+		Operator:     "",
+		OperatorID:   0,
+		OperatorType: model.OperatorTypeUser,
+		UserName:     "小程序用户", // 可以从用户表获取真实姓名
+		UserID:       userID,
+		UserAccount:  "", // 可以从用户表获取账号
+		Remark:       "小程序用户购买",
+		TotalAmount:  totalAmount,
+	}
+
+	// 1.7 校验库存并准备库存操作明细
+	var operationItems []model.StockOperationItem
+	for _, item := range items {
+		// 获取商品信息
+		product, err := os.productRepo.GetByID(item.ProductID)
+		if err != nil {
+			return nil, fmt.Errorf("获取商品信息失败: %v", err)
+		}
+
+		// 检查库存是否足够
+		if product.Stock < item.Quantity {
+			return nil, fmt.Errorf("商品 %s 库存不足，当前库存: %d，需要数量: %d", product.Name, product.Stock, item.Quantity)
+		}
+
+		// 构建库存操作明细
+		operationItem := model.StockOperationItem{
+			ProductID:     item.ProductID,
+			ProductName:   product.Name,
+			Specification: product.Specification,
+			Quantity:      item.Quantity,
+			UnitPrice:     item.UnitPrice,
+			TotalPrice:    item.TotalPrice,
+			BeforeStock:   product.Stock,
+			AfterStock:    product.Stock - item.Quantity,
+			Cost:          0, // 出库时不记录成本价
+			ShippingCost:  0, // 出库时不记录运费
+			ProductCost:   0, // 出库时不记录货物成本
+			Remark:        "小程序用户购买",
+		}
+		operationItems = append(operationItems, operationItem)
+	}
+
+	// 2. 事务处理阶段 - 所有数据库操作在一个事务中执行
+	err = os.orderRepo.ProcessCheckoutTransaction(order, operation, operationItems, req.CartIDs, &log)
 	if err != nil {
 		return nil, err
 	}
 
-	// 6.1. 处理库存出库（使用新的主表+子表结构）
-	err = os.processStockOutboundWithNewStructure(orderItems, order.OrderNo, req.UserID)
-	if err != nil {
-		// 注意：这里如果库存出库失败，订单已经创建成功，实际业务中可能需要回滚订单
-		// 或者记录错误日志，后续手动处理
-		return nil, fmt.Errorf("订单创建成功但库存出库失败: %v", err)
-	}
-
-	// 7.返回订单信息
+	// 3. 返回订单信息
 	return &model.CheckoutResponse{
-		OrderItems:    orderItems,
+		Items:         items,
 		OrderNo:       orderNo,
 		TotalAmount:   totalAmount,
 		ShippingFee:   shippingFee,
@@ -128,8 +172,15 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 	}, nil
 }
 
+// processCheckoutTransaction 已废弃，功能已移至 repository 层
+// 保留此方法用于向后兼容，但建议使用 repository 层的方法
+func (os *orderService) processCheckoutTransaction(order *model.Order, operation *model.StockOperation, operationItems []model.StockOperationItem, cartIDs []int64, log *model.OrderLog) error {
+	// 此方法已废弃，请使用 orderRepo.ProcessCheckoutTransaction 方法
+	return fmt.Errorf("此方法已废弃，请使用 orderRepo.ProcessCheckoutTransaction 方法")
+}
+
 // getOrderItemsFromCart 从购物车获取订单商品和总金额
-func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64, cartIDs []int64) ([]model.OrderItem, model.Amount, error) {
+func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64, cartIDs []int64) ([]model.StockOperationItem, model.Amount, error) {
 	// 1. 获取购物车项
 	cartItems, err := os.cartRepo.GetByIDs(cartIDs)
 	if err != nil {
@@ -158,7 +209,7 @@ func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64,
 	}
 
 	// 5. 构建订单商品项并计算总金额
-	var orderItems []model.OrderItem
+	var orderItems []model.StockOperationItem
 	var totalAmount model.Amount
 
 	for _, cartItem := range cartItems {
@@ -167,22 +218,22 @@ func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64,
 			return nil, 0, fmt.Errorf("商品ID %d 不存在", cartItem.ProductID)
 		}
 
-		// 检查商品库存
-		if product.Stock < cartItem.Quantity {
-			return nil, 0, fmt.Errorf("商品 %s 库存不足", product.Name)
-		}
+		// 注意：库存检查在事务中进行，这里只做数据准备
 		// 计算商品总价
 		itemTotalPrice := int64(product.SellerPrice) * int64(cartItem.Quantity)
 
 		// 构建订单商品项
-		orderItem := model.OrderItem{
-			ProductId:    product.ID,
-			ProductName:  product.Name,
-			ProductImage: product.Image,
-			ProductPrice: product.SellerPrice,
-			Quantity:     cartItem.Quantity,
-			Unit:         product.Unit,
-			TotalPrice:   model.Amount(itemTotalPrice),
+		orderItem := model.StockOperationItem{
+			ProductID:     product.ID,
+			ProductName:   product.Name,
+			Specification: product.Specification,
+			Quantity:      cartItem.Quantity,
+			UnitPrice:     product.SellerPrice,
+			TotalPrice:    model.Amount(itemTotalPrice),
+			Cost:          0,
+			ShippingCost:  0,
+			ProductCost:   0,
+			Remark:        "从购物车创建订单",
 		}
 		orderItems = append(orderItems, orderItem)
 		totalAmount += model.Amount(itemTotalPrice)
@@ -190,100 +241,15 @@ func (os *orderService) getOrderItemsFromCart(ctx context.Context, userID int64,
 	return orderItems, totalAmount, nil
 }
 
-// processStockOutboundWithNewStructure 处理库存出库（使用新的主表+子表结构）
-func (os *orderService) processStockOutboundWithNewStructure(orderItems []model.OrderItem, orderNo string, userID int64) error {
-	if len(orderItems) == 0 {
-		return nil
-	}
-
-	// 生成操作单号
-	operationNo := pkg.GenerateOrderNo(pkg.StockPrefix, userID)
-
-	// 计算总金额
-	var totalAmount model.Amount
-	for _, item := range orderItems {
-		totalAmount += item.TotalPrice
-	}
-
-	// 创建库存操作主表记录
-	operation := &model.StockOperation{
-		OperationNo:  operationNo,
-		Types:        model.StockTypeOutbound,
-		OutboundType: model.OutboundTypeMiniProgram, // 小程序购买出库
-		Operator:     fmt.Sprintf("user:%d", userID),
-		OperatorID:   userID,
-		OperatorType: model.OperatorTypeUser,
-		UserName:     "小程序用户", // 可以从用户表获取真实姓名
-		UserID:       userID,
-		UserAccount:  "", // 可以从用户表获取账号
-		Remark:       "小程序用户购买",
-		TotalAmount:  totalAmount,
-	}
-
-	err := os.stockRepo.CreateStockOperation(operation)
-	if err != nil {
-		return fmt.Errorf("创建库存操作记录失败: %v", err)
-	}
-
-	// 批量处理出库并创建子表记录
-	var operationItems []model.StockOperationItem
-	for _, item := range orderItems {
-		// 获取商品信息
-		product, err := os.productRepo.GetByID(item.ProductId)
-		if err != nil {
-			return fmt.Errorf("获取商品信息失败: %v", err)
-		}
-
-		// 获取操作前库存
-		beforeStock, err := os.stockRepo.GetProductStock(item.ProductId)
-		if err != nil {
-			return fmt.Errorf("获取商品库存失败: %v", err)
-		}
-
-		// 检查库存是否足够
-		if beforeStock < item.Quantity {
-			return fmt.Errorf("商品 %s 库存不足", product.Name)
-		}
-
-		// 更新库存（出库为负数）
-		err = os.stockRepo.UpdateProductStock(item.ProductId, -item.Quantity)
-		if err != nil {
-			return fmt.Errorf("更新商品库存失败: %v", err)
-		}
-
-		// 获取操作后库存
-		afterStock := beforeStock - item.Quantity
-
-		// 构建子表记录
-		operationItem := model.StockOperationItem{
-			OperationID:   operation.ID,
-			ProductID:     item.ProductId,
-			ProductName:   product.Name,
-			Specification: product.Specification,
-			Quantity:      item.Quantity,
-			UnitPrice:     item.ProductPrice,
-			TotalPrice:    item.TotalPrice,
-			BeforeStock:   beforeStock,
-			AfterStock:    afterStock,
-			Cost:          0, // 出库时不记录成本价
-			ShippingCost:  0, // 出库时不记录运费
-			ProductCost:   0, // 出库时不记录货物成本
-			Remark:        "小程序用户购买",
-		}
-		operationItems = append(operationItems, operationItem)
-	}
-
-	// 批量创建子表记录
-	err = os.stockRepo.CreateStockOperationItems(operationItems)
-	if err != nil {
-		return fmt.Errorf("创建库存操作明细失败: %v", err)
-	}
-
-	return nil
+// processStockOutboundWithNewStructure 已废弃，功能已整合到 processCheckoutTransaction 中
+// 保留此方法用于向后兼容，但建议使用新的事务方法
+func (os *orderService) processStockOutboundWithNewStructure(orderItems []model.StockOperationItem, orderNo string, orderID int64, userID int64) error {
+	// 此方法已废弃，请使用 processCheckoutTransaction 方法
+	return fmt.Errorf("此方法已废弃，请使用 processCheckoutTransaction 方法")
 }
 
 // getOrderItemsFromBuyNow 从立即购买获取订单商品和总金额
-func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int64, buyNowItems []*model.BuyNowItem) ([]model.OrderItem, model.Amount, error) {
+func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int64, buyNowItems []*model.BuyNowItem) ([]model.StockOperationItem, model.Amount, error) {
 	// 1. 参数校验
 	if len(buyNowItems) == 0 {
 		return nil, 0, errors.New("立即购买商品不能为空")
@@ -308,7 +274,7 @@ func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int6
 	}
 
 	// 5. 构建订单商品项并计算总金额
-	var orderItems []model.OrderItem
+	var orderItems []model.StockOperationItem
 	var totalAmount model.Amount
 
 	for _, buyNowItem := range buyNowItems {
@@ -317,10 +283,7 @@ func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int6
 			return nil, 0, fmt.Errorf("商品ID %d 不存在", buyNowItem.ProductID)
 		}
 
-		// 检查商品库存
-		if product.Stock < buyNowItem.Quantity {
-			return nil, 0, fmt.Errorf("商品 %s 库存不足", product.Name)
-		}
+		// 注意：库存检查在事务中进行，这里只做数据准备
 
 		// 检查购买数量是否合法
 		if buyNowItem.Quantity <= 0 {
@@ -331,14 +294,17 @@ func (os *orderService) getOrderItemsFromBuyNow(ctx context.Context, userID int6
 		itemTotalPrice := int64(product.SellerPrice) * int64(buyNowItem.Quantity)
 
 		// 构建订单商品项
-		orderItem := model.OrderItem{
-			ProductId:    product.ID,
-			ProductName:  product.Name,
-			ProductImage: product.Image,
-			ProductPrice: product.SellerPrice,
-			Quantity:     buyNowItem.Quantity,
-			Unit:         product.Unit,
-			TotalPrice:   model.Amount(itemTotalPrice),
+		orderItem := model.StockOperationItem{
+			ProductID:     product.ID,
+			ProductName:   product.Name,
+			Specification: product.Specification,
+			Quantity:      buyNowItem.Quantity,
+			UnitPrice:     product.SellerPrice,
+			TotalPrice:    model.Amount(itemTotalPrice),
+			Cost:          0,
+			ShippingCost:  0,
+			ProductCost:   0,
+			Remark:        "立即购买创建订单",
 		}
 		orderItems = append(orderItems, orderItem)
 		totalAmount += model.Amount(itemTotalPrice)
@@ -352,13 +318,13 @@ func (os *orderService) GetOrderList(ctx context.Context, req *model.OrderListRe
 	if err != nil {
 		return nil, 0, err
 	}
-	// 查询每个订单的商品
+	// 查询每个订单的商品（从stock_operation_item表获取）
 	for i := range orders {
-		items, err := os.orderRepo.GetOrderItemList(orders[i].ID)
+		items, err := os.stockRepo.GetStockOperationItemsByOrderID(orders[i].ID)
 		if err != nil {
 			return nil, 0, err
 		}
-		orders[i].OrderItems = items
+		orders[i].Items = items
 	}
 	return orders, total, nil
 }
@@ -375,6 +341,7 @@ func (os *orderService) CancelOrder(ctx context.Context, userID int64, order *mo
 		OrderNo:      order.OrderNo,
 		Action:       "cancel_order",
 		Operator:     fmt.Sprintf("user:%d", userID),
+		OperatorID:   userID,
 		OperatorType: model.OperatorTypeUser,
 		Content:      "用户取消订单",
 	}
@@ -388,6 +355,7 @@ func (os *orderService) DeleteOrder(ctx context.Context, userID int64, order *mo
 		OrderNo:      order.OrderNo,
 		Action:       "delete_order",
 		Operator:     fmt.Sprintf("user:%d", userID),
+		OperatorID:   userID,
 		OperatorType: model.OperatorTypeUser,
 		Content:      "用户删除订单",
 	}

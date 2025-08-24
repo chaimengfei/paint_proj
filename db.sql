@@ -93,3 +93,15 @@ ALTER TABLE stock_operation_item
     ADD COLUMN cost BIGINT NOT NULL DEFAULT 0 COMMENT '成本价(暂不用) 单位:分' AFTER after_stock,
     ADD COLUMN shipping_cost BIGINT NOT NULL DEFAULT 0 COMMENT '运费(暂不用) 单位:分' AFTER cost,
     ADD COLUMN product_cost BIGINT NOT NULL DEFAULT 0 COMMENT '货物成本(暂不用) 单位:分' AFTER shipping_cost;
+
+-- 为stock_operation_item表添加订单关联字段
+ALTER TABLE stock_operation_item
+    ADD COLUMN order_id BIGINT DEFAULT NULL COMMENT '关联订单ID(小程序购买时)' AFTER operation_id,
+    ADD COLUMN order_no VARCHAR(64) DEFAULT NULL COMMENT '关联订单号(小程序购买时)' AFTER order_id,
+    ADD INDEX idx_order_id (order_id),
+    ADD INDEX idx_order_no (order_no);
+
+-- 为order_log表添加operator_id字段，与stock_operation表保持一致
+ALTER TABLE order_log
+    ADD COLUMN operator_id BIGINT DEFAULT NULL COMMENT '操作人ID' AFTER operator,
+    ADD INDEX idx_operator_id (operator_id);

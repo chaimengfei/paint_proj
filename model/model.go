@@ -109,33 +109,12 @@ type Order struct {
 	UpdatedAt       *time.Time        `json:"updated_at" gorm:"updated_at"`             // 更新时间
 	DeletedAt       *time.Time        `json:"deleted_at" gorm:"deleted_at"`             // 删除时间
 
-	OrderItems []OrderItem `json:"order_items" gorm:"-"` // ✅ 不映射到数据库，纯业务使用
+	Items []StockOperationItem `json:"items" gorm:"-"` // ✅ 不映射到数据库，纯业务使用，现在使用StockOperationItem
 }
 
 // TableName 表名称
 func (*Order) TableName() string {
 	return "order"
-}
-
-// OrderItem 订单商品表
-type OrderItem struct {
-	ID           int64      `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
-	OrderId      int64      `json:"order_id" gorm:"order_id"`              // 订单ID
-	OrderNo      string     `json:"order_no" gorm:"order_no"`              // 订单编号
-	ProductId    int64      `json:"product_id" gorm:"product_id"`          // 商品ID
-	ProductName  string     `json:"product_name" gorm:"product_name"`      // 商品名称
-	ProductImage string     `json:"product_image" gorm:"product_image"`    // 商品图片
-	ProductPrice Amount     `json:"product_price" gorm:"product_price"`    // 商品单价
-	TotalPrice   Amount     `json:"total_price" gorm:"total_price"`        // 商品总价
-	Quantity     int        `json:"quantity" gorm:"quantity"`              // 购买数量
-	Unit         string     `json:"unit" gorm:"unit"`                      // 商品单位
-	CreatedAt    *time.Time `json:"created_at" gorm:"created_at"`          // 创建时间
-	UpdatedAt    *time.Time `json:"updated_at" gorm:"updated_at"`          // 更新时间
-}
-
-// TableName 表名称
-func (*OrderItem) TableName() string {
-	return "order_item"
 }
 
 // OrderLog 订单操作日志表
@@ -145,6 +124,7 @@ type OrderLog struct {
 	OrderNo      string     `json:"order_no" gorm:"order_no"`              // 订单编号
 	Action       string     `json:"action" gorm:"action"`                  // 操作行为
 	Operator     string     `json:"operator" gorm:"operator"`              // 操作人
+	OperatorID   int64      `json:"operator_id" gorm:"operator_id"`        // 操作人ID
 	OperatorType int8       `json:"operator_type" gorm:"operator_type"`    // 操作人类型(1:用户,2:系统,3:管理员)
 	Content      string     `json:"content" gorm:"content"`                // 操作内容
 	CreatedAt    *time.Time `json:"created_at" gorm:"created_at"`          // 创建时间
@@ -254,6 +234,8 @@ func (*StockOperation) TableName() string {
 type StockOperationItem struct {
 	ID            int64  `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
 	OperationID   int64  `json:"operation_id" gorm:"operation_id"`      // 操作主表ID
+	OrderID       int64  `json:"order_id" gorm:"order_id"`              // 关联订单ID(小程序购买时)
+	OrderNo       string `json:"order_no" gorm:"order_no"`              // 关联订单号(小程序购买时)
 	ProductID     int64  `json:"product_id" gorm:"product_id"`          // 商品ID
 	ProductName   string `json:"product_name" gorm:"product_name"`      // 商品全名
 	Specification string `json:"specification" gorm:"specification"`    // 规格

@@ -19,6 +19,7 @@ type StockRepository interface {
 	GetStockOperations(page, pageSize int) ([]model.StockOperation, int64, error)
 	GetStockOperationByID(operationID int64) (*model.StockOperation, error)
 	GetStockOperationItems(operationID int64) ([]model.StockOperationItem, error)
+	GetStockOperationItemsByOrderID(orderID int64) ([]model.StockOperationItem, error)
 
 	// 入库成本变更记录
 	CreateInboundCostChange(change *model.InboundCostChange) error
@@ -100,6 +101,15 @@ func (sr *stockRepository) GetStockOperationItems(operationID int64) ([]model.St
 	var items []model.StockOperationItem
 	err := sr.db.Model(&model.StockOperationItem{}).
 		Where("operation_id = ?", operationID).
+		Find(&items).Error
+	return items, err
+}
+
+// GetStockOperationItemsByOrderID 根据订单ID获取库存操作子表记录
+func (sr *stockRepository) GetStockOperationItemsByOrderID(orderID int64) ([]model.StockOperationItem, error) {
+	var items []model.StockOperationItem
+	err := sr.db.Model(&model.StockOperationItem{}).
+		Where("order_id = ?", orderID).
 		Find(&items).Error
 	return items, err
 }

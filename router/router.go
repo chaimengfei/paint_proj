@@ -109,6 +109,7 @@ func SetupRouter() *gin.Engine {
 		{
 			productGroup.POST("/upload/image", productController.UploadImageForAdmin) // 阿里云OSS上传接口
 			productGroup.GET("/list", productController.GetAdminProductList)
+			productGroup.GET("/categories", productController.GetCategories) // 获取所有分类
 			productGroup.GET("/:id", productController.GetProductByID) // 根据ID获取商品信息
 			productGroup.POST("/add", productController.AddProduct)
 			productGroup.PUT("/edit/:id", productController.EditProduct)

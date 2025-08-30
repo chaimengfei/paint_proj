@@ -8,6 +8,7 @@ import (
 
 type ProductRepository interface {
 	GetProductCategory() ([]model.Category, map[int64]string, error) //  从product表查分类
+	GetAllCategories() ([]model.Category, error)                    //  获取所有分类
 	GetAllProduct() ([]model.Product, error)                         //  获取所有商品
 
 	GetByID(productID int64) (*model.Product, error)
@@ -42,6 +43,15 @@ func (p *productRepository) GetProductCategory() ([]model.Category, map[int64]st
 		categoryMap[category.ID] = category.Name
 	}
 	return categories, categoryMap, nil
+}
+
+// GetAllCategories 获取所有分类
+func (p *productRepository) GetAllCategories() ([]model.Category, error) {
+	var categories []model.Category
+	if err := p.db.Model(&model.Category{}).Order("sort_order desc, id asc").Find(&categories).Error; err != nil {
+		return nil, err
+	}
+	return categories, nil
 }
 
 // GetAllProduct 获取所有商品

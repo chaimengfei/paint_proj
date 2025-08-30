@@ -184,3 +184,17 @@ func (pc *ProductController) GetProductByID(c *gin.Context) {
 		"data": product,
 	})
 }
+
+// GetCategories 获取所有分类（后台）
+func (pc *ProductController) GetCategories(c *gin.Context) {
+	categories, err := pc.productService.GetAllCategories()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取分类失败: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": categories,
+	})
+}

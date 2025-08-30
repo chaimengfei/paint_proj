@@ -7,6 +7,7 @@ import (
 
 type ProductService interface {
 	GetProductList() ([]model.Category, map[int64][]model.ProductSimple, error)
+	GetAllCategories() ([]model.Category, error)
 
 	GetAdminProductList(page, pageSize int) ([]model.Product, int64, error)
 	GetProductByID(id int64) (*model.Product, error)
@@ -51,6 +52,10 @@ func (ps *productService) GetProductList() ([]model.Category, map[int64][]model.
 		productMap[p.CategoryId] = append(productMap[p.CategoryId], sp)
 	}
 	return categories, productMap, nil
+}
+
+func (ps *productService) GetAllCategories() ([]model.Category, error) {
+	return ps.productRepo.GetAllCategories()
 }
 
 func (ps *productService) GetAdminProductList(page, pageSize int) ([]model.Product, int64, error) {

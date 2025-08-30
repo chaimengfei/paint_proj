@@ -147,6 +147,17 @@ type EditProductRequest struct {
 	Remark        string `json:"remark"`                          // 备注（可选）
 }
 
+// 分类管理请求结构体
+type AddCategoryRequest struct {
+	Name      string `json:"name" binding:"required"` // 分类名称
+	SortOrder int64  `json:"sort_order"`              // 排序权重(数字越大越靠前)
+}
+
+type EditCategoryRequest struct {
+	Name      string `json:"name" binding:"required"` // 分类名称
+	SortOrder int64  `json:"sort_order"`              // 排序权重(数字越大越靠前)
+}
+
 // 库存操作类型常量
 const (
 	StockTypeInbound  = 1 // 入库

@@ -193,3 +193,70 @@ func (pc *ProductController) GetCategories(c *gin.Context) {
 		"data": categories,
 	})
 }
+
+// AddCategory 新增分类（后台）
+func (pc *ProductController) AddCategory(c *gin.Context) {
+	var req model.AddCategoryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误: " + err.Error()})
+		return
+	}
+
+	category := &model.Category{
+		Name:      req.Name,
+		SortOrder: req.SortOrder,
+	}
+
+	if err := pc.productService.AddCategory(category); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "添加分类失败: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "添加分类成功"})
+}
+
+// EditCategory 编辑分类（后台）
+func (pc *ProductController) EditCategory(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "分类ID格式错误"})
+		return
+	}
+
+	var req model.EditCategoryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误: " + err.Error()})
+		return
+	}
+
+	category := &model.Category{
+		ID:        id,
+		Name:      req.Name,
+		SortOrder: req.SortOrder,
+	}
+
+	if err = pc.productService.UpdateCategory(category); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "编辑分类失败: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "编辑分类成功"})
+}
+
+// DeleteCategory 删除分类（后台）
+func (pc *ProductController) DeleteCategory(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "分类ID格式错误"})
+		return
+	}
+
+	if err := pc.productService.DeleteCategory(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "删除分类失败: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "删除分类成功"})
+}

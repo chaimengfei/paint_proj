@@ -2,6 +2,7 @@ package repository
 
 import (
 	"cmf/paint_proj/model"
+	"errors"
 
 	"gorm.io/gorm"
 )
@@ -18,6 +19,12 @@ type ProductRepository interface {
 	Create(product *model.Product) error
 	Update(product *model.Product) error
 	Delete(id int64) error
+
+	// 分类管理方法
+	CreateCategory(category *model.Category) error
+	UpdateCategory(category *model.Category) error
+	DeleteCategory(id int64) error
+	GetCategoryByID(id int64) (*model.Category, error)
 }
 
 type productRepository struct {
@@ -95,4 +102,31 @@ func (p *productRepository) Update(product *model.Product) error {
 
 func (p *productRepository) Delete(id int64) error {
 	return p.db.Delete(&model.Product{}, id).Error
+}
+
+// 分类管理方法实现
+func (p *productRepository) CreateCategory(category *model.Category) error {
+	return p.db.Create(category).Error
+}
+
+func (p *productRepository) UpdateCategory(category *model.Category) error {
+	return p.db.Model(&model.Category{}).Where("id = ?", category.ID).Updates(category).Error
+}
+
+func (p *productRepository) DeleteCategory(id int64) error {
+	// 检查是否有商品使用此分类
+	var count int64
+	if err := p.db.Model(&model.Product{}).Where("category_id = ?", id).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return errors.New("该分类下还有商品，无法删除")
+	}
+	return p.db.Delete(&model.Category{}, id).Error
+}
+
+func (p *productRepository) GetCategoryByID(id int64) (*model.Category, error) {
+	var category model.Category
+	err := p.db.Model(&model.Category{}).First(&category, id).Error
+	return &category, err
 }

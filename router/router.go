@@ -109,11 +109,15 @@ func SetupRouter() *gin.Engine {
 		{
 			productGroup.POST("/upload/image", productController.UploadImageForAdmin) // 阿里云OSS上传接口
 			productGroup.GET("/list", productController.GetAdminProductList)
-			productGroup.GET("/categories", productController.GetCategories) // 获取所有分类
-			productGroup.GET("/:id", productController.GetProductByID)       // 根据ID获取商品信息
+			productGroup.GET("/:id", productController.GetProductByID) // 根据ID获取商品信息
 			productGroup.POST("/add", productController.AddProduct)
 			productGroup.PUT("/edit/:id", productController.EditProduct)
 			productGroup.DELETE("/del/:id", productController.DeleteProduct)
+
+			productGroup.GET("/categories", productController.GetCategories)           // 获取所有分类
+			productGroup.POST("/category/add", productController.AddCategory)          // 新增分类
+			productGroup.PUT("/category/edit/:id", productController.EditCategory)     // 编辑分类
+			productGroup.DELETE("/category/del/:id", productController.DeleteCategory) // 删除分类
 		}
 
 		stockGroup := admin.Group("/stock")

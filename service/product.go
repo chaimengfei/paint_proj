@@ -7,13 +7,19 @@ import (
 
 type ProductService interface {
 	GetProductList() ([]model.Category, map[int64][]model.ProductSimple, error)
-	GetAllCategories() ([]model.Category, error)
 
 	GetAdminProductList(page, pageSize int) ([]model.Product, int64, error)
 	GetProductByID(id int64) (*model.Product, error)
 	AddProduct(p *model.Product) error
 	UpdateProduct(p *model.Product) error
 	DeleteProduct(id int64) error
+
+	// 分类管理方法
+	GetAllCategories() ([]model.Category, error)
+	AddCategory(category *model.Category) error
+	UpdateCategory(category *model.Category) error
+	DeleteCategory(id int64) error
+	GetCategoryByID(id int64) (*model.Category, error)
 }
 
 type productService struct {
@@ -77,4 +83,21 @@ func (ps *productService) GetProductByID(id int64) (*model.Product, error) {
 
 func (ps *productService) DeleteProduct(id int64) error {
 	return ps.productRepo.Delete(id)
+}
+
+// 分类管理方法实现
+func (ps *productService) AddCategory(category *model.Category) error {
+	return ps.productRepo.CreateCategory(category)
+}
+
+func (ps *productService) UpdateCategory(category *model.Category) error {
+	return ps.productRepo.UpdateCategory(category)
+}
+
+func (ps *productService) DeleteCategory(id int64) error {
+	return ps.productRepo.DeleteCategory(id)
+}
+
+func (ps *productService) GetCategoryByID(id int64) (*model.Category, error) {
+	return ps.productRepo.GetCategoryByID(id)
 }

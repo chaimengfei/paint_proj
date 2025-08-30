@@ -232,6 +232,45 @@ curl --location 'http://127.0.0.1:8009/admin/product/add' \
 curl --location --request DELETE 'http://127.0.0.1:8009/admin/product/del/1'
 ```
 
+##### 获取商品分类
+
+```
+➜  ~ curl 'http://192.168.1.6:8009/admin/product/categories'
+{"code":0,"data":[{"id":1,"name":"1K-漆","sort_order":100},{"id":2,"name":"2K-漆","sort_order":99},{"id":3,"name":"辅料","sort_order":98}]}% 
+```
+
+##### 新增商品分类
+
+```
+➜  ~ curl --location 'http://192.168.1.6:8009/admin/product/category/add' \
+--header 'Content-Type: application/json' \
+--data '{
+    "name":"测试分类1",
+    "sort_order":96
+}'
+{"code":0,"message":"添加分类成功"}
+```
+
+##### 编辑商品分类
+
+```
+curl --location --request PUT 'http://192.168.1.6:8009/admin/product/category/edit/4' \
+--header 'Content-Type: application/json' \
+--data '{
+    "id":4,
+    "name":"测试分类4",
+    "sort_order":96
+}'
+{ "code": 0,"message": "编辑分类成功"}
+```
+
+##### 删除商品分类
+
+```
+curl --location --request DELETE 'http://192.168.1.6:8009/admin/product/category/del/4' 
+{ "code": 0,"message": "删除分类成功"}
+```
+
 
 
 ### 库存管理接口

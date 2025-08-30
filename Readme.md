@@ -158,6 +158,14 @@ CheckoutOrder()
 4. **分页参数**: 页码从1开始，每页大小默认为10
 5. **商品状态**: `is_on_shelf`字段控制商品是否上架，1表示上架，0表示下架
 
+6. **字段对比**
+
+| 操作     | 商品名称 | 商品分类 | 商品图片 | 售价   | 规格   | 单位   | 备注   | 状态   | 成本相关 |
+| :------- | :------- | :------- | :------- | :----- | :----- | :----- | :----- | :----- | :------- |
+|          |          |          |          |        |        |        |        |        |          |
+| 添加商品 | ✅ 必填   | ✅ 必填   | ✅ 必填   | ✅ 必填 | ✅ 可选 | ✅ 必填 | ✅ 可选 | ✅ 必填 | ❌ 去掉   |
+| 编辑商品 | ✅ 必填   | ❌ 去掉   | ✅ 必填   | ✅ 必填 | ✅ 可选 | ❌ 去掉 | ✅ 可选 | ✅ 必填 |          |
+
 ---
 
 #### 错误码说明
@@ -183,17 +191,20 @@ curl http://127.0.0.1:8009/admin/product/list
 {"code":0,"data":{"list":[{"id":1,"name":"贸彩1K白","seller_price":112.00,"cost":87.00,"shipping_cost":2.00,"product_cost":85.00,"category_id":1,"stock":100,"image":"http://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/07GE2k1DJWhah4QA_RlY91685434479136.jpg","specification":"4L","unit":"桶","remark":"","is_on_shelf":1},{"id":2,"name":"贸彩1K特黑","seller_price":108.00,"cost":67.00,"shipping_cost":0.00,"product_cost":67.00,"category_id":1,"stock":118,"image":"https://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/eBJ1AAdnMvKC-MiM1MK0O1686032850008.png","specification":"8L","unit":"桶","remark":"","is_on_shelf":1},{"id":3,"name":"原子灰","seller_price":85.00,"cost":80.00,"shipping_cost":0.00,"product_cost":80.00,"category_id":3,"stock":98,"image":"https://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/eBJ1AAdnMvKC-MiM1MK0O1686032850008.png","specification":"3KG*4","unit":"箱","remark":"","is_on_shelf":1},{"id":4,"name":"贸彩2K特白","seller_price":115.00,"cost":87.00,"shipping_cost":3.00,"product_cost":85.00,"category_id":1,"stock":120,"image":"https://dsers-affiliate.s3.amazonaws.com/logo-big.png","specification":"20L","unit":"桶","remark":"","is_on_shelf":0}],"page":1,"page_size":10,"total":4}}%  
 ```
 
+
+
 ##### 新增商品
 
 ```http
 curl --location 'http://127.0.0.1:8009/admin/product/add' \
 --header 'Content-Type: application/json' \
 --data '{
-                "id": 1,
                 "name": "贸彩1K白",
                 "category_id": 1,
+                "seller_price": 120,
                 "image": "http://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/07GE2k1DJWhah4QA_RlY91685434479136.jpg",
                 "unit": "桶",
+                "is_on_shelf":1,
                 "remark": ""
             }'
 {"code":0,"message":"添加成功"}% 
@@ -204,11 +215,13 @@ curl --location 'http://127.0.0.1:8009/admin/product/add' \
  curl --location --request PUT 'http://127.0.0.1:8009/admin/product/edit/4' \
 --header 'Content-Type: application/json' \
 --data '{
-                "id": 1,
+                "id":1,
                 "name": "贸彩1K白",
                 "category_id": 1,
+                "seller_price": 120,
                 "image": "http://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/07GE2k1DJWhah4QA_RlY91685434479136.jpg",
                 "unit": "桶",
+                "is_on_shelf":1,
                 "remark": ""
             }'
 {"code":0,"message":"编辑成功"}

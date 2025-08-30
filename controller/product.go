@@ -94,15 +94,15 @@ func (pc *ProductController) AddProduct(c *gin.Context) {
 		CategoryId:    req.CategoryId,
 		Image:         req.Image,
 		SellerPrice:   req.SellerPrice,
-		Cost:          req.Cost,
-		ShippingCost:  req.ShippingCost,
-		ProductCost:   req.ProductCost,
 		Specification: req.Specification,
 		Unit:          req.Unit,
 		Remark:        req.Remark,
 		IsOnShelf:     req.IsOnShelf,
-		// TODO 设置默认值 入库单会赋值，会初始化几条入库单数据
-		Stock: 0,
+		// 成本相关字段由入库单自动更新，初始化为0
+		Cost:         0,
+		ShippingCost: 0,
+		ProductCost:  0,
+		Stock:        0,
 	}
 
 	if err := pc.productService.AddProduct(product); err != nil {
@@ -122,7 +122,7 @@ func (pc *ProductController) EditProduct(c *gin.Context) {
 		return
 	}
 
-	var req model.AddOrEditSimpleProductRequest
+	var req model.EditProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误: " + err.Error()})
 		return
@@ -132,14 +132,9 @@ func (pc *ProductController) EditProduct(c *gin.Context) {
 	product := &model.Product{
 		ID:            id,
 		Name:          req.Name,
-		CategoryId:    req.CategoryId,
 		Image:         req.Image,
 		SellerPrice:   req.SellerPrice,
-		Cost:          req.Cost,
-		ShippingCost:  req.ShippingCost,
-		ProductCost:   req.ProductCost,
 		Specification: req.Specification,
-		Unit:          req.Unit,
 		Remark:        req.Remark,
 		IsOnShelf:     req.IsOnShelf,
 	}

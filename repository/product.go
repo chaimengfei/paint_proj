@@ -8,7 +8,7 @@ import (
 
 type ProductRepository interface {
 	GetProductCategory() ([]model.Category, map[int64]string, error) //  从product表查分类
-	GetAllCategories() ([]model.Category, error)                    //  获取所有分类
+	GetAllCategories() ([]model.Category, error)                     //  获取所有分类
 	GetAllProduct() ([]model.Product, error)                         //  获取所有商品
 
 	GetByID(productID int64) (*model.Product, error)

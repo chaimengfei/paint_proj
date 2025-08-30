@@ -206,3 +206,18 @@ type BatchOutboundItem struct {
 	TotalPrice    Amount `json:"total_price"`                   // 总金额（自动计算）
 	Remark        string `json:"remark"`                        // 备注（可选）
 }
+
+// AdminAddressInfo admin地址管理信息
+type AdminAddressInfo struct {
+	AddressID      int64  `json:"address_id"`
+	UserID         int64  `json:"user_id"`
+	UserName       string `json:"user_name"`
+	RecipientName  string `json:"recipient_name"`
+	RecipientPhone string `json:"recipient_phone"`
+	Province       string `json:"province"`
+	City           string `json:"city"`
+	District       string `json:"district"`
+	Detail         string `json:"detail"`
+	IsDefault      bool   `json:"is_default"`
+	CreatedAt      string `json:"created_at"`
+}

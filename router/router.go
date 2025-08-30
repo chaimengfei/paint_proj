@@ -122,7 +122,14 @@ func SetupRouter() *gin.Engine {
 			stockGroup.GET("/operations", stockController.GetStockOperations)         // 库存操作列表
 			stockGroup.GET("/operation/:id", stockController.GetStockOperationDetail) // 库存操作详情
 		}
-	}
 
+		addressGroup := admin.Group("/address")
+		{
+			addressGroup.GET("/list", addressController.GetAdminAddressList)      // 地址列表（支持用户ID或用户名搜索）
+			addressGroup.POST("/add", addressController.CreateAdminAddress)       // 新增地址
+			addressGroup.PUT("/edit/:id", addressController.UpdateAdminAddress)   // 编辑地址
+			addressGroup.DELETE("/del/:id", addressController.DeleteAdminAddress) // 删除地址
+		}
+	}
 	return r
 }

@@ -150,84 +150,76 @@ CheckoutOrder()
 
 ### 商品管理接口
 
-##### 新增商品
-```http
-POST /admin/product/add
-Content-Type: application/json
+#### 注意事项
 
-{
-  "name": "调和漆",
-  "category_id": 1,
-  "image": "https://example.com/paint.jpg",
-  "seller_price": 5000,
-  "cost": 3000,
-  "shipping_cost": 500,
-  "product_cost": 2500,
-  "specification": "3kg*4",
-  "unit": "L",
-  "remark": "优质调和漆",
-  "is_on_shelf": 1
-}
+1. **金额处理**: 所有金额字段在JSON中显示为元，但系统内部存储为分
+2. **必填字段**: 新增和编辑商品时，`name`、`category_id`、`image`为必填字段
+3. **图片上传**: 图片上传接口返回的是完整的URL地址
+4. **分页参数**: 页码从1开始，每页大小默认为10
+5. **商品状态**: `is_on_shelf`字段控制商品是否上架，1表示上架，0表示下架
+
+---
+
+#### 错误码说明
+
+- `0`: 操作成功
+- `-1`: 操作失败，具体错误信息在message字段中
+
+常见错误信息：
+
+- "参数错误: ..." - 请求参数格式错误
+- "商品ID格式错误" - 路径参数ID格式不正确
+- "添加商品失败: ..." - 数据库操作失败
+- "编辑商品失败: ..." - 更新操作失败
+- "删除失败" - 删除操作失败
+- "获取商品信息失败: ..." - 查询操作失败
+
+#### 接口示例
+
+##### 获取商品列表
+
+```
+curl http://127.0.0.1:8009/admin/product/list
+{"code":0,"data":{"list":[{"id":1,"name":"贸彩1K白","seller_price":112.00,"cost":87.00,"shipping_cost":2.00,"product_cost":85.00,"category_id":1,"stock":100,"image":"http://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/07GE2k1DJWhah4QA_RlY91685434479136.jpg","specification":"4L","unit":"桶","remark":"","is_on_shelf":1},{"id":2,"name":"贸彩1K特黑","seller_price":108.00,"cost":67.00,"shipping_cost":0.00,"product_cost":67.00,"category_id":1,"stock":118,"image":"https://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/eBJ1AAdnMvKC-MiM1MK0O1686032850008.png","specification":"8L","unit":"桶","remark":"","is_on_shelf":1},{"id":3,"name":"原子灰","seller_price":85.00,"cost":80.00,"shipping_cost":0.00,"product_cost":80.00,"category_id":3,"stock":98,"image":"https://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/eBJ1AAdnMvKC-MiM1MK0O1686032850008.png","specification":"3KG*4","unit":"箱","remark":"","is_on_shelf":1},{"id":4,"name":"贸彩2K特白","seller_price":115.00,"cost":87.00,"shipping_cost":3.00,"product_cost":85.00,"category_id":1,"stock":120,"image":"https://dsers-affiliate.s3.amazonaws.com/logo-big.png","specification":"20L","unit":"桶","remark":"","is_on_shelf":0}],"page":1,"page_size":10,"total":4}}%  
+```
+
+##### 新增商品
+
+```http
+curl --location 'http://127.0.0.1:8009/admin/product/add' \
+--header 'Content-Type: application/json' \
+--data '{
+                "id": 1,
+                "name": "贸彩1K白",
+                "category_id": 1,
+                "image": "http://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/07GE2k1DJWhah4QA_RlY91685434479136.jpg",
+                "unit": "桶",
+                "remark": ""
+            }'
+{"code":0,"message":"添加成功"}% 
 ```
 
 ##### 编辑商品
 ```http
-PUT /admin/product/edit/1
-Content-Type: application/json
-
-{
-  "name": "调和漆",
-  "category_id": 1,
-  "image": "https://example.com/paint.jpg",
-  "seller_price": 5500,
-  "cost": 3000,
-  "shipping_cost": 500,
-  "product_cost": 2500,
-  "specification": "3kg*4",
-  "unit": "L",
-  "remark": "优质调和漆",
-  "is_on_shelf": 1
-}
+ curl --location --request PUT 'http://127.0.0.1:8009/admin/product/edit/4' \
+--header 'Content-Type: application/json' \
+--data '{
+                "id": 1,
+                "name": "贸彩1K白",
+                "category_id": 1,
+                "image": "http://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/07GE2k1DJWhah4QA_RlY91685434479136.jpg",
+                "unit": "桶",
+                "remark": ""
+            }'
+{"code":0,"message":"编辑成功"}
 ```
 
 ##### 删除商品
 ```http
-DELETE /admin/product/delete/1
+curl --location --request DELETE 'http://127.0.0.1:8009/admin/product/del/1'
 ```
 
-##### 获取商品列表
-```http
-GET /admin/product/list?page=1&page_size=10
-```
 
-##### 根据ID获取商品信息
-```http
-GET /admin/product/1
-```
-
-响应示例：
-```json
-{
-  "code": 0,
-  "data": {
-    "id": 1,
-    "name": "调和漆",
-    "category_id": 1,
-    "image": "https://example.com/paint.jpg",
-    "seller_price": 5000,
-    "cost": 3000,
-    "shipping_cost": 500,
-    "product_cost": 2500,
-    "specification": "3kg*4",
-    "unit": "L",
-    "remark": "优质调和漆",
-    "stock": 100,
-    "is_on_shelf": 1,
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
-}
-```
 
 ### 库存管理接口
 

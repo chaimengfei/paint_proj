@@ -6,11 +6,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// AddressWithUser 地址和用户信息组合
+type AddressWithUser struct {
+	model.Address
+	UserName string `json:"user_name" gorm:"column:nickname"`
+}
+
 type AddressRepository interface {
 	GetById(id int64) (*model.Address, error)
 	GetByUserId(userId int64) ([]model.Address, error)
 	GetByUserAppointId(userId, id int64) (*model.Address, error)
 	GetDefaultOrFirstAddressID(userId int64) (*model.Address, error)
+	// 新增：通过用户ID或用户名搜索地址（用于admin）
+	GetAddressListByUser(userId int64, userName string) ([]AddressWithUser, error)
 
 	Create(data *model.Address) error
 	Update(id int64, data map[string]interface{}) error
@@ -51,6 +59,23 @@ func (ar *addressRepository) GetDefaultOrFirstAddressID(userId int64) (*model.Ad
 		err = ar.db.Model(&model.Address{}).Where("user_id = ? AND is_delete = 0", userId).Order("id asc").First(&address).Error
 	}
 	return &address, err
+}
+
+// GetAddressListByUser 通过用户ID或用户名搜索地址（用于admin）
+func (ar *addressRepository) GetAddressListByUser(userId int64, userName string) ([]AddressWithUser, error) {
+	var result []AddressWithUser
+	query := ar.db.Model(&model.Address{}).Select("address.*, user.nickname as user_name").Joins("JOIN user ON address.user_id = user.id").Where("address.is_delete = 0")
+	
+	if userId > 0 {
+		query = query.Where("address.user_id = ?", userId)
+	}
+	
+	if userName != "" {
+		query = query.Where("user.nickname LIKE ?", "%"+userName+"%")
+	}
+	
+	err := query.Order("address.is_default desc, address.id desc").Find(&result).Error
+	return result, err
 }
 
 func (ar *addressRepository) Create(data *model.Address) error {

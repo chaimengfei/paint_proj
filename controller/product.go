@@ -101,7 +101,7 @@ func (pc *ProductController) AddProduct(c *gin.Context) {
 		Unit:          req.Unit,
 		Remark:        req.Remark,
 		IsOnShelf:     req.IsOnShelf,
-		// TODO 设置默认值
+		// TODO 设置默认值 入库单会赋值，会初始化几条入库单数据
 		Stock: 0,
 	}
 

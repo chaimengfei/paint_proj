@@ -3,6 +3,7 @@ package repository
 import (
 	"cmf/paint_proj/model"
 	"errors"
+
 	"gorm.io/gorm"
 )
 
@@ -64,16 +65,25 @@ func (ar *addressRepository) GetDefaultOrFirstAddressID(userId int64) (*model.Ad
 // GetAddressListByUser 通过用户ID或用户名搜索地址（用于admin）
 func (ar *addressRepository) GetAddressListByUser(userId int64, userName string) ([]AddressWithUser, error) {
 	var result []AddressWithUser
+
+	// 如果userId和userName都为空，直接从address表获取全部数据
+	if userId == 0 && userName == "" {
+		query := ar.db.Model(&model.Address{}).Select("address.*, '' as user_name").Where("address.is_delete = 0")
+		err := query.Order("address.is_default desc, address.id desc").Find(&result).Error
+		return result, err
+	}
+
+	// 否则进行JOIN查询
 	query := ar.db.Model(&model.Address{}).Select("address.*, user.nickname as user_name").Joins("JOIN user ON address.user_id = user.id").Where("address.is_delete = 0")
-	
+
 	if userId > 0 {
 		query = query.Where("address.user_id = ?", userId)
 	}
-	
+
 	if userName != "" {
 		query = query.Where("user.nickname LIKE ?", "%"+userName+"%")
 	}
-	
+
 	err := query.Order("address.is_default desc, address.id desc").Find(&result).Error
 	return result, err
 }

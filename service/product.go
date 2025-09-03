@@ -13,6 +13,7 @@ type ProductService interface {
 	AddProduct(p *model.Product) error
 	UpdateProduct(p *model.Product) error
 	DeleteProduct(id int64) error
+	CheckProductNameExists(name string, excludeID ...int64) (bool, error)
 
 	// 分类管理方法
 	GetAllCategories() ([]model.Category, error)
@@ -100,4 +101,9 @@ func (ps *productService) DeleteCategory(id int64) error {
 
 func (ps *productService) GetCategoryByID(id int64) (*model.Category, error) {
 	return ps.productRepo.GetCategoryByID(id)
+}
+
+// CheckProductNameExists 检查商品名称是否已存在
+func (ps *productService) CheckProductNameExists(name string, excludeID ...int64) (bool, error) {
+	return ps.productRepo.CheckNameExists(name, excludeID...)
 }

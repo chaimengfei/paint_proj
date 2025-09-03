@@ -19,6 +19,7 @@ type ProductRepository interface {
 	Create(product *model.Product) error
 	Update(product *model.Product) error
 	Delete(id int64) error
+	CheckNameExists(name string, excludeID ...int64) (bool, error)
 
 	// 分类管理方法
 	CreateCategory(category *model.Category) error
@@ -129,4 +130,21 @@ func (p *productRepository) GetCategoryByID(id int64) (*model.Category, error) {
 	var category model.Category
 	err := p.db.Model(&model.Category{}).First(&category, id).Error
 	return &category, err
+}
+
+// CheckNameExists 检查商品名称是否已存在
+func (p *productRepository) CheckNameExists(name string, excludeID ...int64) (bool, error) {
+	var count int64
+	query := p.db.Model(&model.Product{}).Where("name = ?", name)
+
+	// 如果提供了excludeID，则排除该ID（用于编辑时检查）
+	if len(excludeID) > 0 && excludeID[0] > 0 {
+		query = query.Where("id != ?", excludeID[0])
+	}
+
+	if err := query.Count(&count).Error; err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }

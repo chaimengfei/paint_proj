@@ -11,3 +11,8 @@ const (
 
 	JwtSecret = "chun0325"
 )
+
+// 错误信息常量
+const (
+	ErrProductNameExists = "商品名称已存在，请使用其他名称"
+)

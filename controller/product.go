@@ -88,6 +88,17 @@ func (pc *ProductController) AddProduct(c *gin.Context) {
 		return
 	}
 
+	// 检查商品名称是否已存在
+	exists, err := pc.productService.CheckProductNameExists(req.Name)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "检查商品名称失败: " + err.Error()})
+		return
+	}
+	if exists {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": pkg.ErrProductNameExists})
+		return
+	}
+
 	// 转换为完整的Product结构体
 	product := &model.Product{
 		Name:          req.Name,
@@ -125,6 +136,17 @@ func (pc *ProductController) EditProduct(c *gin.Context) {
 	var req model.EditProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误: " + err.Error()})
+		return
+	}
+
+	// 检查商品名称是否已存在（排除当前编辑的商品）
+	exists, err := pc.productService.CheckProductNameExists(req.Name, id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "检查商品名称失败: " + err.Error()})
+		return
+	}
+	if exists {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": pkg.ErrProductNameExists})
 		return
 	}
 

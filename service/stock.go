@@ -14,7 +14,7 @@ type StockService interface {
 	BatchOutboundStock(req *model.BatchOutboundRequest) error
 
 	// 库存操作查询
-	GetStockOperations(page, pageSize int) ([]model.StockOperation, int64, error)
+	GetStockOperations(page, pageSize int, types *int8) ([]model.StockOperation, int64, error)
 	GetStockOperationDetail(operationID int64) (*model.StockOperation, []model.StockOperationItem, error)
 }
 
@@ -76,6 +76,7 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 			ProductID:     item.ProductID,
 			ProductName:   item.ProductName,   // 使用前端传入的商品名称
 			Specification: item.Specification, // 使用前端传入的规格
+			Unit:          item.Unit,          // 使用前端传入的单位
 			Quantity:      item.Quantity,
 			UnitPrice:     0, // 入库时不记录单价
 			TotalPrice:    model.Amount(int64(item.Cost) * int64(item.Quantity)),
@@ -130,9 +131,13 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 		OperatorType: model.OperatorTypeAdmin,
 		UserName:     req.UserName,
 		UserID:       req.UserID,
-		UserAccount:  req.UserAccount,
 		Remark:       req.Remark,
 		TotalAmount:  totalAmount,
+	}
+
+	// 如果前端传了操作时间，则设置到CreatedAt字段
+	if req.OperateTime != nil {
+		operation.CreatedAt = req.OperateTime
 	}
 
 	// 构建子表记录
@@ -160,6 +165,7 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 			ProductID:     item.ProductID,
 			ProductName:   item.ProductName,   // 使用前端传入的商品名称
 			Specification: item.Specification, // 使用前端传入的规格
+			Unit:          item.Unit,          // 使用前端传入的单位
 			Quantity:      item.Quantity,
 			UnitPrice:     unitPrice,
 			TotalPrice:    model.Amount(int64(unitPrice) * int64(item.Quantity)),
@@ -206,8 +212,8 @@ func (ss *stockService) processOutboundItemWithNewStructure(item model.BatchOutb
 }
 
 // GetStockOperations 获取库存操作列表
-func (ss *stockService) GetStockOperations(page, pageSize int) ([]model.StockOperation, int64, error) {
-	operations, total, err := ss.stockRepo.GetStockOperations(page, pageSize)
+func (ss *stockService) GetStockOperations(page, pageSize int, types *int8) ([]model.StockOperation, int64, error) {
+	operations, total, err := ss.stockRepo.GetStockOperations(page, pageSize, types)
 	if err != nil {
 		return nil, 0, err
 	}

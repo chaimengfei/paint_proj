@@ -218,9 +218,10 @@ type StockOperation struct {
 	OperatorType int8   `json:"operator_type" gorm:"operator_type"`    // 操作人类型(1:用户,2:系统,3:管理员)
 	UserName     string `json:"user_name" gorm:"user_name"`            // 用户名称(出库时)
 	UserID       int64  `json:"user_id" gorm:"user_id"`                // 用户ID(出库时)
-	UserAccount  string `json:"user_account" gorm:"user_account"`      // 用户账号(出库时)
-	Remark       string `json:"remark" gorm:"remark"`                  // 备注
-	TotalAmount  Amount `json:"total_amount" gorm:"total_amount"`      // 总金额
+	//UserAccount  string `json:"user_account" gorm:"user_account"`      // 用户账号(出库时)
+	Remark      string     `json:"remark" gorm:"remark"`             // 备注
+	TotalAmount Amount     `json:"total_amount" gorm:"total_amount"` // 总金额
+	CreatedAt   *time.Time `json:"created_at" gorm:"created_at"`     // 创建时间
 
 	Items []StockOperationItem `json:"items" gorm:"-"` // 关联的子表数据（不映射到数据库）
 }
@@ -232,22 +233,25 @@ func (*StockOperation) TableName() string {
 
 // 库存操作子表
 type StockOperationItem struct {
-	ID            int64  `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
-	OperationID   int64  `json:"operation_id" gorm:"operation_id"`      // 操作主表ID
-	OrderID       int64  `json:"order_id" gorm:"order_id"`              // 关联订单ID(小程序购买时)
-	OrderNo       string `json:"order_no" gorm:"order_no"`              // 关联订单号(小程序购买时)
-	ProductID     int64  `json:"product_id" gorm:"product_id"`          // 商品ID
-	ProductName   string `json:"product_name" gorm:"product_name"`      // 商品全名
-	Specification string `json:"specification" gorm:"specification"`    // 规格
-	Quantity      int    `json:"quantity" gorm:"quantity"`              // 操作数量
-	UnitPrice     Amount `json:"unit_price" gorm:"unit_price"`          // 单价
-	TotalPrice    Amount `json:"total_price" gorm:"total_price"`        // 总价
-	BeforeStock   int    `json:"before_stock" gorm:"before_stock"`      // 操作前库存
-	AfterStock    int    `json:"after_stock" gorm:"after_stock"`        // 操作后库存
-	Cost          Amount `json:"cost" gorm:"cost"`                      // 成本价=运费成本+货物成本 单位:分
-	ShippingCost  Amount `json:"shipping_cost" gorm:"shipping_cost"`    // 运费成本 单位:分
-	ProductCost   Amount `json:"product_cost" gorm:"product_cost"`      // 货物成本(暂不用) 单位:分
-	Remark        string `json:"remark" gorm:"remark"`                  // 备注
+	ID            int64      `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
+	OperationID   int64      `json:"operation_id" gorm:"operation_id"`      // 操作主表ID
+	OrderID       int64      `json:"order_id" gorm:"order_id"`              // 关联订单ID(小程序购买时)
+	OrderNo       string     `json:"order_no" gorm:"order_no"`              // 关联订单号(小程序购买时)
+	ProductID     int64      `json:"product_id" gorm:"product_id"`          // 商品ID
+	ProductName   string     `json:"product_name" gorm:"product_name"`      // 商品全名
+	Specification string     `json:"specification" gorm:"specification"`    // 规格
+	Unit          string     `json:"unit" gorm:"unit"`                      // 单位 L/桶/套
+	Quantity      int        `json:"quantity" gorm:"quantity"`              // 操作数量
+	UnitPrice     Amount     `json:"unit_price" gorm:"unit_price"`          // 单价
+	TotalPrice    Amount     `json:"total_price" gorm:"total_price"`        // 总价
+	BeforeStock   int        `json:"before_stock" gorm:"before_stock"`      // 操作前库存
+	AfterStock    int        `json:"after_stock" gorm:"after_stock"`        // 操作后库存
+	Cost          Amount     `json:"cost" gorm:"cost"`                      // 成本价=运费成本+货物成本 单位:分
+	ShippingCost  Amount     `json:"shipping_cost" gorm:"shipping_cost"`    // 运费成本 单位:分
+	ProductCost   Amount     `json:"product_cost" gorm:"product_cost"`      // 货物成本(暂不用) 单位:分
+	Remark        string     `json:"remark" gorm:"remark"`                  // 备注
+	CreatedAt     *time.Time `json:"created_at" gorm:"created_at"`          // 创建时间
+
 }
 
 // TableName 表名称

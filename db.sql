@@ -105,3 +105,7 @@ ALTER TABLE stock_operation_item
 ALTER TABLE order_log
     ADD COLUMN operator_id BIGINT DEFAULT NULL COMMENT '操作人ID' AFTER operator,
     ADD INDEX idx_operator_id (operator_id);
+
+-- 为stock_operation_item表添加unit字段
+ALTER TABLE stock_operation_item
+    ADD COLUMN unit VARCHAR(100) NOT NULL DEFAULT '' COMMENT '单位 L/桶/套' AFTER specification;

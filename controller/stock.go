@@ -70,6 +70,7 @@ func (sc *StockController) BatchOutboundStock(c *gin.Context) {
 func (sc *StockController) GetStockOperations(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	pageSizeStr := c.DefaultQuery("page_size", "10")
+	typesStr := c.Query("types") // 获取types查询参数
 
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
@@ -81,7 +82,17 @@ func (sc *StockController) GetStockOperations(c *gin.Context) {
 		pageSize = 10
 	}
 
-	operations, total, err := sc.stockService.GetStockOperations(page, pageSize)
+	// 解析types参数
+	var types *int8
+	if typesStr != "" {
+		typesVal, err := strconv.ParseInt(typesStr, 10, 8)
+		if err == nil {
+			typesInt8 := int8(typesVal)
+			types = &typesInt8
+		}
+	}
+
+	operations, total, err := sc.stockService.GetStockOperations(page, pageSize, types)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取库存操作列表失败: " + err.Error()})
 		return

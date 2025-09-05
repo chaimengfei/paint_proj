@@ -16,7 +16,7 @@ type StockRepository interface {
 	// 库存操作主表+子表
 	CreateStockOperation(operation *model.StockOperation) error
 	CreateStockOperationItems(items []model.StockOperationItem) error
-	GetStockOperations(page, pageSize int) ([]model.StockOperation, int64, error)
+	GetStockOperations(page, pageSize int, types *int8) ([]model.StockOperation, int64, error)
 	GetStockOperationByID(operationID int64) (*model.StockOperation, error)
 	GetStockOperationItems(operationID int64) ([]model.StockOperationItem, error)
 	GetStockOperationItemsByOrderID(orderID int64) ([]model.StockOperationItem, error)
@@ -57,6 +57,7 @@ func (sr *stockRepository) GetProductStock(productID int64) (int, error) {
 
 // CreateStockOperation 创建库存操作主表记录
 func (sr *stockRepository) CreateStockOperation(operation *model.StockOperation) error {
+	// 直接Create，测试GORM是否会使用我们设置的CreatedAt值
 	return sr.db.Create(operation).Error
 }
 
@@ -66,18 +67,24 @@ func (sr *stockRepository) CreateStockOperationItems(items []model.StockOperatio
 }
 
 // GetStockOperations 获取库存操作主表列表
-func (sr *stockRepository) GetStockOperations(page, pageSize int) ([]model.StockOperation, int64, error) {
+func (sr *stockRepository) GetStockOperations(page, pageSize int, types *int8) ([]model.StockOperation, int64, error) {
 	var operations []model.StockOperation
 	var total int64
 
+	// 构建查询条件
+	query := sr.db.Model(&model.StockOperation{})
+	if types != nil {
+		query = query.Where("types = ?", *types)
+	}
+
 	// 获取总数
-	if err := sr.db.Model(&model.StockOperation{}).Count(&total).Error; err != nil {
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	// 获取分页数据
 	offset := (page - 1) * pageSize
-	if err := sr.db.Order("created_at DESC").
+	if err := query.Order("created_at DESC").
 		Offset(offset).
 		Limit(pageSize).
 		Find(&operations).Error; err != nil {
@@ -125,6 +132,7 @@ func (sr *stockRepository) ProcessOutboundTransaction(operation *model.StockOper
 		// 2. 创建子表记录
 		for i := range operation.Items {
 			operation.Items[i].OperationID = operation.ID
+			operation.Items[i].CreatedAt = operation.CreatedAt
 		}
 		if err := tx.Create(&operation.Items).Error; err != nil {
 			return err

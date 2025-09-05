@@ -361,8 +361,13 @@ Content-Type: application/json
 
 #### 3. 获取库存操作列表
 ```http
-GET /admin/stock/operations?page=1&page_size=10
+GET /admin/stock/operations?page=1&page_size=10&types=2
 ```
+
+**查询参数：**
+- `page`: 页码，默认为1
+- `page_size`: 每页大小，默认为10
+- `types`: 操作类型（可选），1-入库，2-出库，3-退货
 
 **响应示例：**
 ```json
@@ -490,6 +495,31 @@ GET /admin/stock/operation/123
 - `types`: 1-入库, 2-出库, 3-退货
 - `outbound_type`: 1-小程序购买, 2-admin后台操作（仅出库时有效）
 - `operator_type`: 1-用户, 2-系统, 3-管理员
+
+**查询参数说明：**
+- `types` 查询参数用于过滤特定类型的库存操作：
+  - 不传 `types` 参数：查询所有类型的操作
+  - `types=1`：只查询入库操作
+  - `types=2`：只查询出库操作
+  - `types=3`：只查询退货操作
+
+**使用示例：**
+```bash
+# 查询所有操作
+curl 'http://192.168.99.172:8009/admin/stock/operations'
+
+# 查询入库操作
+curl 'http://192.168.99.172:8009/admin/stock/operations?types=1'
+
+# 查询出库操作
+curl 'http://192.168.99.172:8009/admin/stock/operations?types=2'
+
+# 查询退货操作
+curl 'http://192.168.99.172:8009/admin/stock/operations?types=3'
+
+# 结合分页查询出库操作
+curl 'http://192.168.99.172:8009/admin/stock/operations?types=2&page=1&page_size=10'
+```
 
 **说明：**
 - 后端会自动补齐商品信息（`product_name`, `specification`, `unit`, `total_price`）

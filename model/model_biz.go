@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 // ProductSimple simple格式
 type ProductSimple struct {
 	ID           int64  `json:"id"`
@@ -203,14 +205,14 @@ type BatchInboundItem struct {
 
 // 批量出库请求结构体
 type BatchOutboundRequest struct {
-	Items       []BatchOutboundItem `json:"items" binding:"required"`        // 出库商品列表
-	TotalAmount Amount              `json:"total_amount"`                    // 总金额（自动计算）
-	UserName    string              `json:"user_name" binding:"required"`    // 用户名称
-	UserID      int64               `json:"user_id" binding:"required"`      // 用户ID
-	UserAccount string              `json:"user_account" binding:"required"` // 用户账号
-	Operator    string              `json:"operator" binding:"required"`     // 操作人
-	OperatorID  int64               `json:"operator_id" binding:"required"`  // 操作人ID
-	Remark      string              `json:"remark"`                          // 备注
+	Items       []BatchOutboundItem `json:"items" binding:"required"`       // 出库商品列表
+	TotalAmount Amount              `json:"total_amount"`                   // 总金额（自动计算）
+	UserName    string              `json:"user_name" binding:"required"`   // 用户名称
+	UserID      int64               `json:"user_id" binding:"required"`     // 用户ID
+	Operator    string              `json:"operator" binding:"required"`    // 操作人
+	OperatorID  int64               `json:"operator_id" binding:"required"` // 操作人ID
+	OperateTime *time.Time          `json:"operate_time"`                   // 操作时间（可选，如果传了则填充到created_at）
+	Remark      string              `json:"remark"`                         // 备注
 }
 
 // 批量出库商品项

@@ -89,8 +89,8 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 		UserId:          req.UserID,
 		OrderStatus:     model.OrderStatusPendingPayment,
 		PaymentStatus:   model.PaymentStatusUnpaid,
-		ReceiverName:    "柴梦妃",                // TODO 根据 user_id 获取name  ,还是根据address直接获取name addressDbData.Name
-		ReceiverPhone:   "13671210659",        // TODO 根据 user_id 获取phone  ,还是根据address直接获取phone addressDbData.Phone
+		ReceiverName:    "柴梦妃",                               // TODO 根据 user_id 获取name  ,还是根据address直接获取name addressDbData.Name
+		ReceiverPhone:   "13671210659",                          // TODO 根据 user_id 获取phone  ,还是根据address直接获取phone addressDbData.Phone
 		ReceiverAddress: "河北省廊坊市三河市燕郊镇四季花都一期", // TODO 待实现address.FullAddress(),
 		TotalAmount:     totalAmount,
 		PaymentAmount:   paymentAmount,
@@ -118,9 +118,9 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 		OperatorType: model.OperatorTypeUser,
 		UserName:     "小程序用户", // 可以从用户表获取真实姓名
 		UserID:       userID,
-		UserAccount:  "", // 可以从用户表获取账号
-		Remark:       "小程序用户购买",
-		TotalAmount:  totalAmount,
+		//UserAccount:  "", // 可以从用户表获取账号
+		Remark:      "小程序用户购买",
+		TotalAmount: totalAmount,
 	}
 
 	// 1.7 校验库存并准备库存操作明细

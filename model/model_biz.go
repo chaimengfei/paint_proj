@@ -227,6 +227,14 @@ type BatchOutboundItem struct {
 	Remark        string `json:"remark"`                        // 备注（可选）
 }
 
+// 更新出库单支付完成状态请求
+type UpdateOutboundPaymentStatusRequest struct {
+	OperationID         int64             `json:"operation_id" binding:"required"`          // 出库单ID
+	PaymentFinishStatus PaymentStatusCode `json:"payment_finish_status" binding:"required"` // 支付完成状态(1:未支付,3:已支付)
+	Operator            string            `json:"operator" binding:"required"`              // 操作人
+	OperatorID          int64             `json:"operator_id" binding:"required"`           // 操作人ID
+}
+
 // AdminAddressInfo admin地址管理信息
 type AdminAddressInfo struct {
 	AddressID      int64  `json:"address_id"`

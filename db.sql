@@ -109,3 +109,16 @@ ALTER TABLE order_log
 -- 为stock_operation_item表添加unit字段
 ALTER TABLE stock_operation_item
     ADD COLUMN unit VARCHAR(100) NOT NULL DEFAULT '' COMMENT '单位 L/桶/套' AFTER specification;
+
+-- 为stock_operation_item表添加利润相关字段
+ALTER TABLE stock_operation_item
+    ADD COLUMN profit BIGINT NOT NULL DEFAULT 0 COMMENT '利润(卖价-成本价)*数量 单位:分' AFTER product_cost;
+
+-- 为stock_operation表添加总利润字段
+ALTER TABLE stock_operation
+    ADD COLUMN total_profit BIGINT NOT NULL DEFAULT 0 COMMENT '总利润 单位:分' AFTER total_amount;
+
+-- 为stock_operation表添加支付完成状态字段
+ALTER TABLE stock_operation
+    ADD COLUMN payment_finish_status TINYINT NOT NULL DEFAULT 1 COMMENT '支付完成状态(1:未支付,3:已支付)' AFTER total_profit,
+    ADD COLUMN payment_finish_time TIMESTAMP NULL COMMENT '支付完成时间' AFTER payment_finish_status;

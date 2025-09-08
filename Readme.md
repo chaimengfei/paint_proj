@@ -454,6 +454,67 @@ GET /admin/stock/operation/123
 }
 ```
 
+#### 5. 更新出库单支付状态
+```http
+POST /admin/stock/set/payment-status
+Content-Type: application/json
+
+{
+  "operation_id": 123,
+  "payment_finish_status": 3,
+  "operator": "管理员",
+  "operator_id": 1001
+}
+```
+
+**curl 命令示例：**
+
+**设置为已支付：**
+```bash
+curl --location 'http://127.0.0.1:8009/admin/stock/set/payment-status' \
+--header 'Content-Type: application/json' \
+--data '{
+  "operation_id": 123,
+  "payment_finish_status": 3,
+  "operator": "管理员",
+  "operator_id": 1001
+}'
+```
+
+**设置为未支付：**
+```bash
+curl --location 'http://127.0.0.1:8009/admin/stock/set/payment-status' \
+--header 'Content-Type: application/json' \
+--data '{
+  "operation_id": 123,
+  "payment_finish_status": 1,
+  "operator": "管理员",
+  "operator_id": 1001
+}'
+```
+
+**响应示例：**
+```json
+{
+  "code": 0,
+  "message": "更新支付状态成功"
+}
+```
+
+**请求参数说明：**
+- `operation_id`: 出库单ID（必填）
+- `payment_finish_status`: 支付完成状态（必填）
+  - `1`: 未支付
+  - `3`: 已支付
+- `operator`: 操作人姓名（必填）
+- `operator_id`: 操作人ID（必填）
+
+**业务说明：**
+- 新建出库单时默认状态为未支付（1）
+- 客户私下转账后，管理员调用此接口设置为已支付（3）
+- 设置为已支付时，系统会自动记录支付完成时间
+- 只能更新出库单的支付状态，不能更新入库单
+
 #### 字段说明
 
 **批量入库请求字段：**

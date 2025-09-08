@@ -122,10 +122,11 @@ func SetupRouter() *gin.Engine {
 
 		stockGroup := admin.Group("/stock")
 		{
-			stockGroup.POST("/batch/inbound", stockController.BatchInboundStock)      // 批量入库
-			stockGroup.POST("/batch/outbound", stockController.BatchOutboundStock)    // 批量出库
-			stockGroup.GET("/operations", stockController.GetStockOperations)         // 库存操作列表
-			stockGroup.GET("/operation/:id", stockController.GetStockOperationDetail) // 库存操作详情
+			stockGroup.POST("/batch/inbound", stockController.BatchInboundStock)             // 批量入库
+			stockGroup.POST("/batch/outbound", stockController.BatchOutboundStock)           // 批量出库
+			stockGroup.POST("/set/payment-status", stockController.SetOutboundPaymentStatus) // 更新出库单支付状态
+			stockGroup.GET("/operations", stockController.GetStockOperations)                // 库存操作列表
+			stockGroup.GET("/operation/:id", stockController.GetStockOperationDetail)        // 库存操作详情
 		}
 
 		addressGroup := admin.Group("/address")

@@ -219,9 +219,12 @@ type StockOperation struct {
 	UserName     string `json:"user_name" gorm:"user_name"`            // 用户名称(出库时)
 	UserID       int64  `json:"user_id" gorm:"user_id"`                // 用户ID(出库时)
 	//UserAccount  string `json:"user_account" gorm:"user_account"`      // 用户账号(出库时)
-	Remark      string     `json:"remark" gorm:"remark"`             // 备注
-	TotalAmount Amount     `json:"total_amount" gorm:"total_amount"` // 总金额
-	CreatedAt   *time.Time `json:"created_at" gorm:"created_at"`     // 创建时间
+	Remark              string            `json:"remark" gorm:"remark"`                               // 备注
+	TotalAmount         Amount            `json:"total_amount" gorm:"total_amount"`                   // 总金额
+	TotalProfit         Amount            `json:"total_profit" gorm:"total_profit"`                   // 总利润
+	PaymentFinishStatus PaymentStatusCode `json:"payment_finish_status" gorm:"payment_finish_status"` // 支付完成状态(1:未支付,3:已支付)
+	PaymentFinishTime   *time.Time        `json:"payment_finish_time" gorm:"payment_finish_time"`     // 支付完成时间
+	CreatedAt           *time.Time        `json:"created_at" gorm:"created_at"`                       // 创建时间
 
 	Items []StockOperationItem `json:"items" gorm:"-"` // 关联的子表数据（不映射到数据库）
 }
@@ -249,6 +252,7 @@ type StockOperationItem struct {
 	Cost          Amount     `json:"cost" gorm:"cost"`                      // 成本价=运费成本+货物成本 单位:分
 	ShippingCost  Amount     `json:"shipping_cost" gorm:"shipping_cost"`    // 运费成本 单位:分
 	ProductCost   Amount     `json:"product_cost" gorm:"product_cost"`      // 货物成本(暂不用) 单位:分
+	Profit        Amount     `json:"profit" gorm:"profit"`                  // 利润(卖价-成本价)*数量 单位:分
 	Remark        string     `json:"remark" gorm:"remark"`                  // 备注
 	CreatedAt     *time.Time `json:"created_at" gorm:"created_at"`          // 创建时间
 

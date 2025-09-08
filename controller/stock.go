@@ -133,6 +133,30 @@ func (sc *StockController) GetStockOperationDetail(c *gin.Context) {
 	})
 }
 
+// SetOutboundPaymentStatus 更新出库单支付状态
+func (sc *StockController) SetOutboundPaymentStatus(c *gin.Context) {
+	var req model.UpdateOutboundPaymentStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误: " + err.Error()})
+		return
+	}
+
+	// 验证请求
+	if err := sc.validateUpdatePaymentStatusRequest(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "验证失败: " + err.Error()})
+		return
+	}
+
+	// 业务处理
+	err := sc.stockService.UpdateOutboundPaymentStatus(&req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "更新支付状态失败: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "更新支付状态成功"})
+}
+
 // validateBatchOutboundRequest 验证批量出库请求
 func (sc *StockController) validateBatchOutboundRequest(req *model.BatchOutboundRequest) error {
 	if len(req.Items) == 0 {
@@ -163,6 +187,27 @@ func (sc *StockController) validateBatchOutboundRequest(req *model.BatchOutbound
 	}
 	if req.TotalAmount > 0 && req.TotalAmount != calculatedTotalAmount {
 		return fmt.Errorf("总金额计算错误，前端计算: %d，后端计算: %d", req.TotalAmount, calculatedTotalAmount)
+	}
+
+	return nil
+}
+
+// validateUpdatePaymentStatusRequest 验证更新支付状态请求
+func (sc *StockController) validateUpdatePaymentStatusRequest(req *model.UpdateOutboundPaymentStatusRequest) error {
+	if req.OperationID <= 0 {
+		return errors.New("出库单ID必须大于0")
+	}
+
+	if req.PaymentFinishStatus != model.PaymentStatusUnpaid && req.PaymentFinishStatus != model.PaymentStatusPaid {
+		return errors.New("无效的支付完成状态，只允许设置为未支付(1)或已支付(3)")
+	}
+
+	if req.Operator == "" {
+		return errors.New("操作人不能为空")
+	}
+
+	if req.OperatorID <= 0 {
+		return errors.New("操作人ID必须大于0")
 	}
 
 	return nil

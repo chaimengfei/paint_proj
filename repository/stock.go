@@ -2,6 +2,7 @@ package repository
 
 import (
 	"cmf/paint_proj/model"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -23,6 +24,9 @@ type StockRepository interface {
 
 	// 入库成本变更记录
 	CreateInboundCostChange(change *model.InboundCostChange) error
+
+	// 更新出库单支付完成状态
+	UpdateOutboundPaymentStatus(operationID int64, paymentFinishStatus model.PaymentStatusCode, paymentFinishTime *time.Time) error
 
 	// 事务处理
 	ProcessOutboundTransaction(operation *model.StockOperation) error
@@ -235,4 +239,20 @@ func (sr *stockRepository) GetProductCost(productID int64) (model.Amount, error)
 // CreateInboundCostChange 创建入库成本变更记录
 func (sr *stockRepository) CreateInboundCostChange(change *model.InboundCostChange) error {
 	return sr.db.Create(change).Error
+}
+
+// UpdateOutboundPaymentStatus 更新出库单支付完成状态
+func (sr *stockRepository) UpdateOutboundPaymentStatus(operationID int64, paymentFinishStatus model.PaymentStatusCode, paymentFinishTime *time.Time) error {
+	updates := map[string]interface{}{
+		"payment_finish_status": paymentFinishStatus,
+	}
+
+	// 如果支付完成状态为已支付，则设置支付完成时间
+	if paymentFinishStatus == model.PaymentStatusPaid && paymentFinishTime != nil {
+		updates["payment_finish_time"] = paymentFinishTime
+	}
+
+	return sr.db.Model(&model.StockOperation{}).
+		Where("id = ?", operationID).
+		Updates(updates).Error
 }

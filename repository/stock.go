@@ -28,6 +28,9 @@ type StockRepository interface {
 	// 更新出库单支付完成状态
 	UpdateOutboundPaymentStatus(operationID int64, paymentFinishStatus model.PaymentStatusCode, paymentFinishTime *time.Time) error
 
+	// 供货商管理
+	GetSupplierList() ([]*model.Supplier, error)
+
 	// 事务处理
 	ProcessOutboundTransaction(operation *model.StockOperation) error
 	ProcessInboundTransaction(operation *model.StockOperation) error
@@ -255,4 +258,11 @@ func (sr *stockRepository) UpdateOutboundPaymentStatus(operationID int64, paymen
 	return sr.db.Model(&model.StockOperation{}).
 		Where("id = ?", operationID).
 		Updates(updates).Error
+}
+
+// GetSupplierList 获取供货商列表
+func (sr *stockRepository) GetSupplierList() ([]*model.Supplier, error) {
+	var suppliers []*model.Supplier
+	err := sr.db.Order("created_at DESC").Find(&suppliers).Error
+	return suppliers, err
 }

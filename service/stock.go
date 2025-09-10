@@ -20,6 +20,9 @@ type StockService interface {
 	// 库存操作查询
 	GetStockOperations(page, pageSize int, types *int8) ([]model.StockOperation, int64, error)
 	GetStockOperationDetail(operationID int64) (*model.StockOperation, []model.StockOperationItem, error)
+
+	// 供货商管理
+	GetSupplierList() ([]*model.Supplier, error)
 }
 
 type stockService struct {
@@ -62,6 +65,7 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 		OperatorType: model.OperatorTypeAdmin,
 		Remark:       req.Remark,
 		TotalAmount:  totalAmount,
+		Supplier:     req.Supplier,
 	}
 
 	// 构建子表记录
@@ -293,4 +297,9 @@ func (ss *stockService) UpdateOutboundPaymentStatus(req *model.UpdateOutboundPay
 	}
 
 	return nil
+}
+
+// GetSupplierList 获取供货商列表
+func (ss *stockService) GetSupplierList() ([]*model.Supplier, error) {
+	return ss.stockRepo.GetSupplierList()
 }

@@ -186,6 +186,7 @@ type BatchInboundRequest struct {
 	TotalAmount Amount             `json:"total_amount"`                   // 总金额（前端计算）
 	Operator    string             `json:"operator" binding:"required"`    // 操作人
 	OperatorID  int64              `json:"operator_id" binding:"required"` // 操作人ID
+	Supplier    string             `json:"supplier"`                       // 供货商
 	Remark      string             `json:"remark"`                         // 备注
 }
 
@@ -197,9 +198,9 @@ type BatchInboundItem struct {
 	ShippingCost  Amount `json:"shipping_cost"`                 // 运费成本
 	ProductCost   Amount `json:"product_cost"`                  // 货物成本
 	Remark        string `json:"remark"`                        // 备注（可选）
-	ProductName   string `json:"product_name"`                  // 商品全名（自动补齐）
-	Specification string `json:"specification"`                 // 规格（自动补齐）
-	Unit          string `json:"unit"`                          // 单位（自动补齐）
+	ProductName   string `json:"product_name"`                  // 商品全名（前端 自动补齐）
+	Specification string `json:"specification"`                 // 规格（前端 自动补齐）
+	Unit          string `json:"unit"`                          // 单位（前端 自动补齐）
 	TotalAmount   Amount `json:"total_amount"`                  // 总金额（自动计算）
 }
 

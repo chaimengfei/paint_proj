@@ -224,14 +224,27 @@ type StockOperation struct {
 	TotalProfit         Amount            `json:"total_profit" gorm:"total_profit"`                   // 总利润
 	PaymentFinishStatus PaymentStatusCode `json:"payment_finish_status" gorm:"payment_finish_status"` // 支付完成状态(1:未支付,3:已支付)
 	PaymentFinishTime   *time.Time        `json:"payment_finish_time" gorm:"payment_finish_time"`     // 支付完成时间
+	Supplier            string            `json:"supplier" gorm:"supplier"`                           // 供货商
 	CreatedAt           *time.Time        `json:"created_at" gorm:"created_at"`                       // 创建时间
 
 	Items []StockOperationItem `json:"items" gorm:"-"` // 关联的子表数据（不映射到数据库）
 }
 
+// Supplier 供货商表
+type Supplier struct {
+	ID   int64  `json:"id" gorm:"primaryKey;autoIncrement"` // 供货商ID
+	Name string `json:"name" gorm:"name;not null"`          // 供货商名称
+	Area string `json:"area" gorm:"area"`                   // 供货商所在地区
+}
+
 // TableName 表名称
 func (*StockOperation) TableName() string {
 	return "stock_operation"
+}
+
+// TableName 表名称
+func (*Supplier) TableName() string {
+	return "supplier"
 }
 
 // 库存操作子表

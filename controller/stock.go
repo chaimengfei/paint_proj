@@ -242,3 +242,21 @@ func (sc *StockController) validateBatchInboundRequest(req *model.BatchInboundRe
 
 	return nil
 }
+
+// GetSupplierList 获取供货商列表
+func (sc *StockController) GetSupplierList(c *gin.Context) {
+	suppliers, err := sc.stockService.GetSupplierList()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    -1,
+			"message": "获取供货商列表失败: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "获取供货商列表成功",
+		"data":    suppliers,
+	})
+}

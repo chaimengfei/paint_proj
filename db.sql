@@ -122,3 +122,18 @@ ALTER TABLE stock_operation
 ALTER TABLE stock_operation
     ADD COLUMN payment_finish_status TINYINT NOT NULL DEFAULT 1 COMMENT '支付完成状态(1:未支付,3:已支付)' AFTER total_profit,
     ADD COLUMN payment_finish_time TIMESTAMP NULL COMMENT '支付完成时间' AFTER payment_finish_status;
+
+-- 为stock_operation表添加供货商字段
+ALTER TABLE stock_operation
+    ADD COLUMN supplier VARCHAR(255) DEFAULT '' COMMENT '供货商' AFTER payment_finish_time;
+
+-- 创建供货商表
+CREATE TABLE IF NOT EXISTS supplier (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '供货商ID',
+    name VARCHAR(500) NOT NULL COMMENT '供货商名称',
+    area VARCHAR(255) DEFAULT '' COMMENT '供货商所在地区',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_name (name),
+    INDEX idx_area (area)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供货商表';

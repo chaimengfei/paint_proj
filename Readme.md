@@ -310,6 +310,7 @@ Content-Type: application/json
   "total_amount": 80000,
   "operator": "张三",
   "operator_id": 1001,
+  "supplier": "华润涂料有限公司",
   "remark": "新货入库"
 }
 ```
@@ -481,18 +482,6 @@ curl --location 'http://127.0.0.1:8009/admin/stock/set/payment-status' \
 }'
 ```
 
-**设置为未支付：**
-```bash
-curl --location 'http://127.0.0.1:8009/admin/stock/set/payment-status' \
---header 'Content-Type: application/json' \
---data '{
-  "operation_id": 123,
-  "payment_finish_status": 1,
-  "operator": "管理员",
-  "operator_id": 1001
-}'
-```
-
 **响应示例：**
 ```json
 {
@@ -515,6 +504,47 @@ curl --location 'http://127.0.0.1:8009/admin/stock/set/payment-status' \
 - 设置为已支付时，系统会自动记录支付完成时间
 - 只能更新出库单的支付状态，不能更新入库单
 
+#### 6. 获取供货商列表
+```http
+GET /admin/stock/suppliers
+```
+
+**curl 命令示例：**
+```bash
+curl --location 'http://127.0.0.1:8009/admin/stock/suppliers'
+```
+
+**响应示例：**
+```json
+{
+  "code": 0,
+  "message": "获取供货商列表成功",
+  "data": [
+    {
+      "id": 1,
+      "name": "华润涂料有限公司",
+      "area": "广东省佛山市",
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:00Z"
+    },
+    {
+      "id": 2,
+      "name": "立邦涂料（中国）有限公司",
+      "area": "上海市",
+      "created_at": "2024-01-16T14:20:00Z",
+      "updated_at": "2024-01-16T14:20:00Z"
+    }
+  ]
+}
+```
+
+**响应字段说明：**
+- `id`: 供货商ID
+- `name`: 供货商名称
+- `area`: 供货商所在地区
+- `created_at`: 创建时间
+- `updated_at`: 更新时间
+
 #### 字段说明
 
 **批量入库请求字段：**
@@ -532,6 +562,7 @@ curl --location 'http://127.0.0.1:8009/admin/stock/set/payment-status' \
 - `total_amount`: 总金额（前端计算，单位：分）
 - `operator`: 操作人姓名（必填）
 - `operator_id`: 操作人ID（必填）
+- `supplier`: 供货商（可选）
 - `remark`: 操作备注（可选）
 
 **批量出库请求字段：**

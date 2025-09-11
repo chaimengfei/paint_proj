@@ -11,8 +11,6 @@ type StockRepository interface {
 	// 库存操作
 	UpdateProductStock(productID int64, quantity int) error
 	GetProductStock(productID int64) (int, error)
-	UpdateProductCost(productID int64, newCost model.Amount) error
-	GetProductCost(productID int64) (model.Amount, error)
 
 	// 库存操作主表+子表
 	CreateStockOperation(operation *model.StockOperation) error
@@ -21,9 +19,6 @@ type StockRepository interface {
 	GetStockOperationByID(operationID int64) (*model.StockOperation, error)
 	GetStockOperationItems(operationID int64) ([]model.StockOperationItem, error)
 	GetStockOperationItemsByOrderID(orderID int64) ([]model.StockOperationItem, error)
-
-	// 入库成本变更记录
-	CreateInboundCostChange(change *model.InboundCostChange) error
 
 	// 更新出库单支付完成状态
 	UpdateOutboundPaymentStatus(operationID int64, paymentFinishStatus model.PaymentStatusCode, paymentFinishTime *time.Time) error
@@ -153,7 +148,6 @@ func (sr *stockRepository) ProcessOutboundTransaction(operation *model.StockOper
 				return err
 			}
 		}
-
 		return nil
 	})
 }
@@ -176,7 +170,7 @@ func (sr *stockRepository) ProcessInboundTransaction(operation *model.StockOpera
 
 		// 3. 更新库存和成本价
 		for _, item := range operation.Items {
-			// 更新库存
+			// 3.1 更新库存
 			if err := tx.Model(&model.Product{}).
 				Where("id = ?", item.ProductID).
 				Update("stock", gorm.Expr("stock + ?", item.Quantity)).Error; err != nil {
@@ -192,27 +186,17 @@ func (sr *stockRepository) ProcessInboundTransaction(operation *model.StockOpera
 				return err
 			}
 
-			// 如果新成本价更低，则更新成本价并记录变更
-			if item.Cost < product.Cost {
-				// 更新成本价
-				if err := tx.Model(&model.Product{}).
-					Where("id = ?", item.ProductID).
-					Update("cost", item.Cost).Error; err != nil {
-					return err
-				}
+			// 如果新进价有变化，则更新进价和成本价
+			if item.ProductCost != product.ProductCost {
+				// 计算新的成本价 = 进价 + 运费成本
+				newCost := item.ProductCost + product.ShippingCost
 
-				// 创建成本变更记录
-				costChange := &model.InboundCostChange{
-					OperationID:  operation.ID,
-					ProductID:    item.ProductID,
-					ProductName:  product.Name,
-					OldCost:      product.Cost,
-					NewCost:      item.Cost,
-					ChangeReason: "入库成本价降低",
-					Operator:     operation.Operator,
-					OperatorID:   operation.OperatorID,
-				}
-				if err := tx.Create(costChange).Error; err != nil {
+				// 更新进价和成本价
+				if err := tx.Model(&model.Product{}).Where("id = ?", item.ProductID).
+					Updates(map[string]interface{}{
+						"product_cost": item.ProductCost,
+						"cost":         newCost,
+					}).Error; err != nil {
 					return err
 				}
 			}
@@ -220,28 +204,6 @@ func (sr *stockRepository) ProcessInboundTransaction(operation *model.StockOpera
 
 		return nil
 	})
-}
-
-// UpdateProductCost 更新商品成本价
-func (sr *stockRepository) UpdateProductCost(productID int64, newCost model.Amount) error {
-	return sr.db.Model(&model.Product{}).
-		Where("id = ?", productID).
-		Update("cost", newCost).Error
-}
-
-// GetProductCost 获取商品成本价
-func (sr *stockRepository) GetProductCost(productID int64) (model.Amount, error) {
-	var product model.Product
-	err := sr.db.Model(&model.Product{}).
-		Select("cost").
-		Where("id = ?", productID).
-		First(&product).Error
-	return product.Cost, err
-}
-
-// CreateInboundCostChange 创建入库成本变更记录
-func (sr *stockRepository) CreateInboundCostChange(change *model.InboundCostChange) error {
-	return sr.db.Create(change).Error
 }
 
 // UpdateOutboundPaymentStatus 更新出库单支付完成状态

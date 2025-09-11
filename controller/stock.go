@@ -234,7 +234,7 @@ func (sc *StockController) validateBatchInboundRequest(req *model.BatchInboundRe
 	// 验证前端计算的总金额是否正确
 	var calculatedTotalAmount model.Amount
 	for _, item := range req.Items {
-		calculatedTotalAmount += model.Amount(int64(item.Cost) * int64(item.Quantity))
+		calculatedTotalAmount += item.TotalPrice
 	}
 	if req.TotalAmount > 0 && req.TotalAmount != calculatedTotalAmount {
 		return fmt.Errorf("总金额计算错误，前端计算: %d，后端计算: %d", req.TotalAmount, calculatedTotalAmount)

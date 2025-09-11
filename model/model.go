@@ -249,50 +249,30 @@ func (*Supplier) TableName() string {
 
 // 库存操作子表
 type StockOperationItem struct {
-	ID            int64      `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
-	OperationID   int64      `json:"operation_id" gorm:"operation_id"`      // 操作主表ID
-	OrderID       int64      `json:"order_id" gorm:"order_id"`              // 关联订单ID(小程序购买时)
-	OrderNo       string     `json:"order_no" gorm:"order_no"`              // 关联订单号(小程序购买时)
-	ProductID     int64      `json:"product_id" gorm:"product_id"`          // 商品ID
-	ProductName   string     `json:"product_name" gorm:"product_name"`      // 商品全名
-	Specification string     `json:"specification" gorm:"specification"`    // 规格
-	Unit          string     `json:"unit" gorm:"unit"`                      // 单位 L/桶/套
-	Quantity      int        `json:"quantity" gorm:"quantity"`              // 操作数量
-	UnitPrice     Amount     `json:"unit_price" gorm:"unit_price"`          // 单价
-	TotalPrice    Amount     `json:"total_price" gorm:"total_price"`        // 总价
-	BeforeStock   int        `json:"before_stock" gorm:"before_stock"`      // 操作前库存
-	AfterStock    int        `json:"after_stock" gorm:"after_stock"`        // 操作后库存
-	Cost          Amount     `json:"cost" gorm:"cost"`                      // 成本价=运费成本+货物成本 单位:分
-	ShippingCost  Amount     `json:"shipping_cost" gorm:"shipping_cost"`    // 运费成本 单位:分
-	ProductCost   Amount     `json:"product_cost" gorm:"product_cost"`      // 货物成本(暂不用) 单位:分
-	Profit        Amount     `json:"profit" gorm:"profit"`                  // 利润(卖价-成本价)*数量 单位:分
-	Remark        string     `json:"remark" gorm:"remark"`                  // 备注
-	CreatedAt     *time.Time `json:"created_at" gorm:"created_at"`          // 创建时间
+	ID          int64  `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
+	OperationID int64  `json:"operation_id" gorm:"operation_id"`      // 操作主表ID
+	OrderID     int64  `json:"order_id" gorm:"order_id"`              // 关联订单ID(小程序购买时)
+	OrderNo     string `json:"order_no" gorm:"order_no"`              // 关联订单号(小程序购买时)
+	ProductID   int64  `json:"product_id" gorm:"product_id"`          // 商品ID
+
+	Quantity      int        `json:"quantity" gorm:"quantity"`           // 操作数量
+	UnitPrice     Amount     `json:"unit_price" gorm:"unit_price"`       // 单价
+	TotalPrice    Amount     `json:"total_price" gorm:"total_price"`     // 总价
+	BeforeStock   int        `json:"before_stock" gorm:"before_stock"`   // 操作前库存
+	AfterStock    int        `json:"after_stock" gorm:"after_stock"`     // 操作后库存
+	ProductCost   Amount     `json:"product_cost" gorm:"product_cost"`   // 货物成本(进价) 单位:分
+	Profit        Amount     `json:"profit" gorm:"profit"`               // 利润(卖价-总成本)*数量 单位:分
+	Remark        string     `json:"remark" gorm:"remark"`               // 备注
+	ProductName   string     `json:"product_name" gorm:"product_name"`   // 商品全名
+	Specification string     `json:"specification" gorm:"specification"` // 规格
+	Unit          string     `json:"unit" gorm:"unit"`                   // 单位 L/桶/套
+	CreatedAt     *time.Time `json:"created_at" gorm:"created_at"`       // 创建时间
 
 }
 
 // TableName 表名称
 func (*StockOperationItem) TableName() string {
 	return "stock_operation_item"
-}
-
-// 入库成本变更记录表
-type InboundCostChange struct {
-	ID           int64      `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
-	OperationID  int64      `json:"operation_id" gorm:"operation_id"`      // 入库操作ID
-	ProductID    int64      `json:"product_id" gorm:"product_id"`          // 商品ID
-	ProductName  string     `json:"product_name" gorm:"product_name"`      // 商品名称
-	OldCost      Amount     `json:"old_cost" gorm:"old_cost"`              // 原成本价
-	NewCost      Amount     `json:"new_cost" gorm:"new_cost"`              // 新成本价
-	ChangeReason string     `json:"change_reason" gorm:"change_reason"`    // 变更原因
-	Operator     string     `json:"operator" gorm:"operator"`              // 操作人
-	OperatorID   int64      `json:"operator_id" gorm:"operator_id"`        // 操作人ID
-	CreatedAt    *time.Time `json:"created_at" gorm:"created_at"`          // 创建时间
-}
-
-// TableName 表名称
-func (*InboundCostChange) TableName() string {
-	return "inbound_cost_change"
 }
 
 // 库存日志表（保留兼容性，后续可考虑迁移）

@@ -276,51 +276,35 @@ curl --location --request DELETE 'http://192.168.1.6:8009/admin/product/category
 ### 库存管理接口
 
 #### 1. 批量入库操作
-```http
-POST /admin/stock/batch/inbound
-Content-Type: application/json
 
-{
-  "items": [
-    {
-      "product_id": 1,
-      "quantity": 10,
-      "cost": 3000,
-      "shipping_cost": 500,
-      "product_cost": 2500,
-      "remark": "优质调和漆",
-      "product_name": "",
-      "specification": "",
-      "unit": "",
-      "total_amount": 0
-    },
-    {
-      "product_id": 2,
-      "quantity": 20,
-      "cost": 2500,
-      "shipping_cost": 400,
-      "product_cost": 2100,
-      "remark": "标准规格",
-      "product_name": "",
-      "specification": "",
-      "unit": "",
-      "total_amount": 0
-    }
-  ],
-  "total_amount": 80000,
-  "operator": "张三",
-  "operator_id": 1001,
-  "supplier": "华润涂料有限公司",
-  "remark": "新货入库"
-}
+**说明：**
+- 批量入库接口的单个item对象已简化，只保留核心字段
+- 前端传递：`product_id`、`quantity`、`product_cost`（进价）、`sum_price`（单个商品总价）、`remark`
+- `ProductName`、`Specification`、`Unit` 从 Product 表里查询获取
+- 入库时只更新 Product 表的 `product_cost` 字段（进价）
+- Product 表的 `shipping_cost` 字段在初始化时设置，且不变
+- 总金额由前端计算并传递
+
 ```
-
-**响应示例：**
-```json
+➜  ~ curl --location 'http://127.0.0.1:8009/admin/stock/batch/inbound' \
+--header 'Content-Type: application/json' \
+--data '{
+"items": [
 {
-  "code": 0,
-  "message": "批量入库成功"
+"product_id": 2,
+"quantity": 20,
+"product_cost": 66,
+"total_price": 1320,
+"remark": ""
 }
+],
+"total_amount": 1320,
+"operator": "张三",
+"operator_id": 1001,
+"supplier": "李彦鹏",
+"remark": "0901入库"
+}'
+{"code":0,"message":"批量入库成功"}%
 ```
 
 #### 2. 批量出库操作

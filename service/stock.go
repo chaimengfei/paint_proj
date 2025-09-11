@@ -43,15 +43,8 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 		return errors.New("入库商品列表不能为空")
 	}
 
-	// 使用前端提供的总金额，如果没有提供则使用计算值
+	// 使用前端提供的总金额
 	totalAmount := req.TotalAmount
-	if totalAmount == 0 {
-		var calculatedTotalAmount model.Amount
-		for _, item := range req.Items {
-			calculatedTotalAmount += model.Amount(int64(item.Cost) * int64(item.Quantity))
-		}
-		totalAmount = calculatedTotalAmount
-	}
 
 	// 生成操作单号
 	operationNo := pkg.GenerateOrderNo(pkg.StockPrefix, req.OperatorID)
@@ -71,29 +64,29 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 	// 构建子表记录
 	var operationItems []*model.StockOperationItem
 	for _, item := range req.Items {
-		// 获取当前库存
-		beforeStock, err := ss.stockRepo.GetProductStock(item.ProductID)
+		// 获取商品信息
+		product, err := ss.productRepo.GetByID(item.ProductID)
 		if err != nil {
-			return fmt.Errorf("获取商品ID %d 库存失败: %v", item.ProductID, err)
+			return fmt.Errorf("获取商品ID %d 信息失败: %v", item.ProductID, err)
 		}
 
+		// 获取当前库存
+		beforeStock := product.Stock
 		afterStock := beforeStock + item.Quantity
 
 		operationItem := &model.StockOperationItem{
 			OperationID:   operation.ID,
 			ProductID:     item.ProductID,
-			ProductName:   item.ProductName,   // 使用前端传入的商品名称
-			Specification: item.Specification, // 使用前端传入的规格
-			Unit:          item.Unit,          // 使用前端传入的单位
+			ProductCost:   item.ProductCost, // 前端传入的货物成本（进价）
 			Quantity:      item.Quantity,
-			UnitPrice:     0, // 入库时不记录单价
-			TotalPrice:    model.Amount(int64(item.Cost) * int64(item.Quantity)),
 			BeforeStock:   beforeStock,
 			AfterStock:    afterStock,
-			Cost:          item.Cost,         // 成本价
-			ShippingCost:  item.ShippingCost, // 运费成本
-			ProductCost:   item.ProductCost,  // 货物成本
+			TotalPrice:    item.TotalPrice, // 使用前端传入的单个商品总价
 			Remark:        item.Remark,
+			UnitPrice:     0,                     // 入库时不记录卖价
+			ProductName:   product.Name,          // 从商品表获取的商品名称
+			Specification: product.Specification, // 从商品表获取的规格
+			Unit:          product.Unit,          // 从商品表获取的单位
 		}
 		operationItems = append(operationItems, operationItem)
 	}
@@ -170,7 +163,7 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 			unitPrice = product.SellerPrice
 		}
 
-		// 计算利润：(卖价 - 成本价) * 数量
+		// 计算利润：(卖价 - 总成本) * 数量
 		profit := model.Amount((int64(unitPrice) - int64(product.Cost)) * int64(item.Quantity))
 		totalProfit += profit
 
@@ -184,13 +177,11 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 			Unit:          item.Unit,          // 使用前端传入的单位
 			Quantity:      item.Quantity,
 			UnitPrice:     unitPrice,
-			TotalPrice:    model.Amount(int64(unitPrice) * int64(item.Quantity)),
+			TotalPrice:    item.TotalPrice,
 			BeforeStock:   beforeStock,
 			AfterStock:    afterStock,
-			Cost:          product.Cost, // 记录成本价
-			ShippingCost:  product.ShippingCost,
-			ProductCost:   product.ProductCost,
-			Profit:        profit, // 记录利润
+			ProductCost:   product.ProductCost, // 记录进价
+			Profit:        profit,              // 记录利润
 			Remark:        item.Remark,
 		}
 		operationItems = append(operationItems, operationItem)

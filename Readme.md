@@ -319,22 +319,23 @@ Content-Type: application/json
             "quantity": 2,
             "unit_price": 85,
             "total_price": 170,
-            "product_name": "固态灰",
-            "unit": "箱",
-            "specification": "3KG*4",
             "remark": "调鼻尖"
-            
         }
     ],
     "total_amount": 170,
     "user_name": "李四",
     "user_id": 1002,
-    "user_account": "13671210659",
     "operator": "张三",
     "operator_id": 1001,
     "remark": "后台操作"
 }
 ```
+
+**说明：**
+- 批量出库接口的单个item对象已简化，只保留核心字段
+- 前端传递：`product_id`、`quantity`、`unit_price`（可选，不传则使用商品售价）、`total_price`、`remark`
+- `ProductName`、`Specification`、`Unit` 从 Product 表里查询获取，减少数据传输压力
+- 总金额由前端计算并传递
 
 **响应示例：**
 ```json
@@ -553,16 +554,15 @@ curl --location 'http://127.0.0.1:8009/admin/stock/suppliers'
 - `items`: 出库商品列表
   - `product_id`: 商品ID（必填）
   - `quantity`: 出库数量（必填）
-  - `unit_price`: 单价（可选，单位：分）
+  - `unit_price`: 单价（可选，不传则使用商品售价，单位：分）
+  - `total_price`: 总金额（必填，单位：分）
   - `remark`: 备注（可选）
-  - `product_name`: 商品全名（自动补齐，前端可传空字符串）
-  - `specification`: 规格（自动补齐，前端可传空字符串）
-  - `unit`: 单位（自动补齐，前端可传空字符串）
-  - `total_price`: 总金额（自动计算，前端可传0）
+  - `product_name`: 商品全名（从商品表获取，前端无需传递）
+  - `specification`: 规格（从商品表获取，前端无需传递）
+  - `unit`: 单位（从商品表获取，前端无需传递）
 - `total_amount`: 总金额（前端计算，单位：分）
 - `user_name`: 用户名称（必填）
 - `user_id`: 用户ID（必填）
-- `user_account`: 用户账号（必填）
 - `operator`: 操作人姓名（必填）
 - `operator_id`: 操作人ID（必填）
 - `remark`: 操作备注（可选）
@@ -598,10 +598,10 @@ curl 'http://192.168.99.172:8009/admin/stock/operations?types=2&page=1&page_size
 ```
 
 **说明：**
-- 后端会自动补齐商品信息（`product_name`, `specification`, `unit`, `total_price`）
-- 前端在items中传入这些字段时可以使用空字符串或0，后端会自动填充
+- 入库时：后端会自动补齐商品信息（`product_name`, `specification`, `unit`），前端在items中传入这些字段时可以使用空字符串，后端会自动填充
+- 出库时：后端会自动从商品表获取商品信息（`product_name`, `specification`, `unit`），前端无需传递这些字段，减少数据传输压力
 - 入库时：如果没有提供 `unit_price`，会使用商品的 `seller_price`；如果新成本价更低，会自动更新商品成本价并记录变更
-- 出库时：`unit_price` 为售价
+- 出库时：如果没有提供 `unit_price`，会使用商品的 `seller_price`
 - 时间字段由后端自动记录，无需前端传入
 
 

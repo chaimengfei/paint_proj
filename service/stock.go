@@ -172,16 +172,16 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 		operationItem := model.StockOperationItem{
 			OperationID:   operation.ID,
 			ProductID:     item.ProductID,
-			ProductName:   item.ProductName,   // 使用前端传入的商品名称
-			Specification: item.Specification, // 使用前端传入的规格
-			Unit:          item.Unit,          // 使用前端传入的单位
 			Quantity:      item.Quantity,
 			UnitPrice:     unitPrice,
 			TotalPrice:    item.TotalPrice,
 			BeforeStock:   beforeStock,
 			AfterStock:    afterStock,
-			ProductCost:   product.ProductCost, // 记录进价
-			Profit:        profit,              // 记录利润
+			ProductCost:   product.ProductCost,   // 记录进价
+			Profit:        profit,                // 记录利润
+			ProductName:   product.Name,          // 从商品表获取的商品名称
+			Specification: product.Specification, // 从商品表获取的规格
+			Unit:          product.Unit,          // 从商品表获取的单位
 			Remark:        item.Remark,
 		}
 		operationItems = append(operationItems, operationItem)

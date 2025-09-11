@@ -225,6 +225,6 @@ func (sr *stockRepository) UpdateOutboundPaymentStatus(operationID int64, paymen
 // GetSupplierList 获取供货商列表
 func (sr *stockRepository) GetSupplierList() ([]*model.Supplier, error) {
 	var suppliers []*model.Supplier
-	err := sr.db.Order("created_at DESC").Find(&suppliers).Error
+	err := sr.db.Model(&model.Supplier{}).Find(&suppliers).Error
 	return suppliers, err
 }

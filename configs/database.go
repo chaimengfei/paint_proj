@@ -6,7 +6,7 @@ import (
 )
 
 func InitDB() (*gorm.DB, error) {
-	dsn := "root:123456@tcp(127.0.0.1:3306)/cmf?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "root:123456@tcp(127.0.0.1:3306)/cmf?charset=utf8mb4&parseTime=True&loc=Asia%2FShanghai&time_zone=%27%2B08%3A00%27"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err

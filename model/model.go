@@ -221,6 +221,7 @@ type StockOperation struct {
 	//UserAccount  string `json:"user_account" gorm:"user_account"`      // 用户账号(出库时)
 	Remark              string            `json:"remark" gorm:"remark"`                               // 备注
 	TotalAmount         Amount            `json:"total_amount" gorm:"total_amount"`                   // 总金额
+	TotalQuantity       int               `json:"total_quantity" gorm:"total_quantity"`               // 总数量
 	TotalProfit         Amount            `json:"total_profit" gorm:"total_profit"`                   // 总利润
 	PaymentFinishStatus PaymentStatusCode `json:"payment_finish_status" gorm:"payment_finish_status"` // 支付完成状态(1:未支付,3:已支付)
 	PaymentFinishTime   *time.Time        `json:"payment_finish_time" gorm:"payment_finish_time"`     // 支付完成时间

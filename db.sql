@@ -137,3 +137,7 @@ CREATE TABLE IF NOT EXISTS supplier (
     INDEX idx_name (name),
     INDEX idx_area (area)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供货商表';
+
+-- 为stock_operation表添加总数量字段
+ALTER TABLE stock_operation
+    ADD COLUMN total_quantity INT NOT NULL DEFAULT 0 COMMENT '总数量' AFTER total_amount;

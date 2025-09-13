@@ -46,19 +46,26 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 	// 使用前端提供的总金额
 	totalAmount := req.TotalAmount
 
+	// 计算总数量
+	var totalQuantity int
+	for _, item := range req.Items {
+		totalQuantity += item.Quantity
+	}
+
 	// 生成操作单号
 	operationNo := pkg.GenerateOrderNo(pkg.StockPrefix, req.OperatorID)
 
 	// 创建库存操作主表记录
 	operation := &model.StockOperation{
-		OperationNo:  operationNo,
-		Types:        model.StockTypeInbound,
-		Operator:     req.Operator,
-		OperatorID:   req.OperatorID,
-		OperatorType: model.OperatorTypeAdmin,
-		Remark:       req.Remark,
-		TotalAmount:  totalAmount,
-		Supplier:     req.Supplier,
+		OperationNo:   operationNo,
+		Types:         model.StockTypeInbound,
+		Operator:      req.Operator,
+		OperatorID:    req.OperatorID,
+		OperatorType:  model.OperatorTypeAdmin,
+		Remark:        req.Remark,
+		TotalAmount:   totalAmount,
+		TotalQuantity: totalQuantity,
+		Supplier:      req.Supplier,
 	}
 
 	// 构建子表记录
@@ -119,6 +126,12 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 		totalAmount = calculatedTotalAmount
 	}
 
+	// 计算总数量
+	var totalQuantity int
+	for _, item := range req.Items {
+		totalQuantity += item.Quantity
+	}
+
 	// 生成操作单号
 	operationNo := pkg.GenerateOrderNo(pkg.StockPrefix, req.UserID)
 
@@ -134,6 +147,7 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 		UserID:              req.UserID,
 		Remark:              req.Remark,
 		TotalAmount:         totalAmount,
+		TotalQuantity:       totalQuantity,
 		TotalProfit:         0,                         // 初始化为0，后面会计算
 		PaymentFinishStatus: model.PaymentStatusUnpaid, // 初始化为未支付
 	}

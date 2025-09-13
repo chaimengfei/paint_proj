@@ -279,7 +279,7 @@ curl --location --request DELETE 'http://192.168.1.6:8009/admin/product/category
 
 **说明：**
 - 批量入库接口的单个item对象已简化，只保留核心字段
-- 前端传递：`product_id`、`quantity`、`product_cost`（进价）、`sum_price`（单个商品总价）、`remark`
+- 前端传递：`product_id`、`quantity`、`product_cost`（进价）、`total_price`（单个商品总价）、`remark`
 - `ProductName`、`Specification`、`Unit` 从 Product 表里查询获取
 - 入库时只更新 Product 表的 `product_cost` 字段（进价）
 - Product 表的 `shipping_cost` 字段在初始化时设置，且不变
@@ -373,6 +373,7 @@ GET /admin/stock/operations?page=1&page_size=10&types=2
         "user_account": "13671210659",
         "remark": "后台操作",
         "total_amount": 170.00,
+        "total_quantity": 2,
         "items": [
           {
             "id": 1,
@@ -434,6 +435,7 @@ GET /admin/stock/operation/123
       "user_account": "13671210659",
       "remark": "后台操作",
       "total_amount": 170.00,
+      "total_quantity": 2,
       "items": null
     }
   }

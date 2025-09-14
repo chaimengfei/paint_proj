@@ -66,6 +66,7 @@ func SetupRouter() *gin.Engine {
 		{
 			userGroup.POST("/login", userController.Login) // 首次登陆注册user_id并获取token
 			userGroup.POST("/update/info", auth.AuthMiddleware(), userController.UpdateUserInfo)
+			userGroup.POST("/bind-mobile", auth.AuthMiddleware(), userController.WechatBindMobile) // 绑定手机号
 		}
 		productGroup := api.Group("/product")
 		{
@@ -128,6 +129,15 @@ func SetupRouter() *gin.Engine {
 			stockGroup.GET("/operations", stockController.GetStockOperations)                // 库存操作列表
 			stockGroup.GET("/operation/:id", stockController.GetStockOperationDetail)        // 库存操作详情
 			stockGroup.GET("/suppliers", stockController.GetSupplierList)                    // 获取供货商列表
+		}
+
+		userGroup := admin.Group("/user")
+		{
+			userGroup.GET("/list", userController.AdminGetUserList)      // 获取用户列表
+			userGroup.GET("/:id", userController.AdminGetUserByID)       // 根据ID获取用户信息
+			userGroup.POST("/add", userController.AdminAddUser)          // 添加用户
+			userGroup.PUT("/edit", userController.AdminEditUser)         // 编辑用户
+			userGroup.DELETE("/del/:id", userController.AdminDeleteUser) // 删除用户
 		}
 
 		addressGroup := admin.Group("/address")

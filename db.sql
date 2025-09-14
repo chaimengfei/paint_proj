@@ -141,3 +141,19 @@ CREATE TABLE IF NOT EXISTS supplier (
 -- 为stock_operation表添加总数量字段
 ALTER TABLE stock_operation
     ADD COLUMN total_quantity INT NOT NULL DEFAULT 0 COMMENT '总数量' AFTER total_amount;
+
+-- 为用户表添加新字段，支持小程序和后台管理系统共用
+ALTER TABLE user 
+    ADD COLUMN mobile_phone VARCHAR(20) UNIQUE COMMENT '手机号（唯一标识）' AFTER avatar,
+    ADD COLUMN source TINYINT NOT NULL DEFAULT 1 COMMENT '用户来源(1:小程序,2:后台添加,3:混合)' AFTER mobile_phone,
+    ADD COLUMN is_enable TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用(1:启用,0:禁用)' AFTER source,
+    ADD COLUMN admin_display_name VARCHAR(100) COMMENT '后台管理系统显示的客户名称' AFTER is_enable,
+    ADD COLUMN wechat_display_name VARCHAR(100) COMMENT '微信小程序显示的客户名称' AFTER admin_display_name,
+    ADD COLUMN has_wechat_bind TINYINT NOT NULL DEFAULT 0 COMMENT '是否已绑定微信(1:是,0:否)' AFTER wechat_display_name;
+
+-- 为现有用户数据设置默认值
+UPDATE user SET 
+    source = 1,
+    has_wechat_bind = CASE WHEN openid IS NOT NULL AND openid != '' THEN 1 ELSE 0 END,
+    wechat_display_name = CASE WHEN nickname IS NOT NULL AND nickname != '' THEN nickname ELSE '' END
+WHERE id > 0;

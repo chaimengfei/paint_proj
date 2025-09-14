@@ -85,6 +85,19 @@ const (
 	//  操作人类型
 	OperatorTypeUser  = 1 // 用户
 	OperatorTypeAdmin = 2 // 管理员
+
+	// 用户来源类型
+	UserSourceWechat = 1 // 小程序注册
+	UserSourceAdmin  = 2 // 后台添加
+	UserSourceMixed  = 3 // 混合（先后台添加，后小程序绑定）
+
+	// 用户状态
+	UserStatusDisabled = 0 // 禁用
+	UserStatusEnabled  = 1 // 启用
+
+	// 微信绑定状态
+	WechatBindNo  = 0 // 未绑定微信
+	WechatBindYes = 1 // 已绑定微信
 )
 
 // Order 订单表
@@ -157,15 +170,20 @@ func (*Payment) TableName() string {
 	return "payment"
 }
 
-// User 小程序用户表
+// User 用户表（支持小程序和后台管理系统）
 type User struct {
-	ID          int64     `json:"id" gorm:"id"`                     // 用户ID
-	Openid      string    `json:"openid" gorm:"openid"`             // 微信OpenID
-	Nickname    string    `json:"nickname" gorm:"nickname"`         // 微信昵称
-	Avatar      string    `json:"avatar" gorm:"avatar"`             // 头像
-	MobilePhone string    `json:"mobile_phone" gorm:"mobile_phone"` // 手机号
-	CreatedAt   time.Time `json:"created_at" gorm:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at" gorm:"updated_at"`
+	ID                int64     `json:"id" gorm:"id"`                                   // 用户ID
+	Openid            string    `json:"openid" gorm:"openid"`                           // 微信OpenID
+	Nickname          string    `json:"nickname" gorm:"nickname"`                       // 微信昵称（原始）
+	Avatar            string    `json:"avatar" gorm:"avatar"`                           // 头像
+	MobilePhone       string    `json:"mobile_phone" gorm:"mobile_phone"`               // 手机号（唯一标识）
+	Source            int8      `json:"source" gorm:"source"`                           // 用户来源(1:小程序,2:后台添加,3:混合)
+	IsEnable          int8      `json:"is_enable" gorm:"is_enable"`                     // 是否启用(1:启用,0:禁用) -防止恶意用户继续使用系统 - 处理用户投诉和纠纷时临时禁用 - 批量禁用测试账户或无效账户
+	AdminDisplayName  string    `json:"admin_display_name" gorm:"admin_display_name"`   // 后台管理系统显示的客户名称
+	WechatDisplayName string    `json:"wechat_display_name" gorm:"wechat_display_name"` // 微信小程序显示的客户名称
+	HasWechatBind     int8      `json:"has_wechat_bind" gorm:"has_wechat_bind"`         // 是否已绑定微信(1:是,0:否)
+	CreatedAt         time.Time `json:"created_at" gorm:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at" gorm:"updated_at"`
 }
 
 // TableName 表名称

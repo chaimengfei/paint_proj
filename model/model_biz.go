@@ -228,6 +228,32 @@ type UpdateOutboundPaymentStatusRequest struct {
 	OperatorID          int64             `json:"operator_id" binding:"required"`           // 操作人ID
 }
 
+// 后台用户管理请求结构体
+type AdminUserAddRequest struct {
+	AdminDisplayName string `json:"admin_display_name" binding:"required"` // 后台显示的客户名称
+	MobilePhone      string `json:"mobile_phone" binding:"required"`       // 手机号
+	Remark           string `json:"remark"`                                // 备注
+}
+
+type AdminUserEditRequest struct {
+	ID               int64  `json:"id" binding:"required"` // 用户ID
+	AdminDisplayName string `json:"admin_display_name"`    // 后台显示的客户名称
+	MobilePhone      string `json:"mobile_phone"`          // 手机号
+	IsEnable         int8   `json:"is_enable"`             // 是否启用
+	Remark           string `json:"remark"`                // 备注
+}
+
+type AdminUserSearchRequest struct {
+	Keyword  string `json:"keyword"`   // 搜索关键词（手机号或姓名）
+	Page     int    `json:"page"`      // 页码
+	PageSize int    `json:"page_size"` // 每页大小
+}
+
+// 小程序用户绑定手机号请求
+type WechatBindMobileRequest struct {
+	MobilePhone string `json:"mobile_phone" binding:"required"` // 手机号
+}
+
 // AdminAddressInfo admin地址管理信息
 type AdminAddressInfo struct {
 	AddressID      int64  `json:"address_id"`

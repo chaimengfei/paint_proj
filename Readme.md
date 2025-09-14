@@ -148,6 +148,73 @@ CheckoutOrder()
 
 ## API接口说明
 
+### 用户管理接口
+
+#### 后台添加用户
+
+```bash
+curl --location 'http://127.0.0.1:8009/admin/user/add' \
+--header 'Content-Type: application/json' \
+--data '{
+    "admin_display_name": "孙阳",
+    "mobile_phone": "13800138001",
+    "remark": "塑雅雕塑"
+}'
+{"code":0,"data":{"id":2,"openid":"","nickname":"","avatar":"","mobile_phone":"13800138001","source":2,"is_enable":1,"admin_display_name":"孙阳","wechat_display_name":"","has_wechat_bind":0,"created_at":"2025-09-14T14:28:51.445+08:00","updated_at":"2025-09-14T14:28:51.445+08:00"},"message":"添加用户成功"}
+```
+
+#### 后台编辑用户
+
+```bash
+curl --location 'http://127.0.0.1:8009/admin/user/edit' \
+--header 'Content-Type: application/json' \
+--data '{
+    "id": 2,
+    "admin_display_name": "孙阳（更新）",
+    "mobile_phone": "13800138002",
+    "is_enable": 1
+}'
+{"code":0,"data":null,"message":"更新用户成功"}
+```
+
+#### 后台获取用户列表
+
+```bash
+curl --location 'http://127.0.0.1:8009/admin/user/list?page=1&page_size=10&keyword=孙阳'
+{"code":0,"data":{"users":[{"id":2,"openid":"","nickname":"","avatar":"","mobile_phone":"13800138001","source":2,"is_enable":1,"admin_display_name":"孙阳","wechat_display_name":"","has_wechat_bind":0,"created_at":"2025-09-14T14:28:51.445+08:00","updated_at":"2025-09-14T14:28:51.445+08:00"}],"total":1},"message":"获取用户列表成功"}
+```
+
+#### 后台获取用户详情
+
+```bash
+curl --location 'http://127.0.0.1:8009/admin/user/2'
+{"code":0,"data":{"id":2,"openid":"","nickname":"","avatar":"","mobile_phone":"13800138001","source":2,"is_enable":1,"admin_display_name":"孙阳","wechat_display_name":"","has_wechat_bind":0,"created_at":"2025-09-14T14:28:51.445+08:00","updated_at":"2025-09-14T14:28:51.445+08:00"},"message":"获取用户详情成功"}
+```
+
+#### 后台删除用户
+
+```bash
+curl --location --request DELETE 'http://127.0.0.1:8009/admin/user/2'
+{"code":0,"data":null,"message":"删除用户成功"}
+```
+
+**响应字段说明**:
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| id | int64 | 用户ID |
+| openid | string | 微信OpenID（后台添加的用户为空） |
+| nickname | string | 微信昵称（后台添加的用户为空） |
+| avatar | string | 头像（后台添加的用户为空） |
+| mobile_phone | string | 手机号 |
+| source | int8 | 用户来源(1:小程序,2:后台添加,3:混合) |
+| is_enable | int8 | 是否启用(1:启用,0:禁用) |
+| admin_display_name | string | 后台管理系统显示的客户名称 |
+| wechat_display_name | string | 微信小程序显示的客户名称 |
+| has_wechat_bind | int8 | 是否已绑定微信(1:是,0:否) |
+| created_at | string | 创建时间 |
+| updated_at | string | 更新时间 |
+
 ### 商品管理接口
 
 #### 注意事项

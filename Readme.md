@@ -166,7 +166,7 @@ curl --location 'http://127.0.0.1:8009/admin/user/add' \
 #### 后台编辑用户
 
 ```bash
-curl --location 'http://127.0.0.1:8009/admin/user/edit' \
+curl -X PUT 'http://127.0.0.1:8009/admin/user/edit' \
 --header 'Content-Type: application/json' \
 --data '{
     "id": 2,
@@ -180,7 +180,7 @@ curl --location 'http://127.0.0.1:8009/admin/user/edit' \
 #### 后台获取用户列表
 
 ```bash
-curl --location 'http://127.0.0.1:8009/admin/user/list?page=1&page_size=10&keyword=孙阳'
+curl --location 'http://127.0.0.1:8009/admin/user/list?page=1&page_size=10'
 {"code":0,"data":{"users":[{"id":2,"openid":"","nickname":"","avatar":"","mobile_phone":"13800138001","source":2,"is_enable":1,"admin_display_name":"孙阳","wechat_display_name":"","has_wechat_bind":0,"created_at":"2025-09-14T14:28:51.445+08:00","updated_at":"2025-09-14T14:28:51.445+08:00"}],"total":1},"message":"获取用户列表成功"}
 ```
 
@@ -194,7 +194,7 @@ curl --location 'http://127.0.0.1:8009/admin/user/2'
 #### 后台删除用户
 
 ```bash
-curl --location --request DELETE 'http://127.0.0.1:8009/admin/user/2'
+curl --location --request DELETE 'http://127.0.0.1:8009/admin/user/del/2'
 {"code":0,"data":null,"message":"删除用户成功"}
 ```
 

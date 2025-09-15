@@ -182,6 +182,7 @@ type User struct {
 	AdminDisplayName  string    `json:"admin_display_name" gorm:"admin_display_name"`   // 后台管理系统显示的客户名称
 	WechatDisplayName string    `json:"wechat_display_name" gorm:"wechat_display_name"` // 微信小程序显示的客户名称
 	HasWechatBind     int8      `json:"has_wechat_bind" gorm:"has_wechat_bind"`         // 是否已绑定微信(1:是,0:否)
+	Remark            string    `json:"remark" gorm:"remark"`                           // 备注
 	CreatedAt         time.Time `json:"created_at" gorm:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at" gorm:"updated_at"`
 }

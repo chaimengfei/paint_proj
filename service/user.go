@@ -90,6 +90,7 @@ func (u userService) CreateUserByAdmin(req *model.AdminUserAddRequest) (*model.U
 		Source:           model.UserSourceAdmin,
 		IsEnable:         model.UserStatusEnabled,
 		HasWechatBind:    model.WechatBindNo,
+		Remark:           req.Remark,
 	}
 	err = u.userRepo.CreateUserByAdmin(user)
 	return user, err
@@ -123,6 +124,9 @@ func (u userService) UpdateUserByAdmin(req *model.AdminUserEditRequest) error {
 	}
 	if req.IsEnable >= 0 {
 		updateData["is_enable"] = req.IsEnable
+	}
+	if req.Remark != "" {
+		updateData["remark"] = req.Remark
 	}
 
 	return u.userRepo.UpdateUserByAdmin(req.ID, updateData)

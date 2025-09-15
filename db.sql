@@ -149,7 +149,8 @@ ALTER TABLE user
     ADD COLUMN is_enable TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用(1:启用,0:禁用)' AFTER source,
     ADD COLUMN admin_display_name VARCHAR(100) COMMENT '后台管理系统显示的客户名称' AFTER is_enable,
     ADD COLUMN wechat_display_name VARCHAR(100) COMMENT '微信小程序显示的客户名称' AFTER admin_display_name,
-    ADD COLUMN has_wechat_bind TINYINT NOT NULL DEFAULT 0 COMMENT '是否已绑定微信(1:是,0:否)' AFTER wechat_display_name;
+    ADD COLUMN has_wechat_bind TINYINT NOT NULL DEFAULT 0 COMMENT '是否已绑定微信(1:是,0:否)' AFTER wechat_display_name,
+    ADD COLUMN remark VARCHAR(255) COMMENT '备注' AFTER has_wechat_bind;
 
 -- 为现有用户数据设置默认值
 UPDATE user SET 

@@ -142,10 +142,10 @@ func SetupRouter() *gin.Engine {
 
 		addressGroup := admin.Group("/address")
 		{
-			addressGroup.GET("/list", addressController.GetAdminAddressList)      // 地址列表（支持用户ID或用户名搜索）
-			addressGroup.POST("/add", addressController.CreateAdminAddress)       // 新增地址
-			addressGroup.PUT("/edit/:id", addressController.UpdateAdminAddress)   // 编辑地址
-			addressGroup.DELETE("/del/:id", addressController.DeleteAdminAddress) // 删除地址
+			addressGroup.GET("/list", addressController.AdminAddressList)         // 地址列表（支持用户ID或用户名搜索）
+			addressGroup.POST("/add", addressController.AdminCreateAddress)       // 新增地址
+			addressGroup.PUT("/edit", addressController.AdminUpdateAddress)       // 编辑地址
+			addressGroup.DELETE("/del/:id", addressController.AdminDeleteAddress) // 删除地址
 		}
 	}
 	return r

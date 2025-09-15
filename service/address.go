@@ -16,6 +16,12 @@ type AddressService interface {
 	GetAdminAddressList(userId int64, userName string) ([]*model.AdminAddressInfo, error)
 	CreateAdminAddress(userId int64, req *model.CreateAddressReq) error
 	UpdateAdminAddress(addressId int64, req *model.UpdateAddressReq) error
+
+	// 新的 Admin 地址管理方法
+	AdminGetAddressList(userID int64, userName string, page, pageSize int) ([]*model.AdminAddressInfo, int64, int, int, error)
+	AdminCreateAddress(req *model.AdminCreateAddressRequest) error
+	AdminUpdateAddress(req *model.AdminUpdateAddressRequest) error
+	AdminDeleteAddress(addressID int64) error
 }
 
 type addressService struct {
@@ -209,4 +215,117 @@ func (a addressService) UpdateAdminAddress(addressId int64, req *model.UpdateAdd
 	}
 
 	return a.addressRepo.Update(addressId, dbData)
+}
+
+// AdminGetAddressList 后台获取地址列表
+func (as *addressService) AdminGetAddressList(userID int64, userName string, page, pageSize int) ([]*model.AdminAddressInfo, int64, int, int, error) {
+	// 设置默认分页参数
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+
+	// 调用 repository 层获取数据
+	addressWithUsers, err := as.addressRepo.GetAddressListByUser(userID, userName)
+	if err != nil {
+		return nil, 0, page, pageSize, err
+	}
+
+	// 计算总数
+	total := int64(len(addressWithUsers))
+
+	// 分页处理
+	offset := (page - 1) * pageSize
+	end := offset + pageSize
+	if end > len(addressWithUsers) {
+		end = len(addressWithUsers)
+	}
+	if offset >= len(addressWithUsers) {
+		return []*model.AdminAddressInfo{}, total, page, pageSize, nil
+	}
+
+	// 数据转换
+	var result []*model.AdminAddressInfo
+	for _, addr := range addressWithUsers[offset:end] {
+		adminAddr := &model.AdminAddressInfo{
+			AddressID:      addr.ID,
+			UserID:         addr.UserId,
+			UserName:       addr.UserName,
+			RecipientName:  addr.RecipientName,
+			RecipientPhone: addr.RecipientPhone,
+			Province:       addr.Province,
+			City:           addr.City,
+			District:       addr.District,
+			Detail:         addr.Detail,
+			IsDefault:      addr.IsDefault == 1,
+			CreatedAt:      "", // Address 模型中没有 CreatedAt 字段
+		}
+		result = append(result, adminAddr)
+	}
+
+	return result, total, page, pageSize, nil
+}
+
+// AdminCreateAddress 后台创建地址
+func (as *addressService) AdminCreateAddress(req *model.AdminCreateAddressRequest) error {
+	// 构建地址实体
+	address := &model.Address{
+		UserId:         req.UserID,
+		RecipientName:  req.RecipientName,
+		RecipientPhone: req.RecipientPhone,
+		Province:       req.Province,
+		City:           req.City,
+		District:       req.District,
+		Detail:         req.Detail,
+		IsDefault:      0, // 默认设为非默认地址
+		IsDelete:       0,
+	}
+
+	// 如果设置为默认地址，需要先取消其他默认地址
+	if req.IsDefault {
+		address.IsDefault = 1
+		err := as.addressRepo.SetDefault(req.UserID, 0) // 先取消所有默认地址
+		if err != nil {
+			return err
+		}
+	}
+
+	// 创建地址
+	return as.addressRepo.Create(address)
+}
+
+// AdminUpdateAddress 后台更新地址
+func (as *addressService) AdminUpdateAddress(req *model.AdminUpdateAddressRequest) error {
+	// 构建更新数据
+	updateData := map[string]interface{}{
+		"user_id":         req.UserID,
+		"recipient_name":  req.RecipientName,
+		"recipient_phone": req.RecipientPhone,
+		"province":        req.Province,
+		"city":            req.City,
+		"district":        req.District,
+		"detail":          req.Detail,
+	}
+
+	// 处理默认地址逻辑
+	if req.IsDefault {
+		updateData["is_default"] = 1
+		// 先取消该用户的其他默认地址
+		err := as.addressRepo.SetDefault(req.UserID, 0)
+		if err != nil {
+			return err
+		}
+	} else {
+		updateData["is_default"] = 0
+	}
+
+	// 更新地址
+	return as.addressRepo.Update(req.ID, updateData)
+}
+
+// AdminDeleteAddress 后台删除地址
+func (as *addressService) AdminDeleteAddress(addressID int64) error {
+	return as.addressRepo.Delete(addressID)
 }

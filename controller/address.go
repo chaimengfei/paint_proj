@@ -202,3 +202,81 @@ func (ac *AddressController) DeleteAdminAddress(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "删除地址成功"})
 }
+
+// AdminAddressList 后台获取地址列表
+func (ac *AddressController) AdminAddressList(c *gin.Context) {
+	var req model.AdminAddressListRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误: " + err.Error()})
+		return
+	}
+
+	list, total, page, pageSize, err := ac.addressService.AdminGetAddressList(req.UserID, req.UserName, req.Page, req.PageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取地址列表失败: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": gin.H{
+			"list":      list,
+			"total":     total,
+			"page":      page,
+			"page_size": pageSize,
+		},
+		"message": "获取地址列表成功",
+	})
+}
+
+// AdminCreateAddress 后台创建地址
+func (ac *AddressController) AdminCreateAddress(c *gin.Context) {
+	var req model.AdminCreateAddressRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误: " + err.Error()})
+		return
+	}
+
+	err := ac.addressService.AdminCreateAddress(&req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "创建地址失败: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "创建地址成功"})
+}
+
+// AdminUpdateAddress 后台更新地址
+func (ac *AddressController) AdminUpdateAddress(c *gin.Context) {
+	var req model.AdminUpdateAddressRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误: " + err.Error()})
+		return
+	}
+
+	err := ac.addressService.AdminUpdateAddress(&req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "更新地址失败: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "更新地址成功"})
+}
+
+// AdminDeleteAddress 后台删除地址
+func (ac *AddressController) AdminDeleteAddress(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "地址ID格式错误"})
+		return
+	}
+
+	err = ac.addressService.AdminDeleteAddress(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "删除地址失败: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "删除地址成功"})
+}

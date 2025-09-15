@@ -268,3 +268,36 @@ type AdminAddressInfo struct {
 	IsDefault      bool   `json:"is_default"`
 	CreatedAt      string `json:"created_at"`
 }
+
+// AdminAddressListRequest admin地址列表请求
+type AdminAddressListRequest struct {
+	UserID   int64  `json:"user_id" form:"user_id"`     // 用户ID（可选）
+	UserName string `json:"user_name" form:"user_name"` // 用户名（可选）
+	Page     int    `json:"page" form:"page"`           // 页码
+	PageSize int    `json:"page_size" form:"page_size"` // 每页大小
+}
+
+// AdminCreateAddressRequest admin创建地址请求
+type AdminCreateAddressRequest struct {
+	UserID         int64  `json:"user_id" binding:"required"`         // 用户ID
+	RecipientName  string `json:"recipient_name" binding:"required"`  // 收货人姓名
+	RecipientPhone string `json:"recipient_phone" binding:"required"` // 收货人电话
+	Province       string `json:"province" binding:"required"`        // 省份
+	City           string `json:"city" binding:"required"`            // 城市
+	District       string `json:"district" binding:"required"`        // 区县
+	Detail         string `json:"detail" binding:"required"`          // 详细地址
+	IsDefault      bool   `json:"is_default"`                         // 是否默认地址
+}
+
+// AdminUpdateAddressRequest admin更新地址请求
+type AdminUpdateAddressRequest struct {
+	ID             int64  `json:"id" binding:"required"`              // 地址ID
+	UserID         int64  `json:"user_id" binding:"required"`         // 用户ID
+	RecipientName  string `json:"recipient_name" binding:"required"`  // 收货人姓名
+	RecipientPhone string `json:"recipient_phone" binding:"required"` // 收货人电话
+	Province       string `json:"province" binding:"required"`        // 省份
+	City           string `json:"city" binding:"required"`            // 城市
+	District       string `json:"district" binding:"required"`        // 区县
+	Detail         string `json:"detail" binding:"required"`          // 详细地址
+	IsDefault      bool   `json:"is_default"`                         // 是否默认地址
+}

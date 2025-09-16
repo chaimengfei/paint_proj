@@ -285,11 +285,13 @@ func (as *addressService) AdminCreateAddress(req *model.AdminCreateAddressReques
 
 	// 如果设置为默认地址，需要先取消其他默认地址
 	if req.IsDefault {
-		address.IsDefault = 1
-		err := as.addressRepo.SetDefault(req.UserID, 0) // 先取消所有默认地址
+		// 先取消所有默认地址
+		err := as.addressRepo.SetDefault(req.UserID, 0)
 		if err != nil {
 			return err
 		}
+		// 设置新地址为默认地址
+		address.IsDefault = 1
 	}
 
 	// 创建地址

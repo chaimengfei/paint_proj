@@ -1,0 +1,7 @@
+# coderabbit.yaml
+scanner: code_rabbit  # 指定使用 CodeRabbit 扫描器
+exclude:
+  - "test/**"          # 排除 test 目录
+  - "cmd/**"           # 排除 cmd 目录
+file_types:
+  - ".go"              # 只扫描 Go 文件

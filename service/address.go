@@ -82,6 +82,7 @@ func (a addressService) CreateAddress(userID int64, req *model.CreateAddressReq)
 func (a addressService) SetDefaultAddress(userID, addressId int64) error {
 	return a.addressRepo.SetDefault(userID, addressId)
 }
+
 func (a addressService) UpdateAddress(userID, addressId int64, req *model.UpdateAddressReq) error {
 	dbData := map[string]interface{}{}
 	if req.Data.RecipientName != "" {
@@ -282,11 +283,15 @@ func (as *addressService) AdminCreateAddress(req *model.AdminCreateAddressReques
 		IsDefault:      0, // 默认设为非默认地址
 		IsDelete:       0,
 	}
-
+	// 创建地址
+	err := as.addressRepo.Create(address)
+	if err != nil {
+		return err
+	}
 	// 如果设置为默认地址，需要先取消其他默认地址
 	if req.IsDefault {
 		// 先取消所有默认地址
-		err := as.addressRepo.SetDefault(req.UserID, 0)
+		err = as.addressRepo.SetDefault(req.UserID, address.ID)
 		if err != nil {
 			return err
 		}
@@ -294,8 +299,7 @@ func (as *addressService) AdminCreateAddress(req *model.AdminCreateAddressReques
 		address.IsDefault = 1
 	}
 
-	// 创建地址
-	return as.addressRepo.Create(address)
+	return nil
 }
 
 // AdminUpdateAddress 后台更新地址
@@ -315,7 +319,7 @@ func (as *addressService) AdminUpdateAddress(req *model.AdminUpdateAddressReques
 	if req.IsDefault {
 		updateData["is_default"] = 1
 		// 先取消该用户的其他默认地址
-		err := as.addressRepo.SetDefault(req.UserID, 0)
+		err := as.addressRepo.SetDefault(req.UserID, req.ID)
 		if err != nil {
 			return err
 		}

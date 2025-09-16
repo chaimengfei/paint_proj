@@ -146,7 +146,223 @@ CheckoutOrder()
 - 添加事务执行时间监控
 - 设置异常告警机制
 
-## API接口说明
+## API 接口说明
+
+### 用户管理接口
+
+#### 用户登录
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/user/login' \
+--header 'Content-Type: application/json' \
+--data '{
+    "code": "wx_login_code_from_miniprogram"
+}'
+```
+
+#### 更新用户信息
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/user/update/info' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer your_jwt_token' \
+--data '{
+    "nickname": "用户昵称",
+    "avatar": "头像URL"
+}'
+```
+
+#### 绑定手机号
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/user/bind-mobile' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer your_jwt_token' \
+--data '{
+    "mobile": "13800138000"
+}'
+```
+
+### 商品管理接口
+
+#### 获取商品列表
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/product/list'
+```
+
+### 地址管理接口
+
+#### 获取地址列表
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/address/list' \
+--header 'Authorization: Bearer your_jwt_token'
+```
+
+#### 创建地址
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/address/create' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer your_jwt_token' \
+--data '{
+    "data": {
+        "recipient_name": "收货人姓名",
+        "recipient_phone": "13800138000",
+        "province": "广东省",
+        "city": "深圳市",
+        "district": "南山区",
+        "detail": "详细地址",
+        "is_default": true
+    }
+}'
+```
+
+#### 设置默认地址
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/address/set_default/1' \
+--header 'Authorization: Bearer your_jwt_token'
+```
+
+#### 更新地址
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/address/update' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer your_jwt_token' \
+--data '{
+    "data": {
+        "address_id": 1,
+        "recipient_name": "收货人姓名",
+        "recipient_phone": "13800138000",
+        "province": "广东省",
+        "city": "深圳市",
+        "district": "南山区",
+        "detail": "详细地址",
+        "is_default": false
+    }
+}'
+```
+
+#### 删除地址
+
+```bash
+curl --location --request DELETE 'http://127.0.0.1:8009/api/address/delete/1' \
+--header 'Authorization: Bearer your_jwt_token'
+```
+
+### 购物车管理接口
+
+#### 获取购物车列表
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/cart/list' \
+--header 'Authorization: Bearer your_jwt_token'
+```
+
+#### 添加到购物车
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/cart/add' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer your_jwt_token' \
+--data '{
+    "product_id": 1,
+    "quantity": 2
+}'
+```
+
+#### 更新购物车商品
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/cart/update' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer your_jwt_token' \
+--data '{
+    "cart_id": 1,
+    "quantity": 3
+}'
+```
+
+#### 删除购物车商品
+
+```bash
+curl --location --request DELETE 'http://127.0.0.1:8009/api/cart/delete/1' \
+--header 'Authorization: Bearer your_jwt_token'
+```
+
+### 订单管理接口
+
+#### 获取订单列表
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/order/list' \
+--header 'Authorization: Bearer your_jwt_token'
+```
+
+#### 获取订单详情
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/order/detail?order_id=1' \
+--header 'Authorization: Bearer your_jwt_token'
+```
+
+#### 创建订单
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/order/checkout' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer your_jwt_token' \
+--data '{
+    "address_id": 1,
+    "remark": "订单备注"
+}'
+```
+
+#### 取消订单
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/order/cancel' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer your_jwt_token' \
+--data '{
+    "order_id": 1
+}'
+```
+
+#### 删除订单
+
+```bash
+curl --location --request DELETE 'http://127.0.0.1:8009/api/order/delete/1' \
+--header 'Authorization: Bearer your_jwt_token'
+```
+
+### 支付管理接口
+
+#### 获取支付数据
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/pay/data' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer your_jwt_token' \
+--data '{
+    "order_id": 1
+}'
+```
+
+#### 支付回调
+
+```bash
+curl --location 'http://127.0.0.1:8009/api/pay/callback' \
+--header 'Content-Type: application/json' \
+--data '{
+    "callback_data": "支付回调数据"
+}'
+```
+
+## Admin 接口说明
 
 ### 用户管理接口
 
@@ -196,6 +412,59 @@ curl --location 'http://127.0.0.1:8009/admin/user/2'
 ```bash
 curl --location --request DELETE 'http://127.0.0.1:8009/admin/user/del/2'
 {"code":0,"data":null,"message":"删除用户成功"}
+```
+
+### 地址管理接口
+
+#### 后台获取地址列表
+
+```bash
+curl --location 'http://127.0.0.1:8009/admin/address/list?user_id=123&user_name=张三&page=1&page_size=10'
+{"code":0,"data":{"list":[{"address_id":1,"user_id":123,"user_name":"张三","recipient_name":"李四","recipient_phone":"13800138000","province":"广东省","city":"深圳市","district":"南山区","detail":"科技园路1号","is_default":true,"created_at":"2024-01-15T10:30:00Z","updated_at":"2024-01-15T10:30:00Z"}],"total":1,"page":1,"page_size":10},"message":"获取地址列表成功"}
+```
+
+#### 后台新增地址
+
+```bash
+curl --location 'http://127.0.0.1:8009/admin/address/add' \
+--header 'Content-Type: application/json' \
+--data '{
+    "user_id": 123,
+    "recipient_name": "李四",
+    "recipient_phone": "13800138000",
+    "province": "广东省",
+    "city": "深圳市",
+    "district": "南山区",
+    "detail": "科技园路1号",
+    "is_default": true
+}'
+{"code":0,"message":"创建地址成功"}
+```
+
+#### 后台编辑地址
+
+```bash
+curl --location --request PUT 'http://127.0.0.1:8009/admin/address/edit' \
+--header 'Content-Type: application/json' \
+--data '{
+    "id": 1,
+    "user_id": 123,
+    "recipient_name": "李四（更新）",
+    "recipient_phone": "13800138001",
+    "province": "广东省",
+    "city": "深圳市",
+    "district": "南山区",
+    "detail": "科技园路2号",
+    "is_default": false
+}'
+{"code":0,"message":"更新地址成功"}
+```
+
+#### 后台删除地址
+
+```bash
+curl --location --request DELETE 'http://127.0.0.1:8009/admin/address/del/1'
+{"code":0,"message":"删除地址成功"}
 ```
 
 **响应字段说明**:
@@ -674,91 +943,6 @@ curl 'http://192.168.99.172:8009/admin/stock/operations?types=2&page=1&page_size
 - 时间字段由后端自动记录，无需前端传入
 
 
-
-### 地址管理接口文档
-
----
-
-#### 1. 获取地址列表（支持搜索）
-
-```http
-curl --location 'http://127.0.0.1:8009/admin/address/list?=null'
-{"code":0,"data":[{"address_id":1,"user_id":123,"user_name":"","recipient_name":"柴五","recipient_phone":"13161621682","province":"北京市","city":"北京市","district":"东城区","detail":"123","is_default":false,"created_at":""}]}%  
-```
-
-
-
----
-
-#### 2. 新增地址
-
-| 参数名  | 类型  | 必填 | 说明                           |
-| ------- | ----- | ---- | ------------------------------ |
-| user_id | int64 | 是   | 用户ID，指定为哪个用户创建地址 |
-
-```http
-POST /admin/address/add?user_id=123
-Content-Type: application/json
-
-{
-  "data": {
-    "recipient_name": "李四",
-    "recipient_phone": "13800138000",
-    "province": "广东省",
-    "city": "深圳市",
-    "district": "南山区",
-    "detail": "科技园路1号",
-    "is_default": true
-  }
-}
-```
-
----
-
-#### 3. 编辑地址
-
-**路径参数**
-
-| 参数名 | 类型  | 必填 | 说明   |
-| ------ | ----- | ---- | ------ |
-| id     | int64 | 是   | 地址ID |
-
-```http
-PUT /admin/address/edit/1
-Content-Type: application/json
-
-{
-  "data": {
-    "recipient_name": "李四",
-    "recipient_phone": "13800138000",
-    "province": "广东省",
-    "city": "深圳市",
-    "district": "南山区",
-    "detail": "科技园路2号",
-    "is_default": false
-  }
-}
-```
-
----
-
-#### 4. 删除地址
-
-**路径参数**
-
-| 参数名 | 类型  | 必填 | 说明   |
-| ------ | ----- | ---- | ------ |
-| id     | int64 | 是   | 地址ID |
-
-**查询参数**
-
-| 参数名  | 类型  | 必填 | 说明                 |
-| ------- | ----- | ---- | -------------------- |
-| user_id | int64 | 是   | 用户ID，用于验证权限 |
-
-```http
-DELETE /admin/address/del/1?user_id=123
-```
 
 ---
 

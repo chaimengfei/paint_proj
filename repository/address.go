@@ -98,7 +98,7 @@ func (ar *addressRepository) Update(id int64, data map[string]interface{}) error
 func (ar *addressRepository) SetDefault(userId, id int64) error {
 	err := ar.db.Transaction(func(tx *gorm.DB) error {
 		// 将现有的1设置为0
-		err := tx.Model(&model.Address{}).Where("user_id = ? and is_delete = 0", userId).Updates(map[string]interface{}{"is_default": 0}).Error
+		err := tx.Model(&model.Address{}).Where("user_id = ? and is_default = 1", userId).Updates(map[string]interface{}{"is_default": 0}).Error
 		if err != nil {
 			return err
 		}

@@ -7,9 +7,11 @@ import (
 
 type ProductService interface {
 	GetProductList() ([]model.Category, map[int64][]model.ProductSimple, error)
+	GetProductListByShop(shopID int64) ([]model.Category, map[int64][]model.ProductSimple, error)
 
 	GetAdminProductList(page, pageSize int) ([]model.Product, int64, error)
 	GetProductByID(id int64) (*model.Product, error)
+	GetProductByIDAndShop(id int64, shopID int64) (*model.Product, error)
 	AddProduct(p *model.Product) error
 	UpdateProduct(p *model.Product) error
 	DeleteProduct(id int64) error
@@ -61,6 +63,35 @@ func (ps *productService) GetProductList() ([]model.Category, map[int64][]model.
 	return categories, productMap, nil
 }
 
+func (ps *productService) GetProductListByShop(shopID int64) ([]model.Category, map[int64][]model.ProductSimple, error) {
+	// 1 根据店铺从product表查分类
+	categories, categoryMap, err := ps.productRepo.GetProductCategoryByShop(shopID)
+	if err != nil {
+		return nil, nil, err
+	}
+	// 2.根据店铺获取所有商品
+	products, err := ps.productRepo.GetAllProductByShop(shopID)
+	if err != nil {
+		return nil, nil, err
+	}
+	// 3.按分类分组
+	productMap := make(map[int64][]model.ProductSimple)
+	for _, p := range products {
+		sp := model.ProductSimple{
+			ID:           p.ID,
+			Name:         p.Name,
+			SellerPrice:  p.SellerPrice,
+			CategoryID:   p.CategoryId,
+			CategoryName: categoryMap[p.CategoryId],
+			Image:        p.Image,
+			Unit:         p.Unit,
+			Remark:       p.Remark,
+		}
+		productMap[p.CategoryId] = append(productMap[p.CategoryId], sp)
+	}
+	return categories, productMap, nil
+}
+
 func (ps *productService) GetAllCategories() ([]model.Category, error) {
 	return ps.productRepo.GetAllCategories()
 }
@@ -80,6 +111,10 @@ func (ps *productService) UpdateProduct(p *model.Product) error {
 
 func (ps *productService) GetProductByID(id int64) (*model.Product, error) {
 	return ps.productRepo.GetByID(id)
+}
+
+func (ps *productService) GetProductByIDAndShop(id int64, shopID int64) (*model.Product, error) {
+	return ps.productRepo.GetByIDAndShop(id, shopID)
 }
 
 func (ps *productService) DeleteProduct(id int64) error {

@@ -8,13 +8,17 @@ import (
 )
 
 type ProductRepository interface {
-	GetProductCategory() ([]model.Category, map[int64]string, error) //  从product表查分类
-	GetAllCategories() ([]model.Category, error)                     //  获取所有分类
-	GetAllProduct() ([]model.Product, error)                         //  获取所有商品
+	GetProductCategory() ([]model.Category, map[int64]string, error)                   //  从product表查分类
+	GetProductCategoryByShop(shopID int64) ([]model.Category, map[int64]string, error) //  根据店铺从product表查分类
+	GetAllCategories() ([]model.Category, error)                                       //  获取所有分类
+	GetAllProduct() ([]model.Product, error)                                           //  获取所有商品
+	GetAllProductByShop(shopID int64) ([]model.Product, error)                         //  根据店铺获取所有商品
 
 	GetByID(productID int64) (*model.Product, error)
+	GetByIDAndShop(productID int64, shopID int64) (*model.Product, error) // 根据ID和店铺获取商品
 	GetByIDs(productIDs []int64) ([]model.Product, error)
 	GetList(offset, limit int) ([]model.Product, int64, error)
+	GetListByShop(offset, limit int, shopID int64) ([]model.Product, int64, error) // 根据店铺获取商品列表
 
 	Create(product *model.Product) error
 	Update(product *model.Product) error
@@ -53,6 +57,23 @@ func (p *productRepository) GetProductCategory() ([]model.Category, map[int64]st
 	return categories, categoryMap, nil
 }
 
+// GetProductCategoryByShop  根据店铺从product表查分类
+func (p *productRepository) GetProductCategoryByShop(shopID int64) ([]model.Category, map[int64]string, error) {
+	var categories []model.Category
+	if err := p.db.Table("product p").
+		Select("distinct p.category_id as id,c.name").
+		Joins("INNER JOIN category c ON p.category_id = c.id").
+		Where("p.is_on_shelf = ? AND p.shop_id = ?", 1, shopID).
+		Scan(&categories).Error; err != nil {
+		return nil, nil, err
+	}
+	var categoryMap = make(map[int64]string)
+	for _, category := range categories {
+		categoryMap[category.ID] = category.Name
+	}
+	return categories, categoryMap, nil
+}
+
 // GetAllCategories 获取所有分类
 func (p *productRepository) GetAllCategories() ([]model.Category, error) {
 	var categories []model.Category
@@ -70,9 +91,24 @@ func (p *productRepository) GetAllProduct() ([]model.Product, error) {
 	}
 	return products, nil
 }
+
+// GetAllProductByShop 根据店铺获取所有商品
+func (p *productRepository) GetAllProductByShop(shopID int64) ([]model.Product, error) {
+	var products []model.Product
+	if err := p.db.Model(&model.Product{}).Where("is_on_shelf = ? AND shop_id = ?", 1, shopID).Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
+}
 func (p *productRepository) GetByID(productID int64) (*model.Product, error) {
 	var product model.Product
 	err := p.db.Model(&model.Product{}).First(&product, productID).Error
+	return &product, err
+}
+
+func (p *productRepository) GetByIDAndShop(productID int64, shopID int64) (*model.Product, error) {
+	var product model.Product
+	err := p.db.Model(&model.Product{}).Where("id = ? AND shop_id = ?", productID, shopID).First(&product).Error
 	return &product, err
 }
 func (p *productRepository) GetByIDs(productIDs []int64) ([]model.Product, error) {
@@ -88,6 +124,19 @@ func (p *productRepository) GetList(offset, limit int) ([]model.Product, int64, 
 		return nil, 0, err
 	}
 	if err := p.db.Offset(offset).Limit(limit).Find(&products).Error; err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
+}
+
+func (p *productRepository) GetListByShop(offset, limit int, shopID int64) ([]model.Product, int64, error) {
+	var products []model.Product
+	var total int64
+
+	if err := p.db.Model(&model.Product{}).Where("shop_id = ?", shopID).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := p.db.Where("shop_id = ?", shopID).Offset(offset).Limit(limit).Find(&products).Error; err != nil {
 		return nil, 0, err
 	}
 	return products, total, nil

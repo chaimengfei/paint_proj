@@ -40,19 +40,20 @@ func SetupRouter() *gin.Engine {
 	userRepo := repository.NewUserRepository(db)
 	addressRepo := repository.NewAddressRepository(db)
 	stockRepo := repository.NewStockRepository(db)
+	shopRepo := repository.NewShopRepository(db)
 
 	// 4.初始化服务层
-	cartService := service.NewCartService(cartRepo, productRepo)
+	cartService := service.NewCartService(cartRepo, productRepo, userRepo)
 	productService := service.NewProductService(productRepo)
-	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo, addressRepo, stockRepo)
+	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo, addressRepo, stockRepo, userRepo)
 	payService := service.NewPayService(orderRepo, cartRepo, productRepo)
-	userService := service.NewUserService(userRepo)
+	userService := service.NewUserService(userRepo, shopRepo)
 	addressService := service.NewAddressService(addressRepo)
 	stockService := service.NewStockService(stockRepo, productRepo)
 
 	// 5. 初始化控制器
 	cartController := controller.NewCartController(cartService)
-	productController := controller.NewProductController(productService)
+	productController := controller.NewProductController(productService, userService)
 	orderController := controller.NewOrderController(orderService)
 	payController := controller.NewPayController(payService)
 	userController := controller.NewUserController(userService)
@@ -70,7 +71,7 @@ func SetupRouter() *gin.Engine {
 		}
 		productGroup := api.Group("/product")
 		{
-			productGroup.GET("/list", productController.GetProductList)
+			productGroup.GET("/list", auth.AuthMiddleware(), productController.GetProductList)
 		}
 		addressGroup := api.Group("/address", auth.AuthMiddleware())
 		{

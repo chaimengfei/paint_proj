@@ -15,18 +15,26 @@ type CartService interface {
 type cartService struct {
 	cartRepo    repository.CartRepository
 	productRepo repository.ProductRepository
+	userRepo    repository.UserRepository
 }
 
-func NewCartService(cr repository.CartRepository, pr repository.ProductRepository) CartService {
+func NewCartService(cr repository.CartRepository, pr repository.ProductRepository, ur repository.UserRepository) CartService {
 	return &cartService{
 		cartRepo:    cr,
 		productRepo: pr,
+		userRepo:    ur,
 	}
 }
 
 func (cs *cartService) GetCartList(userID int64) ([]model.CartWithProduct, error) {
-	// 获取购物车列表并关联商品信息
-	cartItems, err := cs.cartRepo.GetByUserIDWithProduct(userID)
+	// 先获取用户的店铺信息
+	user, err := cs.userRepo.GetUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 根据用户店铺获取购物车商品
+	cartItems, err := cs.cartRepo.GetByUserIDAndShopWithProduct(userID, user.ShopID)
 	if err != nil {
 		return nil, err
 	}
@@ -34,8 +42,14 @@ func (cs *cartService) GetCartList(userID int64) ([]model.CartWithProduct, error
 	return cartItems, nil
 }
 func (cs *cartService) AddToCart(userID, productID int64) error {
-	// 检查商品是否存在
-	_, err := cs.productRepo.GetByID(productID)
+	// 先获取用户的店铺信息
+	user, err := cs.userRepo.GetUserByID(userID)
+	if err != nil {
+		return err
+	}
+
+	// 检查商品是否属于该店铺
+	_, err = cs.productRepo.GetByIDAndShop(productID, user.ShopID)
 	if err != nil {
 		return err
 	}
@@ -50,6 +64,7 @@ func (cs *cartService) AddToCart(userID, productID int64) error {
 	// 不存在则创建
 	cart := &model.Cart{
 		UserID:    userID,
+		ShopID:    user.ShopID,
 		ProductID: productID,
 		Quantity:  1,
 		Selected:  true,

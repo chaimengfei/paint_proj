@@ -22,6 +22,7 @@ type Product struct {
 	Unit          string `json:"unit" gorm:"unit"`                       // 单位
 	Remark        string `json:"remark" gorm:"remark"`                   // 备注
 	IsOnShelf     int8   `json:"is_on_shelf" gorm:"is_on_shelf"`         // 是否上架(1:上架,0:下架)
+	ShopID        int64  `json:"shop_id" gorm:"shop_id"`                 // 关联店铺ID
 }
 
 // TableName 表名称
@@ -44,6 +45,7 @@ func (*Category) TableName() string {
 type Cart struct {
 	ID        int64      `gorm:"id,primaryKey;autoIncrement" json:"id" `
 	UserID    int64      `gorm:"column:user_id" json:"user_id"`
+	ShopID    int64      `gorm:"column:shop_id" json:"shop_id"`
 	ProductID int64      `gorm:"column:product_id" json:"product_id"`
 	Quantity  int        `gorm:"column:quantity" json:"quantity"`
 	Selected  bool       `gorm:"column:selected" json:"selected"`
@@ -105,6 +107,7 @@ type Order struct {
 	ID              int64             `json:"id" gorm:"id,primaryKey;autoIncrement"`    // 主键id
 	OrderNo         string            `json:"order_no" gorm:"order_no"`                 // 订单编号
 	UserId          int64             `json:"user_id" gorm:"user_id"`                   // 用户ID
+	ShopID          int64             `json:"shop_id" gorm:"shop_id"`                   // 关联店铺ID
 	TotalAmount     Amount            `json:"total_amount" gorm:"total_amount"`         // 订单总金额
 	PaymentAmount   Amount            `json:"payment_amount" gorm:"payment_amount"`     // 实付金额
 	ShippingFee     Amount            `json:"shipping_fee" gorm:"shipping_fee"`         // 运费
@@ -183,6 +186,7 @@ type User struct {
 	WechatDisplayName string    `json:"wechat_display_name" gorm:"wechat_display_name"` // 微信小程序显示的客户名称
 	HasWechatBind     int8      `json:"has_wechat_bind" gorm:"has_wechat_bind"`         // 是否已绑定微信(1:是,0:否)
 	Remark            string    `json:"remark" gorm:"remark"`                           // 备注
+	ShopID            int64     `json:"shop_id" gorm:"shop_id"`                         // 关联店铺ID
 	CreatedAt         time.Time `json:"created_at" gorm:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at" gorm:"updated_at"`
 }
@@ -235,6 +239,7 @@ type StockOperation struct {
 	Operator     string `json:"operator" gorm:"operator"`              // 操作人
 	OperatorID   int64  `json:"operator_id" gorm:"operator_id"`        // 操作人ID
 	OperatorType int8   `json:"operator_type" gorm:"operator_type"`    // 操作人类型(1:用户,2:系统,3:管理员)
+	ShopID       int64  `json:"shop_id" gorm:"shop_id"`                // 关联店铺ID
 	UserName     string `json:"user_name" gorm:"user_name"`            // 用户名称(出库时)
 	UserID       int64  `json:"user_id" gorm:"user_id"`                // 用户ID(出库时)
 	//UserAccount  string `json:"user_account" gorm:"user_account"`      // 用户账号(出库时)
@@ -318,4 +323,36 @@ type StockLog struct {
 // TableName 表名称
 func (*StockLog) TableName() string {
 	return "stock_log"
+}
+
+// Shop 店铺表
+type Shop struct {
+	ID          int64     `json:"id" gorm:"id,primaryKey;autoIncrement"` // 店铺ID
+	Name        string    `json:"name" gorm:"name"`                      // 店铺名称
+	Code        string    `json:"code" gorm:"code"`                      // 店铺编码
+	Address     string    `json:"address" gorm:"address"`                // 店铺地址
+	Latitude    float64   `json:"latitude" gorm:"latitude"`              // 纬度
+	Longitude   float64   `json:"longitude" gorm:"longitude"`            // 经度
+	Phone       string    `json:"phone" gorm:"phone"`                    // 联系电话
+	ManagerName string    `json:"manager_name" gorm:"manager_name"`      // 店长姓名
+	IsActive    int8      `json:"is_active" gorm:"is_active"`            // 是否启用(1:启用,0:禁用)
+	CreatedAt   time.Time `json:"created_at" gorm:"created_at"`          // 创建时间
+	UpdatedAt   time.Time `json:"updated_at" gorm:"updated_at"`          // 更新时间
+}
+
+// TableName 表名称
+func (*Shop) TableName() string {
+	return "shop"
+}
+
+// 店铺常量
+const (
+	ShopYanjiao = 1 // 燕郊店
+	ShopLaishui = 2 // 涞水店
+)
+
+// 地理位置相关请求结构
+type LocationRequest struct {
+	Latitude  float64 `json:"latitude" binding:"required"`  // 纬度
+	Longitude float64 `json:"longitude" binding:"required"` // 经度
 }

@@ -62,6 +62,7 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 		Operator:      req.Operator,
 		OperatorID:    req.OperatorID,
 		OperatorType:  model.OperatorTypeAdmin,
+		ShopID:        req.ShopID, // 设置店铺ID
 		Remark:        req.Remark,
 		TotalAmount:   totalAmount,
 		TotalQuantity: totalQuantity,
@@ -143,6 +144,7 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 		Operator:            req.Operator,
 		OperatorID:          req.OperatorID,
 		OperatorType:        model.OperatorTypeAdmin,
+		ShopID:              req.ShopID, // 设置店铺ID
 		UserName:            req.UserName,
 		UserID:              req.UserID,
 		Remark:              req.Remark,

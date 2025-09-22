@@ -95,9 +95,11 @@ type CheckoutResponse struct {
 }
 
 type LoginRequest struct {
-	Code     string `json:"code"`
-	Nickname string `json:"nickname"` // 小程序传来的昵称
-	Avatar   string `json:"avatar"`   // 小程序传来的头像
+	Code      string  `json:"code"`
+	Nickname  string  `json:"nickname"`  // 小程序传来的昵称
+	Avatar    string  `json:"avatar"`    // 小程序传来的头像
+	Latitude  float64 `json:"latitude"`  // 纬度（可选）
+	Longitude float64 `json:"longitude"` // 经度（可选）
 }
 
 type UpdateUserInfoRequest struct {
@@ -186,6 +188,7 @@ type BatchInboundRequest struct {
 	TotalAmount Amount             `json:"total_amount"`                   // 总金额（前端计算）
 	Operator    string             `json:"operator" binding:"required"`    // 操作人
 	OperatorID  int64              `json:"operator_id" binding:"required"` // 操作人ID
+	ShopID      int64              `json:"shop_id" binding:"required"`     // 店铺ID
 	Supplier    string             `json:"supplier"`                       // 供货商
 	Remark      string             `json:"remark"`                         // 备注
 }
@@ -207,6 +210,7 @@ type BatchOutboundRequest struct {
 	UserID      int64               `json:"user_id" binding:"required"`     // 用户ID
 	Operator    string              `json:"operator" binding:"required"`    // 操作人
 	OperatorID  int64               `json:"operator_id" binding:"required"` // 操作人ID
+	ShopID      int64               `json:"shop_id" binding:"required"`     // 店铺ID
 	OperateTime *time.Time          `json:"operate_time"`                   // 操作时间（可选，如果传了则填充到created_at）
 	Remark      string              `json:"remark"`                         // 备注
 }
@@ -232,6 +236,7 @@ type UpdateOutboundPaymentStatusRequest struct {
 type AdminUserAddRequest struct {
 	AdminDisplayName string `json:"admin_display_name" binding:"required"` // 后台显示的客户名称
 	MobilePhone      string `json:"mobile_phone" binding:"required"`       // 手机号
+	ShopID           int64  `json:"shop_id"`                               // 店铺ID（可选，不传则默认燕郊店）
 	Remark           string `json:"remark"`                                // 备注
 }
 

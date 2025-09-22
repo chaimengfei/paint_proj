@@ -2,6 +2,31 @@
 
 ## 功能特性
 
+### 店铺管理
+
+系统支持多店铺管理，每个用户和商品都关联到特定店铺：
+
+#### 店铺信息
+- **燕郊店** (ID: 1): 河北省廊坊市三河市燕郊镇
+- **涞水店** (ID: 2): 河北省保定市涞水县
+
+#### 店铺分配逻辑
+1. **小程序注册时**：
+   - 如果用户提供了位置信息，系统会根据经纬度计算最近的店铺
+   - 如果距离涞水店更近且距离小于50公里，分配涞水店
+   - 否则默认分配燕郊店
+   - 如果没有提供位置信息，默认分配燕郊店
+
+2. **后台添加用户时**：
+   - 管理员可以手动指定店铺ID
+   - 如果不指定，默认分配燕郊店
+
+#### 数据隔离
+- 每个用户只能看到自己店铺的商品
+- 购物车和订单都按店铺隔离
+- 库存操作按店铺分别管理
+- 入库操作需要管理员手动选择店铺
+
 ### 关于登陆
 
 1. 是否每次都要调用 GetOpenIDByCode?
@@ -156,9 +181,26 @@ CheckoutOrder()
 curl --location 'http://127.0.0.1:8009/api/user/login' \
 --header 'Content-Type: application/json' \
 --data '{
-    "code": "wx_login_code_from_miniprogram"
+    "code": "wx_login_code_from_miniprogram",
+    "nickname": "用户昵称",
+    "avatar": "头像URL",
+    "latitude": 39.9042,
+    "longitude": 116.4074
 }'
 ```
+
+**说明：**
+- `code`: 微信登录code（必填）
+- `nickname`: 微信昵称（可选）
+- `avatar`: 头像URL（可选）
+- `latitude`: 纬度（可选，用于确定最近店铺）
+- `longitude`: 经度（可选，用于确定最近店铺）
+
+**店铺分配逻辑：**
+- 如果提供了位置信息，系统会根据经纬度计算最近的店铺
+- 如果距离涞水店更近且距离小于50公里，分配涞水店
+- 否则默认分配燕郊店
+- 如果没有提供位置信息，默认分配燕郊店
 
 #### 更新用户信息
 
@@ -188,8 +230,14 @@ curl --location 'http://127.0.0.1:8009/api/user/bind-mobile' \
 #### 获取商品列表
 
 ```bash
-curl --location 'http://127.0.0.1:8009/api/product/list'
+curl --location 'http://127.0.0.1:8009/api/product/list' \
+--header 'Authorization: Bearer your_jwt_token'
 ```
+
+**说明：**
+- 需要JWT token认证
+- 系统会根据用户所属店铺返回对应的商品列表
+- 每个用户只能看到自己店铺的商品
 
 ### 地址管理接口
 
@@ -374,10 +422,16 @@ curl --location 'http://127.0.0.1:8009/admin/user/add' \
 --data '{
     "admin_display_name": "孙阳",
     "mobile_phone": "13800138001",
+    "shop_id": 1,
     "remark": "塑雅雕塑"
 }'
-{"code":0,"data":{"id":2,"openid":"","nickname":"","avatar":"","mobile_phone":"13800138001","source":2,"is_enable":1,"admin_display_name":"孙阳","wechat_display_name":"","has_wechat_bind":0,"created_at":"2025-09-14T14:28:51.445+08:00","updated_at":"2025-09-14T14:28:51.445+08:00"},"message":"添加用户成功"}
+{"code":0,"data":{"id":2,"openid":"","nickname":"","avatar":"","mobile_phone":"13800138001","source":2,"is_enable":1,"admin_display_name":"孙阳","wechat_display_name":"","has_wechat_bind":0,"shop_id":1,"created_at":"2025-09-14T14:28:51.445+08:00","updated_at":"2025-09-14T14:28:51.445+08:00"},"message":"添加用户成功"}
 ```
+
+**说明：**
+- `shop_id`: 店铺ID（可选，不传则默认分配燕郊店）
+  - `1`: 燕郊店
+  - `2`: 涞水店
 
 #### 后台编辑用户
 
@@ -620,6 +674,7 @@ curl --location --request DELETE 'http://192.168.1.6:8009/admin/product/category
 - 入库时只更新 Product 表的 `product_cost` 字段（进价）
 - Product 表的 `shipping_cost` 字段在初始化时设置，且不变
 - 总金额由前端计算并传递
+- **必须指定店铺ID**，管理员手动选择哪个店铺进行入库
 
 ```
 ➜  ~ curl --location 'http://127.0.0.1:8009/admin/stock/batch/inbound' \
@@ -637,11 +692,17 @@ curl --location --request DELETE 'http://192.168.1.6:8009/admin/product/category
 "total_amount": 1320,
 "operator": "张三",
 "operator_id": 1001,
+"shop_id": 1,
 "supplier": "李彦鹏",
 "remark": "0901入库"
 }'
 {"code":0,"message":"批量入库成功"}%
 ```
+
+**新增字段说明：**
+- `shop_id`: 店铺ID（必填）
+  - `1`: 燕郊店
+  - `2`: 涞水店
 
 #### 2. 批量出库操作
 ```http
@@ -663,9 +724,15 @@ Content-Type: application/json
     "user_id": 1002,
     "operator": "张三",
     "operator_id": 1001,
+    "shop_id": 1,
     "remark": "后台操作"
 }
 ```
+
+**新增字段说明：**
+- `shop_id`: 店铺ID（必填）
+  - `1`: 燕郊店
+  - `2`: 涞水店
 
 **说明：**
 - 批量出库接口的单个item对象已简化，只保留核心字段

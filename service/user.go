@@ -28,11 +28,13 @@ type UserService interface {
 }
 type userService struct {
 	userRepo repository.UserRepository
+	shopRepo repository.ShopRepository
 }
 
-func NewUserService(pr repository.UserRepository) UserService {
+func NewUserService(pr repository.UserRepository, sr repository.ShopRepository) UserService {
 	return &userService{
 		userRepo: pr,
+		shopRepo: sr,
 	}
 }
 
@@ -44,28 +46,56 @@ func (u userService) LoginHandler(ctx context.Context, req *model.LoginRequest) 
 		return 0, "", err
 	}
 
-	// 2.检查openid是否已存在
+	// 2. 检查openid是否已存在
 	user, err := u.userRepo.GetOrCreateUserByOpenID(openid, req.Nickname, req.Avatar)
 	if err != nil {
 		return 0, "", err
 	}
 
-	// 3.如果用户已存在且已绑定微信，直接返回
+	// 3. 如果是新用户且提供了位置信息，根据位置分配店铺
+	if user.ShopID == 0 && (req.Latitude != 0 || req.Longitude != 0) {
+		// 获取最近的店铺
+		shopService := NewShopService(u.shopRepo)
+		nearestShop, err := shopService.GetNearestShopByLocation(req.Latitude, req.Longitude)
+		if err == nil && nearestShop != nil {
+			// 更新用户的店铺信息
+			updateData := map[string]interface{}{
+				"shop_id": nearestShop.ID,
+			}
+			u.userRepo.UpdateUserByAdmin(user.ID, updateData)
+			user.ShopID = nearestShop.ID
+		} else {
+			// 如果获取店铺失败，默认分配燕郊店
+			updateData := map[string]interface{}{
+				"shop_id": model.ShopYanjiao,
+			}
+			u.userRepo.UpdateUserByAdmin(user.ID, updateData)
+			user.ShopID = model.ShopYanjiao
+		}
+	} else if user.ShopID == 0 {
+		// 如果没有位置信息，默认分配燕郊店
+		updateData := map[string]interface{}{
+			"shop_id": model.ShopYanjiao,
+		}
+		u.userRepo.UpdateUserByAdmin(user.ID, updateData)
+		user.ShopID = model.ShopYanjiao
+	}
+
+	// 4. 如果用户已存在且已绑定微信，直接返回
 	if user.HasWechatBind == model.WechatBindYes {
 		token, _ := pkg.GenerateJWTToken(user.ID)
 		return user.ID, token, nil
 	}
 
-	// 4.如果用户是新创建的（小程序注册），设置微信绑定状态
+	// 5. 如果用户是新创建的（小程序注册），设置微信绑定状态
 	if user.ID > 0 && user.HasWechatBind == model.WechatBindNo {
-		// 更新用户信息
 		err = u.BindWechatToUser(user.ID, openid, req.Nickname)
 		if err != nil {
 			return 0, "", err
 		}
 	}
 
-	// 5.生成自定义 token（推荐 JWT）
+	// 6. 生成自定义 token
 	token, _ := pkg.GenerateJWTToken(user.ID)
 	return user.ID, token, nil
 }
@@ -84,12 +114,20 @@ func (u userService) CreateUserByAdmin(req *model.AdminUserAddRequest) (*model.U
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
+
+	// 如果没有指定店铺，默认分配燕郊店
+	shopID := req.ShopID
+	if shopID == 0 {
+		shopID = model.ShopYanjiao
+	}
+
 	user := &model.User{
 		AdminDisplayName: req.AdminDisplayName,
 		MobilePhone:      req.MobilePhone,
 		Source:           model.UserSourceAdmin,
 		IsEnable:         model.UserStatusEnabled,
 		HasWechatBind:    model.WechatBindNo,
+		ShopID:           shopID,
 		Remark:           req.Remark,
 	}
 	err = u.userRepo.CreateUserByAdmin(user)

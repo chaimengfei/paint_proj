@@ -50,6 +50,7 @@ func SetupRouter() *gin.Engine {
 	userService := service.NewUserService(userRepo, shopRepo)
 	addressService := service.NewAddressService(addressRepo)
 	stockService := service.NewStockService(stockRepo, productRepo)
+	shopService := service.NewShopService(shopRepo)
 
 	// 5. 初始化控制器
 	cartController := controller.NewCartController(cartService)
@@ -59,10 +60,17 @@ func SetupRouter() *gin.Engine {
 	userController := controller.NewUserController(userService)
 	addressController := controller.NewAddressController(addressService)
 	stockController := controller.NewStockController(stockService, productService)
+	shopController := controller.NewShopController(shopService)
 
 	// API路由 供微信小程序用
 	api := r.Group("/api")
 	{
+		// 店铺接口（无需token验证）
+		shopGroup := api.Group("/shop")
+		{
+			shopGroup.GET("/list", shopController.GetShopList) // 获取店铺列表
+		}
+
 		userGroup := api.Group("/user")
 		{
 			userGroup.POST("/login", userController.Login) // 首次登陆注册user_id并获取token
@@ -107,6 +115,12 @@ func SetupRouter() *gin.Engine {
 	// Admin路由 供Web后台管理系统
 	admin := r.Group("/admin")
 	{
+		// 店铺接口（无需token验证）
+		shopGroup := admin.Group("/shop")
+		{
+			shopGroup.GET("/list", shopController.GetShopList) // 获取店铺列表
+		}
+
 		productGroup := admin.Group("/product")
 		{
 			productGroup.POST("/upload/image", productController.UploadImageForAdmin) // 阿里云OSS上传接口

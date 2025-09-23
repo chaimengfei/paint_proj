@@ -356,3 +356,14 @@ type LocationRequest struct {
 	Latitude  float64 `json:"latitude" binding:"required"`  // 纬度
 	Longitude float64 `json:"longitude" binding:"required"` // 经度
 }
+
+// 简化的店铺信息结构（用于列表展示）
+type ShopSimple struct {
+	ID          int64  `json:"id"`           // 店铺ID
+	Name        string `json:"name"`         // 店铺名称
+	Code        string `json:"code"`         // 店铺编码
+	Address     string `json:"address"`      // 店铺地址
+	Phone       string `json:"phone"`        // 联系电话
+	ManagerName string `json:"manager_name"` // 店长姓名
+	IsActive    int8   `json:"is_active"`    // 是否启用(1:启用,0:禁用)
+}

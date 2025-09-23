@@ -27,6 +27,51 @@
 - 库存操作按店铺分别管理
 - 入库操作需要管理员手动选择店铺
 
+#### 店铺接口
+系统提供店铺信息查询接口，支持小程序和后台管理系统：
+
+**获取店铺列表**
+```bash
+# 小程序接口
+curl -X GET "http://localhost:8009/api/shop/list"
+
+# 后台管理接口
+curl -X GET "http://localhost:8009/admin/shop/list"
+```
+
+**响应示例**
+```json
+{
+  "code": 0,
+  "data": [
+    {
+      "id": 1,
+      "name": "燕郊店",
+      "code": "YJ001",
+      "address": "河北省廊坊市三河市燕郊镇",
+      "phone": "13161621688",
+      "manager_name": "张三",
+      "is_active": 1
+    },
+    {
+      "id": 2,
+      "name": "涞水店", 
+      "code": "LS001",
+      "address": "河北省保定市涞水县",
+      "phone": "12345678910",
+      "manager_name": "李四",
+      "is_active": 1
+    }
+  ],
+  "message": "获取店铺列表成功"
+}
+```
+
+**注意事项**
+- 店铺接口无需token验证，可直接访问
+- 只返回启用状态（is_active=1）的店铺
+- 支持小程序和后台管理系统同时使用
+
 ### 关于登陆
 
 1. 是否每次都要调用 GetOpenIDByCode?

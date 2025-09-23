@@ -13,6 +13,9 @@ type ShopService interface {
 	// 获取所有启用的店铺
 	GetAllActiveShops() ([]*model.Shop, error)
 
+	// 获取所有启用的店铺（简化信息）
+	GetAllActiveShopsSimple() ([]model.ShopSimple, error)
+
 	// 根据ID获取店铺
 	GetShopByID(shopID int64) (*model.Shop, error)
 
@@ -80,6 +83,30 @@ func (s *shopService) CalculateDistance(lat1, lon1, lat2, lon2 float64) float64 
 
 func (s *shopService) GetAllActiveShops() ([]*model.Shop, error) {
 	return s.shopRepo.GetAllActiveShops()
+}
+
+// GetAllActiveShopsSimple 获取所有启用的店铺（简化信息）
+func (s *shopService) GetAllActiveShopsSimple() ([]model.ShopSimple, error) {
+	shops, err := s.shopRepo.GetAllActiveShops()
+	if err != nil {
+		return nil, err
+	}
+
+	// 转换为简化的店铺信息
+	var shopList []model.ShopSimple
+	for _, shop := range shops {
+		shopList = append(shopList, model.ShopSimple{
+			ID:          shop.ID,
+			Name:        shop.Name,
+			Code:        shop.Code,
+			Address:     shop.Address,
+			Phone:       shop.Phone,
+			ManagerName: shop.ManagerName,
+			IsActive:    shop.IsActive,
+		})
+	}
+
+	return shopList, nil
 }
 
 func (s *shopService) GetShopByID(shopID int64) (*model.Shop, error) {

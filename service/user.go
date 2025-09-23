@@ -83,7 +83,7 @@ func (u userService) LoginHandler(ctx context.Context, req *model.LoginRequest) 
 
 	// 4. 如果用户已存在且已绑定微信，直接返回
 	if user.HasWechatBind == model.WechatBindYes {
-		token, _ := pkg.GenerateJWTToken(user.ID)
+		token, _ := pkg.GenerateJWTToken(user.ID, user.ShopID)
 		return user.ID, token, nil
 	}
 
@@ -96,7 +96,7 @@ func (u userService) LoginHandler(ctx context.Context, req *model.LoginRequest) 
 	}
 
 	// 6. 生成自定义 token
-	token, _ := pkg.GenerateJWTToken(user.ID)
+	token, _ := pkg.GenerateJWTToken(user.ID, user.ShopID)
 	return user.ID, token, nil
 }
 

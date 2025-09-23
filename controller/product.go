@@ -28,23 +28,17 @@ func NewProductController(s service.ProductService, us service.UserService) *Pro
 // @Success 200 {object} model.ProductListResponse
 // @Router /api/products [get]
 func (pc *ProductController) GetProductList(c *gin.Context) {
-	// 获取用户ID（从JWT token中解析）
+	// 获取用户ID和店铺ID（从JWT token中解析）
 	userID := c.GetInt64("user_id")
+	shopID := c.GetInt64("shop_id")
 
 	var categories []model.Category
 	var productMap map[int64][]model.ProductSimple
 	var err error
 
-	if userID > 0 {
-		// 获取用户信息，确定店铺
-		user, err := pc.userService.GetUserByID(userID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取用户信息失败"})
-			return
-		}
-
+	if userID > 0 && shopID > 0 {
 		// 根据用户店铺获取商品列表
-		categories, productMap, err = pc.productService.GetProductListByShop(user.ShopID)
+		categories, productMap, err = pc.productService.GetProductListByShop(shopID)
 	} else {
 		// 如果没有用户信息，返回所有商品（兼容性）
 		categories, productMap, err = pc.productService.GetProductList()

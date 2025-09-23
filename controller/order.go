@@ -3,9 +3,10 @@ package controller
 import (
 	"cmf/paint_proj/model"
 	"cmf/paint_proj/service"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type OrderController struct {
@@ -19,6 +20,7 @@ func NewOrderController(s service.OrderService) *OrderController {
 // CheckoutOrder 订单结算
 func (oc *OrderController) CheckoutOrder(c *gin.Context) {
 	userID := c.GetInt64("user_id") // 从认证中获取用户ID
+	shopID := c.GetInt64("shop_id") // 从认证中获取店铺ID
 	var req model.OrderCheckoutReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
@@ -51,7 +53,7 @@ func (oc *OrderController) CheckoutOrder(c *gin.Context) {
 		return
 	}
 	// 真实的业务处理
-	checkoutData, err := oc.orderService.CheckoutOrder(c.Request.Context(), userID, svcReq)
+	checkoutData, err := oc.orderService.CheckoutOrder(c.Request.Context(), userID, shopID, svcReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "购物车结算失败"})
 		return

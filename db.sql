@@ -158,3 +158,58 @@ UPDATE user SET
     has_wechat_bind = CASE WHEN openid IS NOT NULL AND openid != '' THEN 1 ELSE 0 END,
     wechat_display_name = CASE WHEN nickname IS NOT NULL AND nickname != '' THEN nickname ELSE '' END
 WHERE id > 0;
+
+-- 创建店铺表
+CREATE TABLE shop (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '店铺ID',
+    name VARCHAR(100) NOT NULL COMMENT '店铺名称',
+    code VARCHAR(50) NOT NULL UNIQUE COMMENT '店铺编码',
+    address VARCHAR(255) COMMENT '店铺地址',
+    latitude DECIMAL(10, 8) COMMENT '纬度',
+    longitude DECIMAL(11, 8) COMMENT '经度',
+    phone VARCHAR(20) COMMENT '联系电话',
+    manager_name VARCHAR(50) COMMENT '店长姓名',
+    is_active TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用(1:启用,0:禁用)',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_code (code),
+    INDEX idx_is_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='店铺表';
+
+-- 为用户表添加店铺关联字段
+ALTER TABLE user 
+    ADD COLUMN shop_id BIGINT DEFAULT NULL COMMENT '关联店铺ID' AFTER remark,
+    ADD INDEX idx_shop_id (shop_id),
+    ADD FOREIGN KEY (shop_id) REFERENCES shop(id) ON DELETE SET NULL;
+
+-- 为商品表添加店铺关联字段
+ALTER TABLE product 
+    ADD COLUMN shop_id BIGINT DEFAULT NULL COMMENT '关联店铺ID' AFTER is_on_shelf,
+    ADD INDEX idx_shop_id (shop_id),
+    ADD FOREIGN KEY (shop_id) REFERENCES shop(id) ON DELETE SET NULL;
+
+-- 为购物车表添加店铺关联字段
+ALTER TABLE cart 
+    ADD COLUMN shop_id BIGINT DEFAULT NULL COMMENT '关联店铺ID' AFTER user_id,
+    ADD INDEX idx_shop_id (shop_id),
+    ADD FOREIGN KEY (shop_id) REFERENCES shop(id) ON DELETE SET NULL;
+
+-- 为订单表添加店铺关联字段
+ALTER TABLE `order` 
+    ADD COLUMN shop_id BIGINT DEFAULT NULL COMMENT '关联店铺ID' AFTER user_id,
+    ADD INDEX idx_shop_id (shop_id),
+    ADD FOREIGN KEY (shop_id) REFERENCES shop(id) ON DELETE SET NULL;
+
+-- 为库存操作表添加店铺关联字段
+ALTER TABLE stock_operation 
+    ADD COLUMN shop_id BIGINT DEFAULT NULL COMMENT '关联店铺ID' AFTER operator_type,
+    ADD INDEX idx_shop_id (shop_id),
+    ADD FOREIGN KEY (shop_id) REFERENCES shop(id) ON DELETE SET NULL;
+
+-- 插入默认店铺数据
+INSERT INTO shop (name, code, address, latitude, longitude, phone, manager_name) VALUES
+('燕郊店', 'YJ001', '河北省廊坊市三河市燕郊镇', 39.9042, 116.4074, '010-12345678', '燕郊店长'),
+('涞水店', 'LS001', '河北省保定市涞水县', 39.3908, 115.7119, '0312-87654321', '涞水店长');
+
+-- 为现有用户设置默认店铺（燕郊店）
+UPDATE user SET shop_id = 1 WHERE shop_id IS NULL;

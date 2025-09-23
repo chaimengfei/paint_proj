@@ -10,7 +10,7 @@ import (
 )
 
 type OrderService interface {
-	CheckoutOrder(ctx context.Context, userID int64, req *model.CheckoutOrderRequest) (*model.CheckoutResponse, error)
+	CheckoutOrder(ctx context.Context, userID int64, shopID int64, req *model.CheckoutOrderRequest) (*model.CheckoutResponse, error)
 	GetOrderList(ctx context.Context, req *model.OrderListRequest) ([]model.Order, int64, error) // 获取订单列表
 	GetOrderDetail(ctx context.Context, userID int64, orderNo string) (*model.Order, error)      // 获取订单详情
 
@@ -38,16 +38,12 @@ func NewOrderService(or repository.OrderRepository, cr repository.CartRepository
 	}
 }
 
-func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *model.CheckoutOrderRequest) (*model.CheckoutResponse, error) {
+func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, shopID int64, req *model.CheckoutOrderRequest) (*model.CheckoutResponse, error) {
 	// 1. 数据校验和准备阶段
-	// 1.0 获取用户信息，确定店铺
-	user, err := os.userRepo.GetUserByID(userID)
-	if err != nil {
-		return nil, fmt.Errorf("获取用户信息失败: %v", err)
-	}
 
 	// 1.1 获取用户收货地址
 	var addressDbData *model.Address
+	var err error
 	if req.AddressID == 0 {
 		addressDbData, err = os.addressRepo.GetDefaultOrFirstAddressID(userID)
 	} else {
@@ -94,7 +90,7 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 	order := &model.Order{
 		OrderNo:         orderNo,
 		UserId:          req.UserID,
-		ShopID:          user.ShopID, // 设置店铺ID
+		ShopID:          shopID, // 设置店铺ID
 		OrderStatus:     model.OrderStatusPendingPayment,
 		PaymentStatus:   model.PaymentStatusUnpaid,
 		ReceiverName:    "柴梦妃",                // TODO 根据 user_id 获取name  ,还是根据address直接获取name addressDbData.Name
@@ -124,8 +120,8 @@ func (os *orderService) CheckoutOrder(ctx context.Context, userID int64, req *mo
 		Operator:     "",
 		OperatorID:   0,
 		OperatorType: model.OperatorTypeUser,
-		ShopID:       user.ShopID, // 设置店铺ID
-		UserName:     "小程序用户",     // 可以从用户表获取真实姓名
+		ShopID:       shopID,  // 设置店铺ID
+		UserName:     "小程序用户", // 可以从用户表获取真实姓名
 		UserID:       userID,
 		//UserAccount:  "", // 可以从用户表获取账号
 		Remark:      "小程序用户购买",

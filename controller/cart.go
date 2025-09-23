@@ -3,9 +3,10 @@ package controller
 import (
 	"cmf/paint_proj/model"
 	"cmf/paint_proj/service"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type CartController struct {
@@ -19,8 +20,9 @@ func NewCartController(s service.CartService) *CartController {
 // GetCartList 获取购物车列表
 func (cc *CartController) GetCartList(c *gin.Context) {
 	userID := c.GetInt64("user_id")
+	shopID := c.GetInt64("shop_id")
 
-	cartItems, err := cc.cartService.GetCartList(userID)
+	cartItems, err := cc.cartService.GetCartList(userID, shopID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取购物车失败"})
 		return
@@ -32,6 +34,7 @@ func (cc *CartController) GetCartList(c *gin.Context) {
 // AddToCart 添加商品到购物车
 func (cc *CartController) AddToCart(c *gin.Context) {
 	userID := c.GetInt64("user_id") // 从认证中获取用户ID
+	shopID := c.GetInt64("shop_id") // 从认证中获取店铺ID
 
 	var req model.ProductIdReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -39,7 +42,7 @@ func (cc *CartController) AddToCart(c *gin.Context) {
 		return
 	}
 
-	err := cc.cartService.AddToCart(userID, req.ProductID)
+	err := cc.cartService.AddToCart(userID, req.ProductID, shopID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "添加购物车失败"})
 		return

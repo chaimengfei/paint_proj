@@ -1,3 +1,25 @@
+-- 创建后台管理员表
+CREATE TABLE IF NOT EXISTS operator (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '管理员ID',
+  name VARCHAR(50) UNIQUE NOT NULL COMMENT '管理员账号',
+  password VARCHAR(255) NOT NULL COMMENT '密码(加密)',
+  shop_id BIGINT NOT NULL COMMENT '所属店铺ID',
+  real_name VARCHAR(50) COMMENT '真实姓名',
+  phone VARCHAR(20) COMMENT '联系电话',
+  is_active TINYINT DEFAULT 1 COMMENT '是否启用(1:启用,0:禁用)',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  INDEX idx_name (name),
+  INDEX idx_shop_id (shop_id),
+  FOREIGN KEY (shop_id) REFERENCES shop(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='后台管理员表';
+
+-- 插入示例管理员数据
+INSERT INTO operator (name, password, shop_id, real_name, phone) VALUES
+('root', '$2a$10$encrypted_password_root', 1, '超级管理员', '400-000-0000'),
+('lizengchun', '$2a$10$encrypted_password_lzc', 1, '李增春', '131-0000-0000'),
+('zhangweiyang', '$2a$10$encrypted_password_zwy', 2, '张伟阳', '132-0000-0000');
+
 -- 创建库存日志表
 CREATE TABLE IF NOT EXISTS stock_log (
   id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键id',

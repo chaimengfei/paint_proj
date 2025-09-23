@@ -72,6 +72,98 @@ curl -X GET "http://localhost:8009/admin/shop/list"
 - 只返回启用状态（is_active=1）的店铺
 - 支持小程序和后台管理系统同时使用
 
+### 后台管理系统认证
+
+系统支持后台管理员登录认证，使用 JWT Token 方案：
+
+#### 管理员账号
+- **root**: 超级管理员，可操作所有店铺数据
+- **lizengchun**: 燕郊店管理员，只能操作燕郊店数据
+- **zhangweiyang**: 涞水店管理员，只能操作涞水店数据
+
+#### 登录接口
+```bash
+curl -X POST "http://localhost:8009/admin/operator/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "operator_name": "lizengchun",
+    "password": "your_password"
+  }'
+```
+
+**响应示例**
+```json
+{
+  "code": 0,
+  "message": "登录成功",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "operator": {
+      "id": 2,
+      "operator_name": "lizengchun",
+      "shop_id": 1,
+      "real_name": "李增春",
+      "phone": "131-0000-0000",
+      "is_active": 1
+    },
+    "shop_info": {
+      "id": 1,
+      "name": "燕郊店",
+      "code": "YJ001",
+      "address": "河北省廊坊市三河市燕郊镇",
+      "phone": "13161621688",
+      "manager_name": "张三",
+      "is_active": 1
+    },
+    "expires_in": 7200
+  }
+}
+```
+
+#### 权限控制
+- **超级管理员 (root)**: 可以操作所有店铺的数据
+- **普通管理员**: 只能操作自己所属店铺的数据
+- **Token 有效期**: 2小时
+- **自动店铺关联**: 所有操作自动关联到管理员所属店铺
+
+#### 使用示例
+```bash
+# 添加商品（自动关联到管理员所属店铺）
+curl -X POST "http://localhost:8009/admin/product/add" \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "新商品",
+    "price": 100,
+    "description": "商品描述"
+  }'
+
+# 批量入库（自动关联到管理员所属店铺）
+curl -X POST "http://localhost:8009/admin/stock/batch/inbound" \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+      {
+        "product_id": 1,
+        "quantity": 100
+      }
+    ]
+  }'
+```
+
+#### 数据库初始化
+首次使用前，需要在数据库中插入管理员数据：
+```sql
+-- 插入示例管理员数据（密码需要加密）
+INSERT INTO operator (name, password, shop_id, real_name, phone) VALUES
+('root', '$2a$10$encrypted_password_root', 1, '超级管理员', '400-000-0000'),
+('lizengchun', '$2a$10$encrypted_password_lzc', 1, '李增春', '131-0000-0000'),
+('zhangweiyang', '$2a$10$encrypted_password_zwy', 2, '张伟阳', '132-0000-0000');
+```
+
+**注意**: 管理员账号数量有限，如需新增管理员，请直接在数据库中插入记录。系统不提供通过接口创建、修改、删除管理员的功能。
+
 ### 关于登陆
 
 1. 是否每次都要调用 GetOpenIDByCode?

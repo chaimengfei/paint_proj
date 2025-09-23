@@ -367,3 +367,34 @@ type ShopSimple struct {
 	ManagerName string `json:"manager_name"` // 店长姓名
 	IsActive    int8   `json:"is_active"`    // 是否启用(1:启用,0:禁用)
 }
+
+// 后台管理员模型
+type Operator struct {
+	ID        int64     `json:"id" gorm:"id,primaryKey;autoIncrement"` // 管理员ID
+	Name      string    `json:"name" gorm:"name,uniqueIndex"`          // 管理员账号
+	Password  string    `json:"-" gorm:"password"`                     // 密码(加密，不返回给前端)
+	ShopID    int64     `json:"shop_id" gorm:"shop_id"`                // 所属店铺ID
+	RealName  string    `json:"real_name" gorm:"real_name"`            // 真实姓名
+	Phone     string    `json:"phone" gorm:"phone"`                    // 联系电话
+	IsActive  int8      `json:"is_active" gorm:"is_active"`            // 是否启用(1:启用,0:禁用)
+	CreatedAt time.Time `json:"created_at" gorm:"created_at"`          // 创建时间
+	UpdatedAt time.Time `json:"updated_at" gorm:"updated_at"`          // 更新时间
+}
+
+func (*Operator) TableName() string {
+	return "operator"
+}
+
+// 后台管理员登录请求
+type AdminLoginRequest struct {
+	OperatorName string `json:"operator_name" binding:"required"` // 管理员账号
+	Password     string `json:"password" binding:"required"`      // 密码
+}
+
+// 后台管理员登录响应
+type AdminLoginResponse struct {
+	Token     string      `json:"token"`      // JWT Token
+	Operator  *Operator   `json:"operator"`   // 管理员信息
+	ShopInfo  *ShopSimple `json:"shop_info"`  // 店铺信息
+	ExpiresIn int64       `json:"expires_in"` // Token 过期时间（秒）
+}

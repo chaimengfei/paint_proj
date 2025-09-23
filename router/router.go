@@ -41,6 +41,7 @@ func SetupRouter() *gin.Engine {
 	addressRepo := repository.NewAddressRepository(db)
 	stockRepo := repository.NewStockRepository(db)
 	shopRepo := repository.NewShopRepository(db)
+	operatorRepo := repository.NewOperatorRepository(db)
 
 	// 4.初始化服务层
 	cartService := service.NewCartService(cartRepo, productRepo, userRepo)
@@ -51,6 +52,7 @@ func SetupRouter() *gin.Engine {
 	addressService := service.NewAddressService(addressRepo)
 	stockService := service.NewStockService(stockRepo, productRepo)
 	shopService := service.NewShopService(shopRepo)
+	operatorService := service.NewOperatorService(operatorRepo, shopRepo)
 
 	// 5. 初始化控制器
 	cartController := controller.NewCartController(cartService)
@@ -61,6 +63,7 @@ func SetupRouter() *gin.Engine {
 	addressController := controller.NewAddressController(addressService)
 	stockController := controller.NewStockController(stockService, productService)
 	shopController := controller.NewShopController(shopService)
+	operatorController := controller.NewOperatorController(operatorService)
 
 	// API路由 供微信小程序用
 	api := r.Group("/api")
@@ -115,52 +118,63 @@ func SetupRouter() *gin.Engine {
 	// Admin路由 供Web后台管理系统
 	admin := r.Group("/admin")
 	{
+		// 管理员登录（无需token验证）
+		admin.POST("/login", operatorController.AdminLogin)
+
 		// 店铺接口（无需token验证）
-		shopGroup := admin.Group("/shop")
-		{
-			shopGroup.GET("/list", shopController.GetShopList) // 获取店铺列表
-		}
+		admin.GET("/shop/list", shopController.GetShopList) // 获取店铺列表
 
-		productGroup := admin.Group("/product")
+		// 需要认证的管理接口
+		adminAuth := admin.Group("", auth.AdminAuthMiddleware())
 		{
-			productGroup.POST("/upload/image", productController.UploadImageForAdmin) // 阿里云OSS上传接口
-			productGroup.GET("/list", productController.GetAdminProductList)
-			productGroup.GET("/:id", productController.GetProductByID) // 根据ID获取商品信息
-			productGroup.POST("/add", productController.AddProduct)
-			productGroup.PUT("/edit/:id", productController.EditProduct)
-			productGroup.DELETE("/del/:id", productController.DeleteProduct)
+			// 管理员管理（需要超级管理员权限）
+			operatorGroup := adminAuth.Group("/operator")
+			{
+				operatorGroup.GET("/list", operatorController.GetOperatorList) // 获取管理员列表
+				operatorGroup.GET("/:id", operatorController.GetOperatorByID)  // 根据ID获取管理员信息
+			}
 
-			productGroup.GET("/categories", productController.GetCategories)           // 获取所有分类
-			productGroup.POST("/category/add", productController.AddCategory)          // 新增分类
-			productGroup.PUT("/category/edit/:id", productController.EditCategory)     // 编辑分类
-			productGroup.DELETE("/category/del/:id", productController.DeleteCategory) // 删除分类
-		}
+			productGroup := adminAuth.Group("/product")
+			{
+				productGroup.POST("/upload/image", productController.UploadImageForAdmin) // 阿里云OSS上传接口
+				productGroup.GET("/list", productController.GetAdminProductList)
+				productGroup.GET("/:id", productController.GetProductByID) // 根据ID获取商品信息
+				productGroup.POST("/add", productController.AddProduct)
+				productGroup.PUT("/edit/:id", productController.EditProduct)
+				productGroup.DELETE("/del/:id", productController.DeleteProduct)
 
-		stockGroup := admin.Group("/stock")
-		{
-			stockGroup.POST("/batch/inbound", stockController.BatchInboundStock)             // 批量入库
-			stockGroup.POST("/batch/outbound", stockController.BatchOutboundStock)           // 批量出库
-			stockGroup.POST("/set/payment-status", stockController.SetOutboundPaymentStatus) // 更新出库单支付状态
-			stockGroup.GET("/operations", stockController.GetStockOperations)                // 库存操作列表
-			stockGroup.GET("/operation/:id", stockController.GetStockOperationDetail)        // 库存操作详情
-			stockGroup.GET("/suppliers", stockController.GetSupplierList)                    // 获取供货商列表
-		}
+				productGroup.GET("/categories", productController.GetCategories)           // 获取所有分类
+				productGroup.POST("/category/add", productController.AddCategory)          // 新增分类
+				productGroup.PUT("/category/edit/:id", productController.EditCategory)     // 编辑分类
+				productGroup.DELETE("/category/del/:id", productController.DeleteCategory) // 删除分类
+			}
 
-		userGroup := admin.Group("/user")
-		{
-			userGroup.GET("/list", userController.AdminGetUserList)      // 获取用户列表
-			userGroup.GET("/:id", userController.AdminGetUserByID)       // 根据ID获取用户信息
-			userGroup.POST("/add", userController.AdminAddUser)          // 添加用户
-			userGroup.PUT("/edit", userController.AdminEditUser)         // 编辑用户
-			userGroup.DELETE("/del/:id", userController.AdminDeleteUser) // 删除用户
-		}
+			stockGroup := adminAuth.Group("/stock")
+			{
+				stockGroup.POST("/batch/inbound", stockController.BatchInboundStock)             // 批量入库
+				stockGroup.POST("/batch/outbound", stockController.BatchOutboundStock)           // 批量出库
+				stockGroup.POST("/set/payment-status", stockController.SetOutboundPaymentStatus) // 更新出库单支付状态
+				stockGroup.GET("/operations", stockController.GetStockOperations)                // 库存操作列表
+				stockGroup.GET("/operation/:id", stockController.GetStockOperationDetail)        // 库存操作详情
+				stockGroup.GET("/suppliers", stockController.GetSupplierList)                    // 获取供货商列表
+			}
 
-		addressGroup := admin.Group("/address")
-		{
-			addressGroup.GET("/list", addressController.AdminAddressList)         // 地址列表（支持用户ID或用户名搜索）
-			addressGroup.POST("/add", addressController.AdminCreateAddress)       // 新增地址
-			addressGroup.PUT("/edit", addressController.AdminUpdateAddress)       // 编辑地址
-			addressGroup.DELETE("/del/:id", addressController.AdminDeleteAddress) // 删除地址
+			userGroup := adminAuth.Group("/user")
+			{
+				userGroup.GET("/list", userController.AdminGetUserList)      // 获取用户列表
+				userGroup.GET("/:id", userController.AdminGetUserByID)       // 根据ID获取用户信息
+				userGroup.POST("/add", userController.AdminAddUser)          // 添加用户
+				userGroup.PUT("/edit", userController.AdminEditUser)         // 编辑用户
+				userGroup.DELETE("/del/:id", userController.AdminDeleteUser) // 删除用户
+			}
+
+			addressGroup := adminAuth.Group("/address")
+			{
+				addressGroup.GET("/list", addressController.AdminAddressList)         // 地址列表（支持用户ID或用户名搜索）
+				addressGroup.POST("/add", addressController.AdminCreateAddress)       // 新增地址
+				addressGroup.PUT("/edit", addressController.AdminUpdateAddress)       // 编辑地址
+				addressGroup.DELETE("/del/:id", addressController.AdminDeleteAddress) // 删除地址
+			}
 		}
 	}
 	return r

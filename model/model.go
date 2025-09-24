@@ -391,8 +391,9 @@ type AdminLoginRequest struct {
 
 // 后台管理员登录响应
 type AdminLoginResponse struct {
-	Token     string      `json:"token"`      // JWT Token
-	Operator  *Operator   `json:"operator"`   // 管理员信息
-	ShopInfo  *ShopSimple `json:"shop_info"`  // 店铺信息
-	ExpiresIn int64       `json:"expires_in"` // Token 过期时间（秒）
+	Token     string       `json:"token"`      // JWT Token
+	Operator  *Operator    `json:"operator"`   // 管理员信息
+	ShopInfo  *ShopSimple  `json:"shop_info"`  // 店铺信息（普通管理员）
+	ShopList  []ShopSimple `json:"shop_list"`  // 店铺列表（超级管理员）
+	ExpiresIn int64        `json:"expires_in"` // Token 过期时间（秒）
 }

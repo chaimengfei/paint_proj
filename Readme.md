@@ -1,4 +1,4 @@
-# 油漆销售管理系统
+# 油漆销售系统
 
 ## 功能特性
 
@@ -92,6 +92,8 @@ curl -X POST "http://localhost:8009/admin/operator/login" \
 ```
 
 **响应示例**
+
+**普通管理员登录响应**：
 ```json
 {
   "code": 0,
@@ -115,6 +117,46 @@ curl -X POST "http://localhost:8009/admin/operator/login" \
       "manager_name": "张三",
       "is_active": 1
     },
+    "expires_in": 7200
+  }
+}
+```
+
+**超级管理员(root)登录响应**：
+```json
+{
+  "code": 0,
+  "message": "登录成功",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "operator": {
+      "id": 1,
+      "operator_name": "root",
+      "shop_id": 1,
+      "real_name": "超级管理员",
+      "phone": "400-000-0000",
+      "is_active": 1
+    },
+    "shop_list": [
+      {
+        "id": 1,
+        "name": "燕郊店",
+        "code": "YJ001",
+        "address": "河北省廊坊市三河市燕郊镇",
+        "phone": "13161621688",
+        "manager_name": "张三",
+        "is_active": 1
+      },
+      {
+        "id": 2,
+        "name": "涞水店",
+        "code": "LS001",
+        "address": "河北省保定市涞水县",
+        "phone": "0312-7654321",
+        "manager_name": "张伟阳",
+        "is_active": 1
+      }
+    ],
     "expires_in": 7200
   }
 }

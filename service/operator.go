@@ -45,36 +45,62 @@ func (s *operatorService) AdminLogin(req *model.AdminLoginRequest) (*model.Admin
 		return nil, errors.New("账号或密码错误")
 	}
 
-	// 3. 获取店铺信息
-	shop, err := s.shopRepo.GetShopByID(operator.ShopID)
-	if err != nil {
-		return nil, errors.New("获取店铺信息失败")
-	}
-
-	// 4. 生成 JWT Token
+	// 3. 生成 JWT Token
 	isRoot := operator.Name == "root" // root 账号为超级管理员
 	token, err := pkg.GenerateAdminJWTToken(operator.ID, operator.Name, operator.ShopID, isRoot)
 	if err != nil {
 		return nil, errors.New("生成 token 失败")
 	}
 
-	// 5. 转换为简化的店铺信息
-	shopSimple := &model.ShopSimple{
-		ID:          shop.ID,
-		Name:        shop.Name,
-		Code:        shop.Code,
-		Address:     shop.Address,
-		Phone:       shop.Phone,
-		ManagerName: shop.ManagerName,
-		IsActive:    shop.IsActive,
-	}
-
-	return &model.AdminLoginResponse{
+	// 4. 根据管理员类型返回不同的店铺信息
+	response := &model.AdminLoginResponse{
 		Token:     token,
 		Operator:  operator,
-		ShopInfo:  shopSimple,
 		ExpiresIn: 7200, // 2小时
-	}, nil
+	}
+
+	if isRoot {
+		// 超级管理员返回所有店铺信息
+		shops, err := s.shopRepo.GetAllActiveShops()
+		if err != nil {
+			return nil, errors.New("获取店铺列表失败")
+		}
+
+		// 转换为简化的店铺信息
+		shopList := make([]model.ShopSimple, 0, len(shops))
+		for _, shop := range shops {
+			shopSimple := model.ShopSimple{
+				ID:          shop.ID,
+				Name:        shop.Name,
+				Code:        shop.Code,
+				Address:     shop.Address,
+				Phone:       shop.Phone,
+				ManagerName: shop.ManagerName,
+				IsActive:    shop.IsActive,
+			}
+			shopList = append(shopList, shopSimple)
+		}
+		response.ShopList = shopList
+	} else {
+		// 普通管理员返回单个店铺信息
+		shop, err := s.shopRepo.GetShopByID(operator.ShopID)
+		if err != nil {
+			return nil, errors.New("获取店铺信息失败")
+		}
+
+		shopSimple := &model.ShopSimple{
+			ID:          shop.ID,
+			Name:        shop.Name,
+			Code:        shop.Code,
+			Address:     shop.Address,
+			Phone:       shop.Phone,
+			ManagerName: shop.ManagerName,
+			IsActive:    shop.IsActive,
+		}
+		response.ShopInfo = shopSimple
+	}
+
+	return response, nil
 }
 
 func (s *operatorService) GetOperatorByID(operatorID int64) (*model.Operator, error) {

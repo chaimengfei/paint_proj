@@ -13,10 +13,11 @@ import (
 type ProductController struct {
 	productService service.ProductService
 	userService    service.UserService
+	shopService    service.ShopService
 }
 
-func NewProductController(s service.ProductService, us service.UserService) *ProductController {
-	return &ProductController{productService: s, userService: us}
+func NewProductController(s service.ProductService, us service.UserService, ss service.ShopService) *ProductController {
+	return &ProductController{productService: s, userService: us, shopService: ss}
 }
 
 // GetProductList 获取商品列表
@@ -98,6 +99,23 @@ func (pc *ProductController) GetAdminProductList(c *gin.Context) {
 		return
 	}
 
+	// 获取店铺信息
+	var shopInfo *model.ShopSimple
+	if shopID > 0 {
+		shop, err := pc.shopService.GetShopByID(shopID)
+		if err == nil && shop != nil {
+			shopInfo = &model.ShopSimple{
+				ID:          shop.ID,
+				Name:        shop.Name,
+				Code:        shop.Code,
+				Address:     shop.Address,
+				Phone:       shop.Phone,
+				ManagerName: shop.ManagerName,
+				IsActive:    shop.IsActive,
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"data": gin.H{
@@ -105,6 +123,7 @@ func (pc *ProductController) GetAdminProductList(c *gin.Context) {
 			"total":     total,
 			"page":      page,
 			"page_size": pageSize,
+			"shop_info": shopInfo,
 		},
 	})
 }
@@ -162,7 +181,30 @@ func (pc *ProductController) AddProduct(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "添加成功"})
+	// 获取店铺信息
+	var shopInfo *model.ShopSimple
+	if shopID > 0 {
+		shop, err := pc.shopService.GetShopByID(shopID)
+		if err == nil && shop != nil {
+			shopInfo = &model.ShopSimple{
+				ID:          shop.ID,
+				Name:        shop.Name,
+				Code:        shop.Code,
+				Address:     shop.Address,
+				Phone:       shop.Phone,
+				ManagerName: shop.ManagerName,
+				IsActive:    shop.IsActive,
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "添加成功",
+		"data": gin.H{
+			"shop_info": shopInfo,
+		},
+	})
 }
 
 // EditProduct 编辑商品（后台）
@@ -219,7 +261,30 @@ func (pc *ProductController) EditProduct(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "编辑成功"})
+	// 获取店铺信息
+	var shopInfo *model.ShopSimple
+	if shopID > 0 {
+		shop, err := pc.shopService.GetShopByID(shopID)
+		if err == nil && shop != nil {
+			shopInfo = &model.ShopSimple{
+				ID:          shop.ID,
+				Name:        shop.Name,
+				Code:        shop.Code,
+				Address:     shop.Address,
+				Phone:       shop.Phone,
+				ManagerName: shop.ManagerName,
+				IsActive:    shop.IsActive,
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "编辑成功",
+		"data": gin.H{
+			"shop_info": shopInfo,
+		},
+	})
 }
 
 // DeleteProduct 删除商品（后台）
@@ -281,10 +346,30 @@ func (pc *ProductController) GetProductByID(c *gin.Context) {
 		return
 	}
 
-	// 3. 返回商品信息
+	// 3. 获取店铺信息
+	var shopInfo *model.ShopSimple
+	if product.ShopID > 0 {
+		shop, err := pc.shopService.GetShopByID(product.ShopID)
+		if err == nil && shop != nil {
+			shopInfo = &model.ShopSimple{
+				ID:          shop.ID,
+				Name:        shop.Name,
+				Code:        shop.Code,
+				Address:     shop.Address,
+				Phone:       shop.Phone,
+				ManagerName: shop.ManagerName,
+				IsActive:    shop.IsActive,
+			}
+		}
+	}
+
+	// 4. 返回商品信息
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
-		"data": product,
+		"data": gin.H{
+			"product":   product,
+			"shop_info": shopInfo,
+		},
 	})
 }
 

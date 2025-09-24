@@ -56,7 +56,7 @@ func SetupRouter() *gin.Engine {
 
 	// 5. 初始化控制器
 	cartController := controller.NewCartController(cartService)
-	productController := controller.NewProductController(productService, userService)
+	productController := controller.NewProductController(productService, userService, shopService)
 	orderController := controller.NewOrderController(orderService)
 	payController := controller.NewPayController(payService)
 	userController := controller.NewUserController(userService)

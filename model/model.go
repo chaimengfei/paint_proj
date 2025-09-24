@@ -370,15 +370,13 @@ type ShopSimple struct {
 
 // 后台管理员模型
 type Operator struct {
-	ID        int64     `json:"id" gorm:"id,primaryKey;autoIncrement"` // 管理员ID
-	Name      string    `json:"name" gorm:"name,uniqueIndex"`          // 管理员账号
-	Password  string    `json:"-" gorm:"password"`                     // 密码(加密，不返回给前端)
-	ShopID    int64     `json:"shop_id" gorm:"shop_id"`                // 所属店铺ID
-	RealName  string    `json:"real_name" gorm:"real_name"`            // 真实姓名
-	Phone     string    `json:"phone" gorm:"phone"`                    // 联系电话
-	IsActive  int8      `json:"is_active" gorm:"is_active"`            // 是否启用(1:启用,0:禁用)
-	CreatedAt time.Time `json:"created_at" gorm:"created_at"`          // 创建时间
-	UpdatedAt time.Time `json:"updated_at" gorm:"updated_at"`          // 更新时间
+	ID       int64  `json:"id" gorm:"id,primaryKey;autoIncrement"` // 管理员ID
+	Name     string `json:"name" gorm:"name,uniqueIndex"`          // 管理员账号
+	Password string `json:"-" gorm:"password"`                     // 密码(加密，不返回给前端)
+	ShopID   int64  `json:"shop_id" gorm:"shop_id"`                // 所属店铺ID
+	RealName string `json:"real_name" gorm:"real_name"`            // 真实姓名
+	Phone    string `json:"phone" gorm:"phone"`                    // 联系电话
+	IsActive int8   `json:"is_active" gorm:"is_active"`            // 是否启用(1:启用,0:禁用)
 }
 
 func (*Operator) TableName() string {

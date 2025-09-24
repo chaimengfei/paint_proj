@@ -70,6 +70,7 @@ func (pc *ProductController) UploadImageForAdmin(c *gin.Context) {
 func (pc *ProductController) GetAdminProductList(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	pageSizeStr := c.DefaultQuery("page_size", "10")
+	shopIDStr := c.DefaultQuery("shop_id", "0")
 
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
@@ -79,8 +80,19 @@ func (pc *ProductController) GetAdminProductList(c *gin.Context) {
 	if err != nil || pageSize < 1 {
 		pageSize = 10
 	}
+	shopID, err := strconv.ParseInt(shopIDStr, 10, 64)
+	if err != nil {
+		shopID = 0
+	}
 
-	products, total, err := pc.productService.GetAdminProductList(page, pageSize)
+	// 验证店铺权限
+	validShopID, isValid := pkg.ValidateShopPermission(c, shopID)
+	if !isValid {
+		return
+	}
+	shopID = validShopID
+
+	products, total, err := pc.productService.GetAdminProductList(page, pageSize, shopID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": err.Error()})
 		return
@@ -105,7 +117,18 @@ func (pc *ProductController) AddProduct(c *gin.Context) {
 		return
 	}
 
-	// 检查商品名称是否已存在
+	// 验证店铺权限
+	shopID, isValid := pkg.ValidateShopPermission(c, req.ShopID)
+	if !isValid {
+		return
+	}
+
+	if shopID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "缺少店铺信息"})
+		return
+	}
+
+	// 检查商品名称是否已存在（在同一店铺内）
 	exists, err := pc.productService.CheckProductNameExists(req.Name)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "检查商品名称失败: " + err.Error()})
@@ -126,6 +149,7 @@ func (pc *ProductController) AddProduct(c *gin.Context) {
 		Unit:          req.Unit,
 		Remark:        req.Remark,
 		IsOnShelf:     req.IsOnShelf,
+		ShopID:        shopID,
 		// 成本相关字段由入库单自动更新，初始化为0
 		Cost:         0,
 		ShippingCost: 0,
@@ -156,6 +180,17 @@ func (pc *ProductController) EditProduct(c *gin.Context) {
 		return
 	}
 
+	// 验证店铺权限
+	shopID, isValid := pkg.ValidateShopPermission(c, req.ShopID)
+	if !isValid {
+		return
+	}
+
+	if shopID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "缺少店铺信息"})
+		return
+	}
+
 	// 检查商品名称是否已存在（排除当前编辑的商品）
 	exists, err := pc.productService.CheckProductNameExists(req.Name, id)
 	if err != nil {
@@ -176,6 +211,7 @@ func (pc *ProductController) EditProduct(c *gin.Context) {
 		Specification: req.Specification,
 		Remark:        req.Remark,
 		IsOnShelf:     req.IsOnShelf,
+		ShopID:        shopID,
 	}
 
 	if err = pc.productService.UpdateProduct(product); err != nil {
@@ -189,12 +225,34 @@ func (pc *ProductController) EditProduct(c *gin.Context) {
 // DeleteProduct 删除商品（后台）
 func (pc *ProductController) DeleteProduct(c *gin.Context) {
 	idStr := c.Param("id")
-	id, _ := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "商品ID格式错误"})
+		return
+	}
 
+	// 1. 先查询商品信息
+	product, err := pc.productService.GetProductByID(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取商品信息失败: " + err.Error()})
+		return
+	}
+
+	// 2. 验证店铺权限
+	operatorShopID := c.GetInt64("shop_id")
+	isRoot := c.GetBool("is_root")
+
+	if !isRoot && product.ShopID != operatorShopID {
+		c.JSON(http.StatusForbidden, gin.H{"code": -1, "message": "无权限删除该商品"})
+		return
+	}
+
+	// 3. 执行删除操作
 	if err := pc.productService.DeleteProduct(id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "删除失败"})
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "删除成功"})
 }
 
@@ -207,12 +265,23 @@ func (pc *ProductController) GetProductByID(c *gin.Context) {
 		return
 	}
 
+	// 1. 先查询商品信息
 	product, err := pc.productService.GetProductByID(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取商品信息失败: " + err.Error()})
 		return
 	}
 
+	// 2. 验证店铺权限
+	operatorShopID := c.GetInt64("shop_id")
+	isRoot := c.GetBool("is_root")
+
+	if !isRoot && product.ShopID != operatorShopID {
+		c.JSON(http.StatusForbidden, gin.H{"code": -1, "message": "无权限查看该商品"})
+		return
+	}
+
+	// 3. 返回商品信息
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"data": product,

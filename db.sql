@@ -15,10 +15,11 @@ CREATE TABLE IF NOT EXISTS operator (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='后台管理员表';
 
 -- 插入示例管理员数据
+-- 密码说明: root=admin123, lizengchun=lzc123, zhangweiyang=zwy123
 INSERT INTO operator (name, password, shop_id, real_name, phone) VALUES
-('root', '$2a$10$encrypted_password_root', 1, '超级管理员', '400-000-0000'),
-('lizengchun', '$2a$10$encrypted_password_lzc', 1, '李增春', '131-0000-0000'),
-('zhangweiyang', '$2a$10$encrypted_password_zwy', 2, '张伟阳', '132-0000-0000');
+('root', '$2a$10$4YpHd00gQ7NuVkxHofK9Vupfm4rC/mwE0yfDtkoa0B/63Ec7uyTDG', 1, '超级管理员', '400-000-0000'),
+('lizengchun', '$2a$10$rIzWQMbXpsFgQSSotodPDuVNKaphBIsYoxZrAb5orzrASOzH20MXW', 1, '李增春', '131-0000-0000'),
+('zhangweiyang', '$2a$10$HLfwdIvwGjodaDkjQnrQVuhBnQsRytKtrvolXB861whv2n96.Lzge', 2, '张伟阳', '132-0000-0000');
 
 -- 创建库存日志表
 CREATE TABLE IF NOT EXISTS stock_log (

@@ -77,9 +77,9 @@ curl -X GET "http://localhost:8009/admin/shop/list"
 系统支持后台管理员登录认证，使用 JWT Token 方案：
 
 #### 管理员账号
-- **root**: 超级管理员，可操作所有店铺数据
-- **lizengchun**: 燕郊店管理员，只能操作燕郊店数据
-- **zhangweiyang**: 涞水店管理员，只能操作涞水店数据
+- **root** (密码: admin123): 超级管理员，可操作所有店铺数据
+- **lizengchun** (密码: lzc123): 燕郊店管理员，只能操作燕郊店数据
+- **zhangweiyang** (密码: zwy123): 涞水店管理员，只能操作涞水店数据
 
 #### 登录接口
 ```bash
@@ -155,11 +155,12 @@ curl -X POST "http://localhost:8009/admin/stock/batch/inbound" \
 #### 数据库初始化
 首次使用前，需要在数据库中插入管理员数据：
 ```sql
--- 插入示例管理员数据（密码需要加密）
+-- 插入示例管理员数据（密码已加密）
+-- 密码说明: root=admin123, lizengchun=lzc123, zhangweiyang=zwy123
 INSERT INTO operator (name, password, shop_id, real_name, phone) VALUES
-('root', '$2a$10$encrypted_password_root', 1, '超级管理员', '400-000-0000'),
-('lizengchun', '$2a$10$encrypted_password_lzc', 1, '李增春', '131-0000-0000'),
-('zhangweiyang', '$2a$10$encrypted_password_zwy', 2, '张伟阳', '132-0000-0000');
+('root', '$2a$10$4YpHd00gQ7NuVkxHofK9Vupfm4rC/mwE0yfDtkoa0B/63Ec7uyTDG', 1, '超级管理员', '400-000-0000'),
+('lizengchun', '$2a$10$rIzWQMbXpsFgQSSotodPDuVNKaphBIsYoxZrAb5orzrASOzH20MXW', 1, '李增春', '131-0000-0000'),
+('zhangweiyang', '$2a$10$HLfwdIvwGjodaDkjQnrQVuhBnQsRytKtrvolXB861whv2n96.Lzge', 2, '张伟阳', '132-0000-0000');
 ```
 
 **注意**: 管理员账号数量有限，如需新增管理员，请直接在数据库中插入记录。系统不提供通过接口创建、修改、删除管理员的功能。
@@ -684,6 +685,16 @@ curl --location --request DELETE 'http://127.0.0.1:8009/admin/address/del/1'
 3. **图片上传**: 图片上传接口返回的是完整的URL地址
 4. **分页参数**: 页码从1开始，每页大小默认为10
 5. **商品状态**: `is_on_shelf`字段控制商品是否上架，1表示上架，0表示下架
+6. **店铺管理**: 
+   - 获取商品列表支持 `shop_id` 参数进行店铺筛选
+   - 新增和编辑商品时，`shop_id` 字段可选，如果未提供则从JWT token中获取
+   - 超级管理员(root)可以操作所有店铺的商品，其他管理员只能操作自己店铺的商品
+   - **权限验证机制**：
+     - 前端可以传递 `shop_id` 参数，便于显示当前操作的店铺
+     - 后端会验证前端传递的 `shop_id` 是否与管理员权限匹配
+     - 如果前端未传递 `shop_id`，则自动使用JWT token中的店铺ID
+     - 普通管理员(lizengchun/zhangweiyang)只能操作自己店铺的数据
+     - 超级管理员(root)可以操作任意店铺的数据
 
 6. **字段对比**
 
@@ -714,44 +725,90 @@ curl --location --request DELETE 'http://127.0.0.1:8009/admin/address/del/1'
 ##### 获取商品列表
 
 ```
-curl http://127.0.0.1:8009/admin/product/list
-{"code":0,"data":{"list":[{"id":1,"name":"贸彩1K白","seller_price":112.00,"cost":87.00,"shipping_cost":2.00,"product_cost":85.00,"category_id":1,"stock":100,"image":"http://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/07GE2k1DJWhah4QA_RlY91685434479136.jpg","specification":"4L","unit":"桶","remark":"","is_on_shelf":1},{"id":2,"name":"贸彩1K特黑","seller_price":108.00,"cost":67.00,"shipping_cost":0.00,"product_cost":67.00,"category_id":1,"stock":118,"image":"https://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/eBJ1AAdnMvKC-MiM1MK0O1686032850008.png","specification":"8L","unit":"桶","remark":"","is_on_shelf":1},{"id":3,"name":"原子灰","seller_price":85.00,"cost":80.00,"shipping_cost":0.00,"product_cost":80.00,"category_id":3,"stock":98,"image":"https://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/eBJ1AAdnMvKC-MiM1MK0O1686032850008.png","specification":"3KG*4","unit":"箱","remark":"","is_on_shelf":1},{"id":4,"name":"贸彩2K特白","seller_price":115.00,"cost":87.00,"shipping_cost":3.00,"product_cost":85.00,"category_id":1,"stock":120,"image":"https://dsers-affiliate.s3.amazonaws.com/logo-big.png","specification":"20L","unit":"桶","remark":"","is_on_shelf":0}],"page":1,"page_size":10,"total":4}}%  
+# 超级管理员(root) - 可以查看所有店铺的商品
+curl "http://127.0.0.1:8009/admin/product/list?page=1&page_size=10" \
+  -H "Authorization: Bearer ROOT_TOKEN"
+
+# 超级管理员(root) - 可以查看指定店铺的商品
+curl "http://127.0.0.1:8009/admin/product/list?page=1&page_size=10&shop_id=2" \
+  -H "Authorization: Bearer ROOT_TOKEN"
+
+# 普通管理员(lizengchun) - 只能查看自己店铺的商品
+curl "http://127.0.0.1:8009/admin/product/list?page=1&page_size=10" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN"
+
+# 普通管理员(lizengchun) - 尝试查看其他店铺商品会返回403错误
+curl "http://127.0.0.1:8009/admin/product/list?page=1&page_size=10&shop_id=2" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN"
+# 返回: {"code":-1,"message":"无权限查看该店铺的商品"}
 ```
 
 
 
 ##### 新增商品
 
-```http
-curl --location 'http://127.0.0.1:8009/admin/product/add' \
---header 'Content-Type: application/json' \
---data '{
-                "name": "贸彩1K白",
-                "category_id": 1,
-                "seller_price": 120,
-                "image": "http://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/07GE2k1DJWhah4QA_RlY91685434479136.jpg",
-                "unit": "桶",
-                "is_on_shelf":1,
-                "remark": ""
-            }'
-{"code":0,"message":"添加成功"}% 
+```bash
+# 普通管理员(lizengchun) - 新增商品到自己的店铺
+curl -X POST "http://127.0.0.1:8009/admin/product/add" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "贸彩1K白",
+    "category_id": 1,
+    "seller_price": 120,
+    "image": "http://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/07GE2k1DJWhah4QA_RlY91685434479136.jpg",
+    "unit": "桶",
+    "is_on_shelf": 1,
+    "remark": "",
+    "shop_id": 1
+  }'
+
+# 普通管理员(lizengchun) - 不传递shop_id，自动使用JWT中的店铺ID
+curl -X POST "http://127.0.0.1:8009/admin/product/add" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "贸彩1K白",
+    "category_id": 1,
+    "seller_price": 120,
+    "image": "http://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/07GE2k1DJWhah4QA_RlY91685434479136.jpg",
+    "unit": "桶",
+    "is_on_shelf": 1,
+    "remark": ""
+  }'
+
+# 普通管理员(lizengchun) - 尝试添加商品到其他店铺会返回403错误
+curl -X POST "http://127.0.0.1:8009/admin/product/add" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "贸彩1K白",
+    "category_id": 1,
+    "seller_price": 120,
+    "image": "http://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/07GE2k1DJWhah4QA_RlY91685434479136.jpg",
+    "unit": "桶",
+    "is_on_shelf": 1,
+    "remark": "",
+    "shop_id": 2
+  }'
+# 返回: {"code":-1,"message":"无权限操作该店铺的数据"}
 ```
 
 ##### 编辑商品
-```http
- curl --location --request PUT 'http://127.0.0.1:8009/admin/product/edit/4' \
---header 'Content-Type: application/json' \
---data '{
-                "id":1,
-                "name": "贸彩1K白",
-                "category_id": 1,
-                "seller_price": 120,
-                "image": "http://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/07GE2k1DJWhah4QA_RlY91685434479136.jpg",
-                "unit": "桶",
-                "is_on_shelf":1,
-                "remark": ""
-            }'
-{"code":0,"message":"编辑成功"}
+
+```bash
+# 编辑商品（店铺ID从JWT token中获取）
+curl -X PUT "http://127.0.0.1:8009/admin/product/edit/4" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "贸彩1K白",
+    "seller_price": 120,
+    "image": "http://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/07GE2k1DJWhah4QA_RlY91685434479136.jpg",
+    "is_on_shelf": 1,
+    "remark": "",
+    "shop_id": 1
+  }'
 ```
 
 ##### 删除商品

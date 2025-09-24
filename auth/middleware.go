@@ -14,7 +14,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		// 解析 Header 里的 Token
 		tokenStr := c.GetHeader("Authorization")
 		if tokenStr == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "缺少 Authorization header"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "缺少 Authorization "})
 			return
 		}
 
@@ -40,7 +40,7 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 		// 解析 Header 里的 Token
 		tokenStr := c.GetHeader("Authorization")
 		if tokenStr == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "缺少 Authorization header"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "web后台缺少 Authorization header"})
 			return
 		}
 

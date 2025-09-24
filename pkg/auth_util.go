@@ -1,48 +1,48 @@
 package pkg
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
 
-// GetOperatorShopID 获取操作者的店铺ID（考虑超级管理员权限）
-func GetOperatorShopID(c *gin.Context, targetShopID int64) int64 {
-	authType := c.GetString("auth_type")
+	"github.com/gin-gonic/gin"
+)
 
-	if authType == "admin" {
-		isRoot := c.GetBool("is_root")
-		operatorShopID := c.GetInt64("shop_id")
+// GetOperatorShopID 获取操作员的有效店铺ID
+// 优先使用前端传递的shopID，但需要验证权限
+// 如果前端没有传递shopID，则使用JWT中的店铺ID
+func GetOperatorShopID(c *gin.Context, frontendShopID int64) (int64, error) {
+	operatorShopID := c.GetInt64("shop_id")
+	isRoot := c.GetBool("is_root")
 
-		if isRoot {
-			// 超级管理员可以操作指定店铺，如果不指定则操作所有店铺
-			if targetShopID > 0 {
-				return targetShopID
-			}
-			return 0 // 0 表示所有店铺
-		}
-
-		// 普通管理员只能操作自己店铺
-		return operatorShopID
+	// 如果前端没有传递shop_id，使用JWT中的店铺ID
+	if frontendShopID == 0 {
+		return operatorShopID, nil
 	}
 
-	// 小程序用户
-	return c.GetInt64("shop_id")
+	// 如果前端传递了shop_id，需要验证权限
+	if !isRoot && frontendShopID != operatorShopID {
+		c.JSON(http.StatusForbidden, gin.H{"code": -1, "message": "无权限操作该店铺的数据"})
+		return 0, gin.Error{Err: nil, Type: gin.ErrorTypePublic}
+	}
+
+	return frontendShopID, nil
 }
 
-// IsRootOperator 检查是否为超级管理员
-func IsRootOperator(c *gin.Context) bool {
-	authType := c.GetString("auth_type")
-	if authType == "admin" {
-		return c.GetBool("is_root")
-	}
-	return false
-}
+// ValidateShopPermission 验证店铺权限
+// 如果验证失败，会直接返回错误响应
+func ValidateShopPermission(c *gin.Context, targetShopID int64) (int64, bool) {
+	operatorShopID := c.GetInt64("shop_id")
+	isRoot := c.GetBool("is_root")
 
-// GetOperatorID 获取操作者ID
-func GetOperatorID(c *gin.Context) int64 {
-	authType := c.GetString("auth_type")
-
-	if authType == "admin" {
-		return c.GetInt64("operator_id")
+	// 如果目标店铺ID为0，使用操作员的店铺ID
+	if targetShopID == 0 {
+		return operatorShopID, true
 	}
 
-	// 小程序用户
-	return c.GetInt64("user_id")
+	// 验证权限：超级管理员可以操作所有店铺，普通管理员只能操作自己的店铺
+	if !isRoot && targetShopID != operatorShopID {
+		c.JSON(http.StatusForbidden, gin.H{"code": -1, "message": "无权限操作该店铺的数据"})
+		return 0, false
+	}
+
+	return targetShopID, true
 }

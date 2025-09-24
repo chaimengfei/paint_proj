@@ -139,6 +139,7 @@ type AddOrEditSimpleProductRequest struct {
 	Unit          string `json:"unit" binding:"required"`         // 单位 L/桶/卷
 	IsOnShelf     int8   `json:"is_on_shelf" binding:"required"`  // 是否上架(1:上架,0:下架)
 	Remark        string `json:"remark"`                          // 备注（可选）
+	ShopID        int64  `json:"shop_id"`                         // 店铺ID（可选，从JWT token中获取）
 }
 
 // 编辑商品请求结构体
@@ -149,6 +150,7 @@ type EditProductRequest struct {
 	Specification string `json:"specification"`                   // 规格（可选）
 	IsOnShelf     int8   `json:"is_on_shelf" binding:"required"`  // 是否上架(1:上架,0:下架)
 	Remark        string `json:"remark"`                          // 备注（可选）
+	ShopID        int64  `json:"shop_id"`                         // 店铺ID（可选，从JWT token中获取）
 }
 
 // 分类管理请求结构体

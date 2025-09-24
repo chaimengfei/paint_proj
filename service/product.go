@@ -19,6 +19,7 @@ type ProductService interface {
 
 	// 分类管理方法
 	GetAllCategories() ([]model.Category, error)
+	GetCategoriesByShop(shopID int64) ([]model.Category, error)
 	AddCategory(category *model.Category) error
 	UpdateCategory(category *model.Category) error
 	DeleteCategory(id int64) error
@@ -94,6 +95,10 @@ func (ps *productService) GetProductListByShop(shopID int64) ([]model.Category, 
 
 func (ps *productService) GetAllCategories() ([]model.Category, error) {
 	return ps.productRepo.GetAllCategories()
+}
+
+func (ps *productService) GetCategoriesByShop(shopID int64) ([]model.Category, error) {
+	return ps.productRepo.GetCategoriesByShop(shopID)
 }
 
 func (ps *productService) GetAdminProductList(page, pageSize int, shopID int64) ([]model.Product, int64, error) {

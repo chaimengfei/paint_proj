@@ -860,41 +860,162 @@ curl --location --request DELETE 'http://127.0.0.1:8009/admin/product/del/1'
 
 ##### 获取商品分类
 
+**说明：**
+- 支持 `shop_id` 参数进行店铺筛选
+- 超级管理员(root)可以查看所有店铺的分类，普通管理员只能查看自己店铺的分类
+- 如果未传递 `shop_id` 参数，则自动使用JWT token中的店铺ID
+
+```bash
+# 超级管理员(root) - 查看所有分类
+curl "http://127.0.0.1:8009/admin/product/categories" \
+  -H "Authorization: Bearer ROOT_TOKEN"
+
+# 超级管理员(root) - 查看指定店铺的分类
+curl "http://127.0.0.1:8009/admin/product/categories?shop_id=2" \
+  -H "Authorization: Bearer ROOT_TOKEN"
+
+# 普通管理员(lizengchun) - 只能查看自己店铺的分类
+curl "http://127.0.0.1:8009/admin/product/categories" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN"
+
+# 普通管理员(lizengchun) - 尝试查看其他店铺分类会返回403错误
+curl "http://127.0.0.1:8009/admin/product/categories?shop_id=2" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN"
+# 返回: {"code":-1,"message":"无权限操作该店铺的数据"}
 ```
-➜  ~ curl 'http://192.168.1.6:8009/admin/product/categories'
-{"code":0,"data":[{"id":1,"name":"1K-漆","sort_order":100},{"id":2,"name":"2K-漆","sort_order":99},{"id":3,"name":"辅料","sort_order":98}]}% 
+
+**响应示例**
+```json
+{
+  "code": 0,
+  "data": [
+    {
+      "id": 1,
+      "name": "1K-漆",
+      "sort_order": 100,
+      "shop_id": 1
+    },
+    {
+      "id": 2,
+      "name": "2K-漆", 
+      "sort_order": 99,
+      "shop_id": 1
+    }
+  ]
+}
 ```
 
 ##### 新增商品分类
 
-```
-➜  ~ curl --location 'http://192.168.1.6:8009/admin/product/category/add' \
---header 'Content-Type: application/json' \
---data '{
-    "name":"测试分类1",
-    "sort_order":96
-}'
+**说明：**
+- 需要传递 `shop_id` 参数指定店铺
+- 超级管理员(root)可以创建任意店铺的分类，普通管理员只能创建自己店铺的分类
+- 系统会验证 `shop_id` 与管理员权限是否匹配
+
+```bash
+# 普通管理员(lizengchun) - 新增分类到自己的店铺
+curl -X POST "http://127.0.0.1:8009/admin/product/category/add" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "测试分类1",
+    "sort_order": 96,
+    "shop_id": 1
+  }'
+
+# 超级管理员(root) - 新增分类到指定店铺
+curl -X POST "http://127.0.0.1:8009/admin/product/category/add" \
+  -H "Authorization: Bearer ROOT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "涞水店专用分类",
+    "sort_order": 95,
+    "shop_id": 2
+  }'
+
+# 普通管理员尝试创建其他店铺分类会返回403错误
+curl -X POST "http://127.0.0.1:8009/admin/product/category/add" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "其他店铺分类",
+    "sort_order": 94,
+    "shop_id": 2
+  }'
+# 返回: {"code":-1,"message":"无权限操作该店铺的数据"}
 {"code":0,"message":"添加分类成功"}
 ```
 
 ##### 编辑商品分类
 
+**说明：**
+- 需要传递 `shop_id` 参数指定店铺
+- 超级管理员(root)可以编辑任意店铺的分类，普通管理员只能编辑自己店铺的分类
+- 系统会验证 `shop_id` 与管理员权限是否匹配
+
+```bash
+# 普通管理员(lizengchun) - 编辑自己店铺的分类
+curl -X PUT "http://127.0.0.1:8009/admin/product/category/edit/4" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "测试分类4",
+    "sort_order": 96,
+    "shop_id": 1
+  }'
+
+# 超级管理员(root) - 编辑指定店铺的分类
+curl -X PUT "http://127.0.0.1:8009/admin/product/category/edit/5" \
+  -H "Authorization: Bearer ROOT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "涞水店分类更新",
+    "sort_order": 95,
+    "shop_id": 2
+  }'
+
+# 普通管理员尝试编辑其他店铺分类会返回403错误
+curl -X PUT "http://127.0.0.1:8009/admin/product/category/edit/5" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "其他店铺分类",
+    "sort_order": 94,
+    "shop_id": 2
+  }'
+# 返回: {"code":-1,"message":"无权限操作该店铺的数据"}
 ```
-curl --location --request PUT 'http://192.168.1.6:8009/admin/product/category/edit/4' \
---header 'Content-Type: application/json' \
---data '{
-    "id":4,
-    "name":"测试分类4",
-    "sort_order":96
-}'
-{ "code": 0,"message": "编辑分类成功"}
+
+**响应示例**
+```json
+{"code": 0, "message": "编辑分类成功"}
 ```
 
 ##### 删除商品分类
 
+**说明：**
+- 无需传递 `shop_id` 参数，系统会从JWT token中获取管理员权限
+- 系统会先查询分类信息，然后验证管理员是否有权限删除该分类
+- 超级管理员(root)可以删除任意店铺的分类，普通管理员只能删除自己店铺的分类
+
+```bash
+# 普通管理员(lizengchun) - 删除自己店铺的分类
+curl -X DELETE "http://127.0.0.1:8009/admin/product/category/del/4" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN"
+
+# 超级管理员(root) - 删除任意店铺的分类
+curl -X DELETE "http://127.0.0.1:8009/admin/product/category/del/5" \
+  -H "Authorization: Bearer ROOT_TOKEN"
+
+# 普通管理员尝试删除其他店铺分类会返回403错误
+curl -X DELETE "http://127.0.0.1:8009/admin/product/category/del/5" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN"
+# 返回: {"code":-1,"message":"无权限删除该分类"}
 ```
-curl --location --request DELETE 'http://192.168.1.6:8009/admin/product/category/del/4' 
-{ "code": 0,"message": "删除分类成功"}
+
+**响应示例**
+```json
+{"code": 0, "message": "删除分类成功"}
 ```
 
 

@@ -236,3 +236,25 @@ INSERT INTO shop (name, code, address, latitude, longitude, phone, manager_name)
 
 -- 为现有用户设置默认店铺（燕郊店）
 UPDATE user SET shop_id = 1 WHERE shop_id IS NULL;
+
+-- 创建商品分类表
+CREATE TABLE IF NOT EXISTS category (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '分类ID',
+  name VARCHAR(100) NOT NULL COMMENT '分类名称',
+  sort_order BIGINT DEFAULT 0 COMMENT '排序权重(数字越大越靠前)',
+  shop_id BIGINT NOT NULL COMMENT '关联店铺ID',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  INDEX idx_shop_id (shop_id),
+  INDEX idx_sort_order (sort_order),
+  FOREIGN KEY (shop_id) REFERENCES shop(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品分类表';
+
+-- 为现有分类表添加shop_id字段（如果表已存在）
+ALTER TABLE category 
+ADD COLUMN IF NOT EXISTS shop_id BIGINT NOT NULL DEFAULT 1 COMMENT '关联店铺ID' AFTER sort_order,
+ADD INDEX IF NOT EXISTS idx_shop_id (shop_id),
+ADD FOREIGN KEY IF NOT EXISTS (shop_id) REFERENCES shop(id) ON DELETE RESTRICT;
+
+-- 为现有分类设置默认店铺（燕郊店）
+UPDATE category SET shop_id = 1 WHERE shop_id IS NULL OR shop_id = 0;

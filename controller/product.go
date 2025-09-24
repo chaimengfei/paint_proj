@@ -375,7 +375,21 @@ func (pc *ProductController) GetProductByID(c *gin.Context) {
 
 // GetCategories 获取所有分类（后台）
 func (pc *ProductController) GetCategories(c *gin.Context) {
-	categories, err := pc.productService.GetAllCategories()
+	// 获取shop_id参数
+	shopIDStr := c.Query("shop_id")
+	shopID, err := strconv.ParseInt(shopIDStr, 10, 64)
+	if err != nil {
+		shopID = 0
+	}
+
+	// 验证店铺权限
+	validShopID, isValid := pkg.ValidateShopPermission(c, shopID)
+	if !isValid {
+		return
+	}
+	shopID = validShopID
+
+	categories, err := pc.productService.GetCategoriesByShop(shopID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取分类失败: " + err.Error()})
 		return
@@ -395,9 +409,21 @@ func (pc *ProductController) AddCategory(c *gin.Context) {
 		return
 	}
 
+	// 验证店铺权限
+	shopID, isValid := pkg.ValidateShopPermission(c, req.ShopID)
+	if !isValid {
+		return
+	}
+
+	if shopID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "缺少店铺信息"})
+		return
+	}
+
 	category := &model.Category{
 		Name:      req.Name,
 		SortOrder: req.SortOrder,
+		ShopID:    shopID,
 	}
 
 	if err := pc.productService.AddCategory(category); err != nil {
@@ -423,10 +449,22 @@ func (pc *ProductController) EditCategory(c *gin.Context) {
 		return
 	}
 
+	// 验证店铺权限
+	shopID, isValid := pkg.ValidateShopPermission(c, req.ShopID)
+	if !isValid {
+		return
+	}
+
+	if shopID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "缺少店铺信息"})
+		return
+	}
+
 	category := &model.Category{
 		ID:        id,
 		Name:      req.Name,
 		SortOrder: req.SortOrder,
+		ShopID:    shopID,
 	}
 
 	if err = pc.productService.UpdateCategory(category); err != nil {
@@ -446,6 +484,23 @@ func (pc *ProductController) DeleteCategory(c *gin.Context) {
 		return
 	}
 
+	// 1. 先查询分类信息
+	category, err := pc.productService.GetCategoryByID(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取分类信息失败: " + err.Error()})
+		return
+	}
+
+	// 2. 验证店铺权限
+	operatorShopID := c.GetInt64("shop_id")
+	isRoot := c.GetBool("is_root")
+
+	if !isRoot && category.ShopID != operatorShopID {
+		c.JSON(http.StatusForbidden, gin.H{"code": -1, "message": "无权限删除该分类"})
+		return
+	}
+
+	// 3. 删除分类
 	if err := pc.productService.DeleteCategory(id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "删除分类失败: " + err.Error()})
 		return

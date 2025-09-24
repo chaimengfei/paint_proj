@@ -157,11 +157,13 @@ type EditProductRequest struct {
 type AddCategoryRequest struct {
 	Name      string `json:"name" binding:"required"` // 分类名称
 	SortOrder int64  `json:"sort_order"`              // 排序权重(数字越大越靠前)
+	ShopID    int64  `json:"shop_id"`                 // 店铺ID
 }
 
 type EditCategoryRequest struct {
 	Name      string `json:"name" binding:"required"` // 分类名称
 	SortOrder int64  `json:"sort_order"`              // 排序权重(数字越大越靠前)
+	ShopID    int64  `json:"shop_id"`                 // 店铺ID
 }
 
 // 库存操作类型常量

@@ -35,6 +35,7 @@ type Category struct {
 	ID        int64  `json:"id" gorm:"id,primaryKey;autoIncrement" ` // 分类ID
 	Name      string `json:"name" gorm:"name"`                       // 分类名称
 	SortOrder int64  `json:"sort_order" gorm:"sort_order"`           // 排序权重(数字越大越靠前)
+	ShopID    int64  `json:"shop_id" gorm:"shop_id"`                 // 关联店铺ID
 }
 
 // TableName 表名称

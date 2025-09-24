@@ -11,6 +11,7 @@ type ProductRepository interface {
 	GetProductCategory() ([]model.Category, map[int64]string, error)                   //  从product表查分类
 	GetProductCategoryByShop(shopID int64) ([]model.Category, map[int64]string, error) //  根据店铺从product表查分类
 	GetAllCategories() ([]model.Category, error)                                       //  获取所有分类
+	GetCategoriesByShop(shopID int64) ([]model.Category, error)                        //  根据店铺获取分类
 	GetAllProduct() ([]model.Product, error)                                           //  获取所有商品
 	GetAllProductByShop(shopID int64) ([]model.Product, error)                         //  根据店铺获取所有商品
 
@@ -78,6 +79,15 @@ func (p *productRepository) GetProductCategoryByShop(shopID int64) ([]model.Cate
 func (p *productRepository) GetAllCategories() ([]model.Category, error) {
 	var categories []model.Category
 	if err := p.db.Model(&model.Category{}).Order("sort_order desc, id asc").Find(&categories).Error; err != nil {
+		return nil, err
+	}
+	return categories, nil
+}
+
+// GetCategoriesByShop 根据店铺获取分类
+func (p *productRepository) GetCategoriesByShop(shopID int64) ([]model.Category, error) {
+	var categories []model.Category
+	if err := p.db.Model(&model.Category{}).Where("shop_id = ?", shopID).Order("sort_order desc, id asc").Find(&categories).Error; err != nil {
 		return nil, err
 	}
 	return categories, nil

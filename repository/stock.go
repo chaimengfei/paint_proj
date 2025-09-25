@@ -16,6 +16,7 @@ type StockRepository interface {
 	CreateStockOperation(operation *model.StockOperation) error
 	CreateStockOperationItems(items []model.StockOperationItem) error
 	GetStockOperations(page, pageSize int, types *int8) ([]model.StockOperation, int64, error)
+	GetStockOperationsByShop(page, pageSize int, types *int8, shopID int64) ([]model.StockOperation, int64, error)
 	GetStockOperationByID(operationID int64) (*model.StockOperation, error)
 	GetStockOperationItems(operationID int64) ([]model.StockOperationItem, error)
 	GetStockOperationItemsByOrderID(orderID int64) ([]model.StockOperationItem, error)
@@ -75,6 +76,34 @@ func (sr *stockRepository) GetStockOperations(page, pageSize int, types *int8) (
 
 	// 构建查询条件
 	query := sr.db.Model(&model.StockOperation{})
+	if types != nil {
+		query = query.Where("types = ?", *types)
+	}
+
+	// 获取总数
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// 获取分页数据
+	offset := (page - 1) * pageSize
+	if err := query.Order("created_at DESC").
+		Offset(offset).
+		Limit(pageSize).
+		Find(&operations).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return operations, total, nil
+}
+
+// GetStockOperationsByShop 根据店铺获取库存操作主表列表
+func (sr *stockRepository) GetStockOperationsByShop(page, pageSize int, types *int8, shopID int64) ([]model.StockOperation, int64, error) {
+	var operations []model.StockOperation
+	var total int64
+
+	// 构建查询条件
+	query := sr.db.Model(&model.StockOperation{}).Where("shop_id = ?", shopID)
 	if types != nil {
 		query = query.Where("types = ?", *types)
 	}

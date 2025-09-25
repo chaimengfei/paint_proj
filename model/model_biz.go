@@ -234,6 +234,7 @@ type UpdateOutboundPaymentStatusRequest struct {
 	PaymentFinishStatus PaymentStatusCode `json:"payment_finish_status" binding:"required"` // 支付完成状态(1:未支付,3:已支付)
 	Operator            string            `json:"operator" binding:"required"`              // 操作人
 	OperatorID          int64             `json:"operator_id" binding:"required"`           // 操作人ID
+	ShopID              int64             `json:"shop_id"`                                  // 店铺ID
 }
 
 // 后台用户管理请求结构体

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"cmf/paint_proj/model"
+	"cmf/paint_proj/pkg"
 	"cmf/paint_proj/service"
 	"errors"
 	"fmt"
@@ -28,6 +29,13 @@ func (sc *StockController) BatchInboundStock(c *gin.Context) {
 		return
 	}
 
+	// 验证店铺权限
+	validShopID, isValid := pkg.ValidateShopPermission(c, req.ShopID)
+	if !isValid {
+		return
+	}
+	req.ShopID = validShopID
+
 	// 验证请求
 	if err := sc.validateBatchInboundRequest(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "验证失败: " + err.Error()})
@@ -51,6 +59,13 @@ func (sc *StockController) BatchOutboundStock(c *gin.Context) {
 		return
 	}
 
+	// 验证店铺权限
+	validShopID, isValid := pkg.ValidateShopPermission(c, req.ShopID)
+	if !isValid {
+		return
+	}
+	req.ShopID = validShopID
+
 	// 验证请求
 	if err := sc.validateBatchOutboundRequest(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "验证失败: " + err.Error()})
@@ -70,7 +85,8 @@ func (sc *StockController) BatchOutboundStock(c *gin.Context) {
 func (sc *StockController) GetStockOperations(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	pageSizeStr := c.DefaultQuery("page_size", "10")
-	typesStr := c.Query("types") // 获取types查询参数
+	typesStr := c.Query("types")    // 获取types查询参数
+	shopIDStr := c.Query("shop_id") // 获取shop_id查询参数
 
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
@@ -82,6 +98,22 @@ func (sc *StockController) GetStockOperations(c *gin.Context) {
 		pageSize = 10
 	}
 
+	// 解析shop_id参数
+	var shopID int64
+	if shopIDStr != "" {
+		shopID, err = strconv.ParseInt(shopIDStr, 10, 64)
+		if err != nil {
+			shopID = 0
+		}
+	}
+
+	// 验证店铺权限
+	validShopID, isValid := pkg.ValidateShopPermission(c, shopID)
+	if !isValid {
+		return
+	}
+	shopID = validShopID
+
 	// 解析types参数
 	var types *int8
 	if typesStr != "" {
@@ -92,7 +124,7 @@ func (sc *StockController) GetStockOperations(c *gin.Context) {
 		}
 	}
 
-	operations, total, err := sc.stockService.GetStockOperations(page, pageSize, types)
+	operations, total, err := sc.stockService.GetStockOperationsByShop(page, pageSize, types, shopID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取库存操作列表失败: " + err.Error()})
 		return
@@ -118,9 +150,19 @@ func (sc *StockController) GetStockOperationDetail(c *gin.Context) {
 		return
 	}
 
+	// 1. 先查询操作信息
 	operation, items, err := sc.stockService.GetStockOperationDetail(operationID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取库存操作详情失败: " + err.Error()})
+		return
+	}
+
+	// 2. 验证店铺权限
+	operatorShopID := c.GetInt64("shop_id")
+	isRoot := c.GetBool("is_root")
+
+	if !isRoot && operation.ShopID != operatorShopID {
+		c.JSON(http.StatusForbidden, gin.H{"code": -1, "message": "无权限查看该库存操作"})
 		return
 	}
 
@@ -140,6 +182,13 @@ func (sc *StockController) SetOutboundPaymentStatus(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误: " + err.Error()})
 		return
 	}
+
+	// 验证店铺权限
+	validShopID, isValid := pkg.ValidateShopPermission(c, req.ShopID)
+	if !isValid {
+		return
+	}
+	req.ShopID = validShopID
 
 	// 验证请求
 	if err := sc.validateUpdatePaymentStatusRequest(&req); err != nil {

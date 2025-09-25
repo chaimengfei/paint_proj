@@ -1032,6 +1032,9 @@ curl -X DELETE "http://127.0.0.1:8009/admin/product/category/del/5" \
 - Product 表的 `shipping_cost` 字段在初始化时设置，且不变
 - 总金额由前端计算并传递
 - **必须指定店铺ID**，管理员手动选择哪个店铺进行入库
+- **权限校验**：系统会验证传入的 `shop_id` 与JWT token中的权限是否匹配
+  - 超级管理员(root)可以操作任意店铺的入库
+  - 普通管理员(lizengchun/zhangweiyang)只能操作自己店铺的入库
 
 ```
 ➜  ~ curl --location 'http://127.0.0.1:8009/admin/stock/batch/inbound' \
@@ -1062,11 +1065,18 @@ curl -X DELETE "http://127.0.0.1:8009/admin/product/category/del/5" \
   - `2`: 涞水店
 
 #### 2. 批量出库操作
-```http
-POST /admin/stock/batch/outbound
-Content-Type: application/json
 
-{
+**说明：**
+- **权限校验**：系统会验证传入的 `shop_id` 与JWT token中的权限是否匹配
+  - 超级管理员(root)可以操作任意店铺的出库
+  - 普通管理员(lizengchun/zhangweiyang)只能操作自己店铺的出库
+
+```bash
+# 普通管理员(lizengchun) - 操作自己店铺的出库
+curl -X POST "http://127.0.0.1:8009/admin/stock/batch/outbound" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
     "items": [
         {
             "product_id": 3,
@@ -1083,10 +1093,57 @@ Content-Type: application/json
     "operator_id": 1001,
     "shop_id": 1,
     "remark": "后台操作"
-}
+  }'
+
+# 超级管理员(root) - 操作指定店铺的出库
+curl -X POST "http://127.0.0.1:8009/admin/stock/batch/outbound" \
+  -H "Authorization: Bearer ROOT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+        {
+            "product_id": 5,
+            "quantity": 1,
+            "unit_price": 100,
+            "total_price": 100,
+            "remark": "涞水店出库"
+        }
+    ],
+    "total_amount": 100,
+    "user_name": "王五",
+    "user_id": 1003,
+    "operator": "root",
+    "operator_id": 1,
+    "shop_id": 2,
+    "remark": "涞水店操作"
+  }'
+
+# 普通管理员尝试操作其他店铺出库会返回403错误
+curl -X POST "http://127.0.0.1:8009/admin/stock/batch/outbound" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+        {
+            "product_id": 5,
+            "quantity": 1,
+            "unit_price": 100,
+            "total_price": 100,
+            "remark": "其他店铺出库"
+        }
+    ],
+    "total_amount": 100,
+    "user_name": "王五",
+    "user_id": 1003,
+    "operator": "lizengchun",
+    "operator_id": 2,
+    "shop_id": 2,
+    "remark": "其他店铺操作"
+  }'
+# 返回: {"code":-1,"message":"无权限操作该店铺的数据"}
 ```
 
-**新增字段说明：**
+**字段说明：**
 - `shop_id`: 店铺ID（必填）
   - `1`: 燕郊店
   - `2`: 涞水店
@@ -1106,14 +1163,36 @@ Content-Type: application/json
 ```
 
 #### 3. 获取库存操作列表
-```http
-GET /admin/stock/operations?page=1&page_size=10&types=2
+
+**说明：**
+- 支持 `shop_id` 参数进行店铺筛选
+- 超级管理员(root)可以查看所有店铺的库存操作，普通管理员只能查看自己店铺的库存操作
+- 如果未传递 `shop_id` 参数，则自动使用JWT token中的店铺ID
+
+```bash
+# 超级管理员(root) - 查看所有库存操作
+curl "http://127.0.0.1:8009/admin/stock/operations?page=1&page_size=10" \
+  -H "Authorization: Bearer ROOT_TOKEN"
+
+# 超级管理员(root) - 查看指定店铺的库存操作
+curl "http://127.0.0.1:8009/admin/stock/operations?page=1&page_size=10&shop_id=2" \
+  -H "Authorization: Bearer ROOT_TOKEN"
+
+# 普通管理员(lizengchun) - 只能查看自己店铺的库存操作
+curl "http://127.0.0.1:8009/admin/stock/operations?page=1&page_size=10" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN"
+
+# 普通管理员(lizengchun) - 尝试查看其他店铺库存操作会返回403错误
+curl "http://127.0.0.1:8009/admin/stock/operations?page=1&page_size=10&shop_id=2" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN"
+# 返回: {"code":-1,"message":"无权限操作该店铺的数据"}
 ```
 
 **查询参数：**
 - `page`: 页码，默认为1
 - `page_size`: 每页大小，默认为10
 - `types`: 操作类型（可选），1-入库，2-出库，3-退货
+- `shop_id`: 店铺ID（可选），用于筛选特定店铺的库存操作
 
 **响应示例：**
 ```json
@@ -1159,6 +1238,28 @@ GET /admin/stock/operations?page=1&page_size=10&types=2
 ```
 
 #### 4. 获取库存操作详情
+
+**说明：**
+- 无需传递 `shop_id` 参数，系统会从JWT token中获取管理员权限
+- 系统会先查询操作信息，然后验证管理员是否有权限查看该操作
+- 超级管理员(root)可以查看任意店铺的库存操作详情，普通管理员只能查看自己店铺的库存操作详情
+
+```bash
+# 普通管理员(lizengchun) - 查看自己店铺的库存操作详情
+curl "http://127.0.0.1:8009/admin/stock/operation/123" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN"
+
+# 超级管理员(root) - 查看任意店铺的库存操作详情
+curl "http://127.0.0.1:8009/admin/stock/operation/456" \
+  -H "Authorization: Bearer ROOT_TOKEN"
+
+# 普通管理员尝试查看其他店铺库存操作详情会返回403错误
+curl "http://127.0.0.1:8009/admin/stock/operation/456" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN"
+# 返回: {"code":-1,"message":"无权限查看该库存操作"}
+```
+
+**请求示例：**
 ```http
 GET /admin/stock/operation/123
 ```
@@ -1203,6 +1304,52 @@ GET /admin/stock/operation/123
 ```
 
 #### 5. 更新出库单支付状态
+
+**说明：**
+- 需要传递 `shop_id` 参数指定店铺
+- 超级管理员(root)可以更新任意店铺的出库单支付状态，普通管理员只能更新自己店铺的出库单支付状态
+- 系统会验证 `shop_id` 与管理员权限是否匹配
+
+```bash
+# 普通管理员(lizengchun) - 更新自己店铺的出库单支付状态
+curl -X POST "http://127.0.0.1:8009/admin/stock/set/payment-status" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "operation_id": 123,
+    "payment_finish_status": 3,
+    "operator": "lizengchun",
+    "operator_id": 2,
+    "shop_id": 1
+  }'
+
+# 超级管理员(root) - 更新指定店铺的出库单支付状态
+curl -X POST "http://127.0.0.1:8009/admin/stock/set/payment-status" \
+  -H "Authorization: Bearer ROOT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "operation_id": 456,
+    "payment_finish_status": 3,
+    "operator": "root",
+    "operator_id": 1,
+    "shop_id": 2
+  }'
+
+# 普通管理员尝试更新其他店铺出库单支付状态会返回403错误
+curl -X POST "http://127.0.0.1:8009/admin/stock/set/payment-status" \
+  -H "Authorization: Bearer LIZENGCHUN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "operation_id": 456,
+    "payment_finish_status": 3,
+    "operator": "lizengchun",
+    "operator_id": 2,
+    "shop_id": 2
+  }'
+# 返回: {"code":-1,"message":"无权限操作该店铺的数据"}
+```
+
+**请求示例：**
 ```http
 POST /admin/stock/set/payment-status
 Content-Type: application/json
@@ -1211,7 +1358,8 @@ Content-Type: application/json
   "operation_id": 123,
   "payment_finish_status": 3,
   "operator": "管理员",
-  "operator_id": 1001
+  "operator_id": 1001,
+  "shop_id": 1
 }
 ```
 
@@ -1252,13 +1400,20 @@ curl --location 'http://127.0.0.1:8009/admin/stock/set/payment-status' \
 - 只能更新出库单的支付状态，不能更新入库单
 
 #### 6. 获取供货商列表
-```http
-GET /admin/stock/suppliers
+
+**说明：**
+- 无需传递任何参数，返回所有供货商列表
+- 所有管理员都可以查看完整的供货商列表
+
+```bash
+# 获取供货商列表
+curl "http://127.0.0.1:8009/admin/stock/suppliers" \
+  -H "Authorization: Bearer ROOT_TOKEN"
 ```
 
-**curl 命令示例：**
-```bash
-curl --location 'http://127.0.0.1:8009/admin/stock/suppliers'
+**请求示例：**
+```http
+GET /admin/stock/suppliers
 ```
 
 **响应示例：**

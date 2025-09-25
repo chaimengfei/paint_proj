@@ -19,6 +19,7 @@ type StockService interface {
 
 	// 库存操作查询
 	GetStockOperations(page, pageSize int, types *int8) ([]model.StockOperation, int64, error)
+	GetStockOperationsByShop(page, pageSize int, types *int8, shopID int64) ([]model.StockOperation, int64, error)
 	GetStockOperationDetail(operationID int64) (*model.StockOperation, []model.StockOperationItem, error)
 
 	// 供货商管理
@@ -241,6 +242,25 @@ func (ss *stockService) processOutboundItemWithNewStructure(item model.BatchOutb
 // GetStockOperations 获取库存操作列表
 func (ss *stockService) GetStockOperations(page, pageSize int, types *int8) ([]model.StockOperation, int64, error) {
 	operations, total, err := ss.stockRepo.GetStockOperations(page, pageSize, types)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 为每个操作填充Items字段
+	for i := range operations {
+		items, err := ss.stockRepo.GetStockOperationItems(operations[i].ID)
+		if err != nil {
+			return nil, 0, fmt.Errorf("获取操作ID %d 的明细失败: %v", operations[i].ID, err)
+		}
+		operations[i].Items = items
+	}
+
+	return operations, total, nil
+}
+
+// GetStockOperationsByShop 根据店铺获取库存操作列表
+func (ss *stockService) GetStockOperationsByShop(page, pageSize int, types *int8, shopID int64) ([]model.StockOperation, int64, error) {
+	operations, total, err := ss.stockRepo.GetStockOperationsByShop(page, pageSize, types, shopID)
 	if err != nil {
 		return nil, 0, err
 	}

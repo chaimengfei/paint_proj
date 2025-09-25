@@ -156,6 +156,7 @@ func SetupRouter() *gin.Engine {
 				stockGroup.POST("/set/payment-status", stockController.SetOutboundPaymentStatus) // 更新出库单支付状态
 				stockGroup.GET("/operations", stockController.GetStockOperations)                // 库存操作列表
 				stockGroup.GET("/operation/:id", stockController.GetStockOperationDetail)        // 库存操作详情
+				stockGroup.GET("/items", stockController.GetStockOperationItems)                 // 库存操作明细列表
 				stockGroup.GET("/suppliers", stockController.GetSupplierList)                    // 获取供货商列表
 			}
 

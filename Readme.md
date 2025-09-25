@@ -1715,7 +1715,82 @@ curl --location 'http://127.0.0.1:8009/admin/stock/set/payment-status' \
 - 设置为已支付时，系统会自动记录支付完成时间
 - 只能更新出库单的支付状态，不能更新入库单
 
-#### 6. 获取供货商列表
+#### 6. 获取库存操作明细列表
+
+**说明：**
+- 获取库存操作明细列表，支持按店铺和商品筛选
+- **权限校验**：系统会验证传入的 `shop_id` 与JWT token中的权限是否匹配
+  - 超级管理员(root)可以查看任意店铺的库存操作明细
+  - 普通管理员(lizengchun/zhangweiyang)只能查看自己店铺的库存操作明细
+- 支持分页查询和按商品ID筛选
+
+**请求参数：**
+- `page`: 页码（可选，默认1）
+- `page_size`: 每页数量（可选，默认10）
+- `shop_id`: 店铺ID（可选，用于筛选特定店铺的明细）
+- `product_id`: 商品ID（可选，用于筛选特定商品的明细）
+
+```bash
+# 获取库存操作明细列表
+curl "http://127.0.0.1:8009/admin/stock/items?page=1&page_size=10&shop_id=1&product_id=2" \
+  -H "Authorization: Bearer ROOT_TOKEN"
+```
+
+**请求示例：**
+```http
+GET /admin/stock/items?page=1&page_size=10&shop_id=1&product_id=2
+```
+
+**响应示例：**
+```json
+{
+  "code": 0,
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "operation_id": 1001,
+        "shop_id": 1,
+        "product_id": 2,
+        "quantity": 20,
+        "unit_price": 0,
+        "total_price": 1320,
+        "before_stock": 50,
+        "after_stock": 70,
+        "product_cost": 66,
+        "profit": 0,
+        "product_name": "华润漆",
+        "specification": "5L/桶",
+        "unit": "桶",
+        "remark": "0901入库",
+        "created_at": "2024-01-15T10:30:00Z"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "page_size": 10
+  },
+  "message": "获取库存操作明细成功"
+}
+```
+
+**字段说明：**
+- `operation_id`: 关联的库存操作主表ID
+- `shop_id`: 关联的店铺ID
+- `product_id`: 商品ID
+- `quantity`: 操作数量
+- `unit_price`: 单价（入库时为0，出库时为售价）
+- `total_price`: 总价
+- `before_stock`: 操作前库存
+- `after_stock`: 操作后库存
+- `product_cost`: 商品成本（进价）
+- `profit`: 利润（出库时计算）
+- `product_name`: 商品名称
+- `specification`: 商品规格
+- `unit`: 商品单位
+- `remark`: 备注
+
+#### 7. 获取供货商列表
 
 **说明：**
 - 无需传递任何参数，返回所有供货商列表
@@ -1871,112 +1946,67 @@ curl 'http://192.168.99.172:8009/admin/stock/operations?types=2&page=1&page_size
 - 地址信息建议进行合理性验证
 - 
 
-## 数据库表结构
+## 需初始化的数据库表结构
 
-### 商品表
-
-#### product 商品表
-```sql
-CREATE TABLE product (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  name VARCHAR(255) NOT NULL COMMENT '商品全名',
-  category_id BIGINT NOT NULL COMMENT '分类ID',
-  image VARCHAR(500) COMMENT '商品图片',
-  seller_price BIGINT NOT NULL DEFAULT 0 COMMENT '单价(分)',
-  cost BIGINT DEFAULT 0 COMMENT '成本(分)',
-  shipping_cost BIGINT DEFAULT 0 COMMENT '运费(分)',
-  product_cost BIGINT DEFAULT 0 COMMENT '货物成本(分)',
-  specification VARCHAR(200) DEFAULT '' COMMENT '规格',
-  unit VARCHAR(50) DEFAULT '' COMMENT '单位',
-  remark VARCHAR(500) COMMENT '备注',
-  stock INT NOT NULL DEFAULT 0 COMMENT '库存',
-  is_on_shelf TINYINT NOT NULL DEFAULT 1 COMMENT '是否上架(1:上架,0:下架)',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
-);
-```
-
-### 库存操作
-
-#### stock_operation 库存操作主表
-
-```sql
-CREATE TABLE stock_operation (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  operation_no VARCHAR(64) NOT NULL COMMENT '操作单号',
-  type TINYINT NOT NULL COMMENT '操作类型(1:入库,2:出库,3:退货)',
-  operator VARCHAR(255) NOT NULL COMMENT '操作人',
-  operator_id BIGINT NOT NULL COMMENT '操作人ID',
-  operator_type TINYINT NOT NULL COMMENT '操作人类型(1:用户,2:系统,3:管理员)',
-  user_name VARCHAR(255) COMMENT '用户名称(出库时)',
-  user_id BIGINT COMMENT '用户ID(出库时)',
-  user_account VARCHAR(255) COMMENT '用户账号(出库时)',
-  purchase_time TIMESTAMP COMMENT '购买时间(出库时)',
-  remark VARCHAR(255) COMMENT '备注',
-  total_amount BIGINT NOT NULL DEFAULT 0 COMMENT '总金额(分)',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
-);
-```
+### 库存操作明细表
 
 #### stock_operation_item 库存操作子表
 ```sql
 CREATE TABLE stock_operation_item (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   operation_id BIGINT NOT NULL COMMENT '操作主表ID',
+  shop_id BIGINT DEFAULT NULL COMMENT '关联店铺ID',
+  order_id BIGINT COMMENT '关联订单ID(小程序购买时)',
+  order_no VARCHAR(64) COMMENT '关联订单号(小程序购买时)',
   product_id BIGINT NOT NULL COMMENT '商品ID',
-  product_name VARCHAR(255) NOT NULL COMMENT '商品全名',
-  specification VARCHAR(200) DEFAULT '' COMMENT '规格',
   quantity INT NOT NULL COMMENT '操作数量',
   unit_price BIGINT NOT NULL DEFAULT 0 COMMENT '单价(分)',
   total_price BIGINT NOT NULL DEFAULT 0 COMMENT '总价(分)',
   before_stock INT NOT NULL COMMENT '操作前库存',
   after_stock INT NOT NULL COMMENT '操作后库存',
-  cost BIGINT NOT NULL DEFAULT 0 COMMENT '成本价(暂不用) 单位:分',
-  shipping_cost BIGINT NOT NULL DEFAULT 0 COMMENT '运费(暂不用) 单位:分',
-  product_cost BIGINT NOT NULL DEFAULT 0 COMMENT '货物成本(暂不用) 单位:分',
+  product_cost BIGINT NOT NULL DEFAULT 0 COMMENT '货物成本(进价) 单位:分',
+  profit BIGINT NOT NULL DEFAULT 0 COMMENT '利润(卖价-总成本)*数量 单位:分',
+  product_name VARCHAR(255) NOT NULL COMMENT '商品全名',
+  specification VARCHAR(200) DEFAULT '' COMMENT '规格',
+  unit VARCHAR(50) DEFAULT '' COMMENT '单位',
   remark VARCHAR(500) DEFAULT '' COMMENT '备注',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
-);
-```
-
-#### inbound_cost_change 入库成本变更记录表
-```sql
-CREATE TABLE inbound_cost_change (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键id',
-  operation_id BIGINT NOT NULL COMMENT '入库操作ID',
-  product_id BIGINT NOT NULL COMMENT '商品ID',
-  product_name VARCHAR(255) NOT NULL COMMENT '商品名称',
-  old_cost BIGINT NOT NULL DEFAULT 0 COMMENT '原成本价(分)',
-  new_cost BIGINT NOT NULL DEFAULT 0 COMMENT '新成本价(分)',
-  change_reason VARCHAR(500) DEFAULT '' COMMENT '变更原因',
-  operator VARCHAR(100) NOT NULL COMMENT '操作人',
-  operator_id BIGINT NOT NULL COMMENT '操作人ID',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   INDEX idx_operation_id (operation_id),
+  INDEX idx_shop_id (shop_id),
   INDEX idx_product_id (product_id),
-  INDEX idx_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='入库成本变更记录表';
-```
-
-#### stock_log 库存日志表（兼容旧版本）
-```sql
-CREATE TABLE stock_log (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  product_id BIGINT NOT NULL COMMENT '商品ID',
-  product_name VARCHAR(255) NOT NULL COMMENT '商品名称',
-  type TINYINT NOT NULL COMMENT '操作类型(1:入库,2:出库,3:退货)',
-  quantity INT NOT NULL COMMENT '操作数量',
-  before_stock INT NOT NULL COMMENT '操作前库存',
-  after_stock INT NOT NULL COMMENT '操作后库存',
-  order_no VARCHAR(64) COMMENT '关联订单号(出库/退货时)',
-  remark VARCHAR(255) COMMENT '备注',
-  operator VARCHAR(255) NOT NULL COMMENT '操作人',
-  operator_id BIGINT COMMENT '操作人ID',
-  operator_type TINYINT NOT NULL COMMENT '操作人类型(1:用户,2:系统,3:管理员)',
-  buyer_name VARCHAR(255) COMMENT '购买者名称(出库时)',
-  buyer_account VARCHAR(255) COMMENT '购买者账号(出库时)',
-  purchase_time TIMESTAMP COMMENT '购买时间(出库时)',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+  INDEX idx_order_id (order_id),
+  FOREIGN KEY (operation_id) REFERENCES stock_operation(id) ON DELETE CASCADE,
+  FOREIGN KEY (shop_id) REFERENCES shop(id) ON DELETE SET NULL,
+  FOREIGN KEY (product_id) REFERENCES product(id) ON DELETE CASCADE
 );
 ```
+
+**字段说明：**
+- `shop_id`: 关联店铺ID，用于快速筛选和权限控制
+- `operation_id`: 关联库存操作主表ID
+- `order_id`: 关联订单ID（小程序购买时）
+- `product_id`: 商品ID
+- `quantity`: 操作数量（正数为入库，负数为出库）
+- `unit_price`: 单价（入库时为0，出库时为售价）
+- `total_price`: 总价
+- `before_stock`: 操作前库存
+- `after_stock`: 操作后库存
+- `product_cost`: 商品成本（进价）
+- `profit`: 利润（出库时计算：(卖价-总成本)*数量）
+- `product_name`: 商品名称（冗余存储，便于查询）
+- `specification`: 商品规格
+- `unit`: 商品单位
+- `remark`: 备注
+
+**索引说明：**
+- `idx_operation_id`: 按操作ID查询明细
+- `idx_shop_id`: 按店铺ID快速筛选明细
+- `idx_product_id`: 按商品ID查询明细
+- `idx_order_id`: 按订单ID查询明细
+
+**外键约束：**
+- `operation_id` → `stock_operation(id)`: 级联删除
+- `shop_id` → `shop(id)`: 店铺删除时设为NULL
+- `product_id` → `product(id)`: 级联删除
+
 

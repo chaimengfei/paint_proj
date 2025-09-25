@@ -20,6 +20,7 @@ type StockRepository interface {
 	GetStockOperationByID(operationID int64) (*model.StockOperation, error)
 	GetStockOperationItems(operationID int64) ([]model.StockOperationItem, error)
 	GetStockOperationItemsByOrderID(orderID int64) ([]model.StockOperationItem, error)
+	GetStockOperationItemsByShop(page, pageSize int, shopID int64, productID *int64) ([]model.StockOperationItem, int64, error)
 
 	// 更新出库单支付完成状态
 	UpdateOutboundPaymentStatus(operationID int64, paymentFinishStatus model.PaymentStatusCode, paymentFinishTime *time.Time) error
@@ -150,6 +151,34 @@ func (sr *stockRepository) GetStockOperationItemsByOrderID(orderID int64) ([]mod
 		Where("order_id = ?", orderID).
 		Find(&items).Error
 	return items, err
+}
+
+// GetStockOperationItemsByShop 根据店铺获取库存操作明细列表
+func (sr *stockRepository) GetStockOperationItemsByShop(page, pageSize int, shopID int64, productID *int64) ([]model.StockOperationItem, int64, error) {
+	var items []model.StockOperationItem
+	var total int64
+
+	// 构建查询条件
+	query := sr.db.Model(&model.StockOperationItem{}).Where("shop_id = ?", shopID)
+	if productID != nil {
+		query = query.Where("product_id = ?", *productID)
+	}
+
+	// 获取总数
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// 获取分页数据
+	offset := (page - 1) * pageSize
+	if err := query.Order("created_at DESC").
+		Offset(offset).
+		Limit(pageSize).
+		Find(&items).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return items, total, nil
 }
 
 // ProcessOutboundTransaction 处理出库事务：创建主表记录、子表记录、更新库存

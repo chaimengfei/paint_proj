@@ -278,6 +278,7 @@ func (*Supplier) TableName() string {
 type StockOperationItem struct {
 	ID          int64  `json:"id" gorm:"id,primaryKey;autoIncrement"` // 主键id
 	OperationID int64  `json:"operation_id" gorm:"operation_id"`      // 操作主表ID
+	ShopID      int64  `json:"shop_id" gorm:"shop_id"`                // 关联店铺ID
 	OrderID     int64  `json:"order_id" gorm:"order_id"`              // 关联订单ID(小程序购买时)
 	OrderNo     string `json:"order_no" gorm:"order_no"`              // 关联订单号(小程序购买时)
 	ProductID   int64  `json:"product_id" gorm:"product_id"`          // 商品ID

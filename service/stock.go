@@ -21,6 +21,7 @@ type StockService interface {
 	GetStockOperations(page, pageSize int, types *int8) ([]model.StockOperation, int64, error)
 	GetStockOperationsByShop(page, pageSize int, types *int8, shopID int64) ([]model.StockOperation, int64, error)
 	GetStockOperationDetail(operationID int64) (*model.StockOperation, []model.StockOperationItem, error)
+	GetStockOperationItemsByShop(page, pageSize int, shopID int64, productID *int64) ([]model.StockOperationItem, int64, error)
 
 	// 供货商管理
 	GetSupplierList() ([]*model.Supplier, error)
@@ -85,6 +86,7 @@ func (ss *stockService) BatchInboundStock(req *model.BatchInboundRequest) error 
 
 		operationItem := &model.StockOperationItem{
 			OperationID:   operation.ID,
+			ShopID:        req.ShopID, // 设置店铺ID
 			ProductID:     item.ProductID,
 			ProductCost:   item.ProductCost, // 前端传入的货物成本（进价）
 			Quantity:      item.Quantity,
@@ -188,6 +190,7 @@ func (ss *stockService) BatchOutboundStock(req *model.BatchOutboundRequest) erro
 
 		operationItem := model.StockOperationItem{
 			OperationID:   operation.ID,
+			ShopID:        req.ShopID, // 设置店铺ID
 			ProductID:     item.ProductID,
 			Quantity:      item.Quantity,
 			UnitPrice:     unitPrice,
@@ -290,6 +293,11 @@ func (ss *stockService) GetStockOperationDetail(operationID int64) (*model.Stock
 	}
 
 	return operation, items, nil
+}
+
+// GetStockOperationItemsByShop 根据店铺获取库存操作明细列表
+func (ss *stockService) GetStockOperationItemsByShop(page, pageSize int, shopID int64, productID *int64) ([]model.StockOperationItem, int64, error) {
+	return ss.stockRepo.GetStockOperationItemsByShop(page, pageSize, shopID, productID)
 }
 
 // UpdateOutboundPaymentStatus 更新出库单支付状态

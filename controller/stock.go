@@ -309,3 +309,69 @@ func (sc *StockController) GetSupplierList(c *gin.Context) {
 		"data":    suppliers,
 	})
 }
+
+// GetStockOperationItems 获取库存操作明细列表
+func (sc *StockController) GetStockOperationItems(c *gin.Context) {
+	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("page_size", "10")
+	shopIDStr := c.Query("shop_id")
+	productIDStr := c.Query("product_id")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil || pageSize < 1 {
+		pageSize = 10
+	}
+
+	// 解析shop_id参数
+	var shopID int64
+	if shopIDStr != "" {
+		var err error
+		shopID, err = strconv.ParseInt(shopIDStr, 10, 64)
+		if err != nil {
+			shopID = 0
+		}
+	}
+
+	// 解析product_id参数
+	var productID *int64
+	if productIDStr != "" {
+		var err error
+		pid, err := strconv.ParseInt(productIDStr, 10, 64)
+		if err == nil {
+			productID = &pid
+		}
+	}
+
+	// 验证店铺权限
+	validShopID, isValid := pkg.ValidateShopPermission(c, shopID)
+	if !isValid {
+		return
+	}
+	shopID = validShopID
+
+	// 获取库存操作明细列表
+	items, total, err := sc.stockService.GetStockOperationItemsByShop(page, pageSize, shopID, productID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    -1,
+			"message": "获取库存操作明细失败: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": gin.H{
+			"list":      items,
+			"total":     total,
+			"page":      page,
+			"page_size": pageSize,
+		},
+		"message": "获取库存操作明细成功",
+	})
+}

@@ -596,56 +596,206 @@ curl --location 'http://127.0.0.1:8009/api/pay/callback' \
 
 #### 后台添加用户
 
+**说明：**
+- 支持 `shop_id` 参数进行店铺筛选
+- 超级管理员(root)可以添加任何店铺的用户，普通管理员只能添加自己店铺的用户
+- 如果未传递 `shop_id` 参数，则自动使用JWT token中的店铺ID
+
 ```bash
+# 超级管理员(root) - 添加用户到指定店铺
 curl --location 'http://127.0.0.1:8009/admin/user/add' \
 --header 'Content-Type: application/json' \
+--header 'Authorization: Bearer ROOT_TOKEN' \
 --data '{
     "admin_display_name": "孙阳",
     "mobile_phone": "13800138001",
     "shop_id": 1,
     "remark": "塑雅雕塑"
 }'
-{"code":0,"data":{"id":2,"openid":"","nickname":"","avatar":"","mobile_phone":"13800138001","source":2,"is_enable":1,"admin_display_name":"孙阳","wechat_display_name":"","has_wechat_bind":0,"shop_id":1,"created_at":"2025-09-14T14:28:51.445+08:00","updated_at":"2025-09-14T14:28:51.445+08:00"},"message":"添加用户成功"}
+
+# 普通管理员(lizengchun) - 只能添加自己店铺的用户
+curl --location 'http://127.0.0.1:8009/admin/user/add' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN' \
+--data '{
+    "admin_display_name": "孙阳",
+    "mobile_phone": "13800138001",
+    "shop_id": 1,
+    "remark": "塑雅雕塑"
+}'
+
+# 普通管理员(lizengchun) - 尝试添加其他店铺用户会返回403错误
+curl --location 'http://127.0.0.1:8009/admin/user/add' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN' \
+--data '{
+    "admin_display_name": "孙阳",
+    "mobile_phone": "13800138001",
+    "shop_id": 2,
+    "remark": "塑雅雕塑"
+}'
+# 返回: {"code":-1,"message":"无权限操作该店铺的数据"}
 ```
 
-**说明：**
-- `shop_id`: 店铺ID（可选，不传则默认分配燕郊店）
-  - `1`: 燕郊店
-  - `2`: 涞水店
+**请求示例：**
+```http
+POST /admin/user/add
+Content-Type: application/json
+Authorization: Bearer TOKEN
+
+{
+    "admin_display_name": "孙阳",
+    "mobile_phone": "13800138001",
+    "shop_id": 1,
+    "remark": "塑雅雕塑"
+}
+```
 
 #### 后台编辑用户
 
+**说明：**
+- 支持 `shop_id` 参数进行店铺筛选
+- 超级管理员(root)可以编辑任何店铺的用户，普通管理员只能编辑自己店铺的用户
+- 如果未传递 `shop_id` 参数，则自动使用JWT token中的店铺ID
+
 ```bash
+# 超级管理员(root) - 编辑用户到指定店铺
 curl -X PUT 'http://127.0.0.1:8009/admin/user/edit' \
 --header 'Content-Type: application/json' \
+--header 'Authorization: Bearer ROOT_TOKEN' \
 --data '{
     "id": 2,
     "admin_display_name": "孙阳（更新）",
     "mobile_phone": "13800138002",
-    "is_enable": 1
+    "is_enable": 1,
+    "shop_id": 1
 }'
-{"code":0,"data":null,"message":"更新用户成功"}
+
+# 普通管理员(lizengchun) - 只能编辑自己店铺的用户
+curl -X PUT 'http://127.0.0.1:8009/admin/user/edit' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN' \
+--data '{
+    "id": 2,
+    "admin_display_name": "孙阳（更新）",
+    "mobile_phone": "13800138002",
+    "is_enable": 1,
+    "shop_id": 1
+}'
+
+# 普通管理员(lizengchun) - 尝试编辑其他店铺用户会返回403错误
+curl -X PUT 'http://127.0.0.1:8009/admin/user/edit' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN' \
+--data '{
+    "id": 2,
+    "admin_display_name": "孙阳（更新）",
+    "mobile_phone": "13800138002",
+    "is_enable": 1,
+    "shop_id": 2
+}'
+# 返回: {"code":-1,"message":"无权限操作该店铺的数据"}
+```
+
+**请求示例：**
+```http
+PUT /admin/user/edit
+Content-Type: application/json
+Authorization: Bearer TOKEN
+
+{
+    "id": 2,
+    "admin_display_name": "孙阳（更新）",
+    "mobile_phone": "13800138002",
+    "is_enable": 1,
+    "shop_id": 1
+}
 ```
 
 #### 后台获取用户列表
 
+**说明：**
+- 支持 `shop_id` 参数进行店铺筛选
+- 超级管理员(root)可以查看所有店铺的用户，普通管理员只能查看自己店铺的用户
+- 如果未传递 `shop_id` 参数，则自动使用JWT token中的店铺ID
+
 ```bash
-curl --location 'http://127.0.0.1:8009/admin/user/list?page=1&page_size=10'
-{"code":0,"data":{"users":[{"id":2,"openid":"","nickname":"","avatar":"","mobile_phone":"13800138001","source":2,"is_enable":1,"admin_display_name":"孙阳","wechat_display_name":"","has_wechat_bind":0,"created_at":"2025-09-14T14:28:51.445+08:00","updated_at":"2025-09-14T14:28:51.445+08:00"}],"total":1},"message":"获取用户列表成功"}
+# 超级管理员(root) - 查看所有用户
+curl --location 'http://127.0.0.1:8009/admin/user/list?page=1&page_size=10' \
+--header 'Authorization: Bearer ROOT_TOKEN'
+
+# 超级管理员(root) - 查看指定店铺的用户
+curl --location 'http://127.0.0.1:8009/admin/user/list?page=1&page_size=10&shop_id=2' \
+--header 'Authorization: Bearer ROOT_TOKEN'
+
+# 普通管理员(lizengchun) - 只能查看自己店铺的用户
+curl --location 'http://127.0.0.1:8009/admin/user/list?page=1&page_size=10' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN'
+
+# 普通管理员(lizengchun) - 尝试查看其他店铺用户会返回403错误
+curl --location 'http://127.0.0.1:8009/admin/user/list?page=1&page_size=10&shop_id=2' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN'
+# 返回: {"code":-1,"message":"无权限操作该店铺的数据"}
+```
+
+**请求示例：**
+```http
+GET /admin/user/list?page=1&page_size=10&shop_id=1
+Authorization: Bearer TOKEN
 ```
 
 #### 后台获取用户详情
 
+**说明：**
+- 无需传递 `shop_id` 参数，但会校验用户所属店铺权限
+- 超级管理员(root)可以查看任何用户详情，普通管理员只能查看自己店铺的用户详情
+
 ```bash
-curl --location 'http://127.0.0.1:8009/admin/user/2'
-{"code":0,"data":{"id":2,"openid":"","nickname":"","avatar":"","mobile_phone":"13800138001","source":2,"is_enable":1,"admin_display_name":"孙阳","wechat_display_name":"","has_wechat_bind":0,"created_at":"2025-09-14T14:28:51.445+08:00","updated_at":"2025-09-14T14:28:51.445+08:00"},"message":"获取用户详情成功"}
+# 超级管理员(root) - 可以查看任何用户详情
+curl --location 'http://127.0.0.1:8009/admin/user/2' \
+--header 'Authorization: Bearer ROOT_TOKEN'
+
+# 普通管理员(lizengchun) - 只能查看自己店铺的用户详情
+curl --location 'http://127.0.0.1:8009/admin/user/2' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN'
+
+# 普通管理员(lizengchun) - 尝试查看其他店铺用户详情会返回403错误
+curl --location 'http://127.0.0.1:8009/admin/user/3' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN'
+# 返回: {"code":-1,"message":"无权限查看该用户信息"}
+```
+
+**请求示例：**
+```http
+GET /admin/user/2
+Authorization: Bearer TOKEN
 ```
 
 #### 后台删除用户
 
+**说明：**
+- 无需传递 `shop_id` 参数，但会校验用户所属店铺权限
+- 超级管理员(root)可以删除任何用户，普通管理员只能删除自己店铺的用户
+
 ```bash
-curl --location --request DELETE 'http://127.0.0.1:8009/admin/user/del/2'
-{"code":0,"data":null,"message":"删除用户成功"}
+# 超级管理员(root) - 可以删除任何用户
+curl --location --request DELETE 'http://127.0.0.1:8009/admin/user/del/2' \
+--header 'Authorization: Bearer ROOT_TOKEN'
+
+# 普通管理员(lizengchun) - 只能删除自己店铺的用户
+curl --location --request DELETE 'http://127.0.0.1:8009/admin/user/del/2' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN'
+
+# 普通管理员(lizengchun) - 尝试删除其他店铺用户会返回403错误
+curl --location --request DELETE 'http://127.0.0.1:8009/admin/user/del/3' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN'
+# 返回: {"code":-1,"message":"无权限删除该用户"}
+```
+
+**请求示例：**
+```http
+DELETE /admin/user/del/2
+Authorization: Bearer TOKEN
 ```
 
 ### 地址管理接口

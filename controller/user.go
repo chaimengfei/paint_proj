@@ -2,6 +2,7 @@ package controller
 
 import (
 	"cmf/paint_proj/model"
+	"cmf/paint_proj/pkg"
 	"cmf/paint_proj/service"
 	"context"
 	"net/http"
@@ -12,10 +13,11 @@ import (
 
 type UserController struct {
 	userService service.UserService
+	shopService service.ShopService
 }
 
-func NewUserController(s service.UserService) *UserController {
-	return &UserController{userService: s}
+func NewUserController(s service.UserService, shopService service.ShopService) *UserController {
+	return &UserController{userService: s, shopService: shopService}
 }
 
 // Login 登录接口：code换openid，自动注册，返回token
@@ -71,6 +73,13 @@ func (uc *UserController) AdminAddUser(c *gin.Context) {
 		return
 	}
 
+	// 验证店铺权限
+	validShopID, isValid := pkg.ValidateShopPermission(c, req.ShopID)
+	if !isValid {
+		return
+	}
+	req.ShopID = validShopID
+
 	user, err := uc.userService.CreateUserByAdmin(&req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "添加用户失败: " + err.Error()})
@@ -89,6 +98,7 @@ func (uc *UserController) AdminGetUserList(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	pageSizeStr := c.DefaultQuery("page_size", "10")
 	keyword := c.Query("keyword")
+	shopIDStr := c.Query("shop_id")
 
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
@@ -100,7 +110,31 @@ func (uc *UserController) AdminGetUserList(c *gin.Context) {
 		pageSize = 10
 	}
 
-	users, total, err := uc.userService.GetUserList(page, pageSize, keyword)
+	// 解析shop_id参数
+	var shopID int64
+	if shopIDStr != "" {
+		shopID, err = strconv.ParseInt(shopIDStr, 10, 64)
+		if err != nil {
+			shopID = 0
+		}
+	}
+
+	// 验证店铺权限
+	validShopID, isValid := pkg.ValidateShopPermission(c, shopID)
+	if !isValid {
+		return
+	}
+	shopID = validShopID
+
+	// 根据shopID决定调用哪个方法
+	var users []*model.User
+	var total int64
+	if shopID > 0 {
+		users, total, err = uc.userService.GetUserListByShop(page, pageSize, keyword, shopID)
+	} else {
+		users, total, err = uc.userService.GetUserList(page, pageSize, keyword)
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取用户列表失败: " + err.Error()})
 		return
@@ -126,9 +160,19 @@ func (uc *UserController) AdminGetUserByID(c *gin.Context) {
 		return
 	}
 
+	// 1. 先查询用户信息
 	user, err := uc.userService.GetUserByID(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取用户信息失败: " + err.Error()})
+		return
+	}
+
+	// 2. 验证店铺权限
+	operatorShopID := c.GetInt64("shop_id")
+	isRoot := c.GetBool("is_root")
+
+	if !isRoot && user.ShopID != operatorShopID {
+		c.JSON(http.StatusForbidden, gin.H{"code": -1, "message": "无权限查看该用户信息"})
 		return
 	}
 
@@ -145,6 +189,13 @@ func (uc *UserController) AdminEditUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误: " + err.Error()})
 		return
 	}
+
+	// 验证店铺权限
+	validShopID, isValid := pkg.ValidateShopPermission(c, req.ShopID)
+	if !isValid {
+		return
+	}
+	req.ShopID = validShopID
 
 	err := uc.userService.UpdateUserByAdmin(&req)
 	if err != nil {
@@ -167,6 +218,23 @@ func (uc *UserController) AdminDeleteUser(c *gin.Context) {
 		return
 	}
 
+	// 1. 先查询用户信息
+	user, err := uc.userService.GetUserByID(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取用户信息失败: " + err.Error()})
+		return
+	}
+
+	// 2. 验证店铺权限
+	operatorShopID := c.GetInt64("shop_id")
+	isRoot := c.GetBool("is_root")
+
+	if !isRoot && user.ShopID != operatorShopID {
+		c.JSON(http.StatusForbidden, gin.H{"code": -1, "message": "无权限删除该用户"})
+		return
+	}
+
+	// 3. 删除用户
 	err = uc.userService.DeleteUser(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "删除用户失败: " + err.Error()})

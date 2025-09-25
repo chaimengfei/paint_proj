@@ -59,7 +59,7 @@ func SetupRouter() *gin.Engine {
 	productController := controller.NewProductController(productService, userService, shopService)
 	orderController := controller.NewOrderController(orderService)
 	payController := controller.NewPayController(payService)
-	userController := controller.NewUserController(userService)
+	userController := controller.NewUserController(userService, shopService)
 	addressController := controller.NewAddressController(addressService)
 	stockController := controller.NewStockController(stockService, productService)
 	shopController := controller.NewShopController(shopService)

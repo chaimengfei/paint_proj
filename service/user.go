@@ -19,6 +19,7 @@ type UserService interface {
 	GetUserByID(userID int64) (*model.User, error)
 	UpdateUserByAdmin(req *model.AdminUserEditRequest) error
 	GetUserList(page, pageSize int, keyword string) ([]*model.User, int64, error)
+	GetUserListByShop(page, pageSize int, keyword string, shopID int64) ([]*model.User, int64, error)
 	DeleteUser(userID int64) error
 
 	// 小程序用户绑定
@@ -173,6 +174,10 @@ func (u userService) UpdateUserByAdmin(req *model.AdminUserEditRequest) error {
 // GetUserList 获取用户列表
 func (u userService) GetUserList(page, pageSize int, keyword string) ([]*model.User, int64, error) {
 	return u.userRepo.GetUserList(page, pageSize, keyword)
+}
+
+func (u userService) GetUserListByShop(page, pageSize int, keyword string, shopID int64) ([]*model.User, int64, error) {
+	return u.userRepo.GetUserListByShop(page, pageSize, keyword, shopID)
 }
 
 // DeleteUser 删除用户

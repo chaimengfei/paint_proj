@@ -18,6 +18,7 @@ type UserRepository interface {
 	GetUserByID(userID int64) (*model.User, error)
 	GetUserByMobilePhone(mobilePhone string) (*model.User, error)
 	GetUserList(page, pageSize int, keyword string) ([]*model.User, int64, error)
+	GetUserListByShop(page, pageSize int, keyword string, shopID int64) ([]*model.User, int64, error)
 	DeleteUser(userID int64) error
 
 	// 小程序用户绑定
@@ -93,6 +94,30 @@ func (u userRepository) GetUserList(page, pageSize int, keyword string) ([]*mode
 	var total int64
 
 	query := u.db.Model(&model.User{})
+
+	// 搜索条件
+	if keyword != "" {
+		query = query.Where("admin_display_name LIKE ? OR mobile_phone LIKE ? OR wechat_display_name LIKE ?",
+			"%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
+	}
+
+	// 获取总数
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// 分页查询
+	offset := (page - 1) * pageSize
+	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&users).Error
+	return users, total, err
+}
+
+// GetUserListByShop 根据店铺获取用户列表
+func (u userRepository) GetUserListByShop(page, pageSize int, keyword string, shopID int64) ([]*model.User, int64, error) {
+	var users []*model.User
+	var total int64
+
+	query := u.db.Model(&model.User{}).Where("shop_id = ?", shopID)
 
 	// 搜索条件
 	if keyword != "" {

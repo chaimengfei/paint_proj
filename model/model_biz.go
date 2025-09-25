@@ -250,6 +250,7 @@ type AdminUserEditRequest struct {
 	AdminDisplayName string `json:"admin_display_name"`    // 后台显示的客户名称
 	MobilePhone      string `json:"mobile_phone"`          // 手机号
 	IsEnable         int8   `json:"is_enable"`             // 是否启用
+	ShopID           int64  `json:"shop_id"`               // 店铺ID
 	Remark           string `json:"remark"`                // 备注
 }
 

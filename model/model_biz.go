@@ -291,6 +291,7 @@ type AdminAddressListRequest struct {
 // AdminCreateAddressRequest admin创建地址请求
 type AdminCreateAddressRequest struct {
 	UserID         int64  `json:"user_id" binding:"required"`         // 用户ID
+	ShopID         int64  `json:"shop_id"`                            // 店铺ID
 	RecipientName  string `json:"recipient_name" binding:"required"`  // 收货人姓名
 	RecipientPhone string `json:"recipient_phone" binding:"required"` // 收货人电话
 	Province       string `json:"province" binding:"required"`        // 省份
@@ -304,6 +305,7 @@ type AdminCreateAddressRequest struct {
 type AdminUpdateAddressRequest struct {
 	ID             int64  `json:"id" binding:"required"`              // 地址ID
 	UserID         int64  `json:"user_id" binding:"required"`         // 用户ID
+	ShopID         int64  `json:"shop_id"`                            // 店铺ID
 	RecipientName  string `json:"recipient_name" binding:"required"`  // 收货人姓名
 	RecipientPhone string `json:"recipient_phone" binding:"required"` // 收货人电话
 	Province       string `json:"province" binding:"required"`        // 省份

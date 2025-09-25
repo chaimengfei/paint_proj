@@ -216,6 +216,7 @@ func (a *Amount) UnmarshalJSON(data []byte) error {
 type Address struct {
 	ID             int64  `json:"id" gorm:"id"`
 	UserId         int64  `json:"user_id" gorm:"user_id"`
+	ShopID         int64  `json:"shop_id" gorm:"shop_id"` // 关联店铺ID
 	RecipientName  string `json:"recipient_name" gorm:"recipient_name"`
 	RecipientPhone string `json:"recipient_phone" gorm:"recipient_phone"`
 	Province       string `json:"province" gorm:"province"`

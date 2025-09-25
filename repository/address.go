@@ -20,6 +20,7 @@ type AddressRepository interface {
 	GetDefaultOrFirstAddressID(userId int64) (*model.Address, error)
 	// 新增：通过用户ID或用户名搜索地址（用于admin）
 	GetAddressListByUser(userId int64, userName string) ([]AddressWithUser, error)
+	GetAddressListByShop(userId int64, userName string, shopID int64) ([]AddressWithUser, error)
 
 	Create(data *model.Address) error
 	Update(id int64, data map[string]interface{}) error
@@ -75,6 +76,32 @@ func (ar *addressRepository) GetAddressListByUser(userId int64, userName string)
 
 	// 否则进行JOIN查询
 	query := ar.db.Model(&model.Address{}).Select("address.*, user.nickname as user_name").Joins("JOIN user ON address.user_id = user.id").Where("address.is_delete = 0")
+
+	if userId > 0 {
+		query = query.Where("address.user_id = ?", userId)
+	}
+
+	if userName != "" {
+		query = query.Where("user.nickname LIKE ?", "%"+userName+"%")
+	}
+
+	err := query.Order("address.is_default desc, address.id desc").Find(&result).Error
+	return result, err
+}
+
+// GetAddressListByShop 根据店铺获取地址列表（用于admin）
+func (ar *addressRepository) GetAddressListByShop(userId int64, userName string, shopID int64) ([]AddressWithUser, error) {
+	var result []AddressWithUser
+
+	// 如果userId和userName都为空，直接从address表获取指定店铺的数据
+	if userId == 0 && userName == "" {
+		query := ar.db.Model(&model.Address{}).Select("address.*, '' as user_name").Where("address.is_delete = 0 AND address.shop_id = ?", shopID)
+		err := query.Order("address.is_default desc, address.id desc").Find(&result).Error
+		return result, err
+	}
+
+	// 否则进行JOIN查询
+	query := ar.db.Model(&model.Address{}).Select("address.*, user.nickname as user_name").Joins("JOIN user ON address.user_id = user.id").Where("address.is_delete = 0 AND address.shop_id = ?", shopID)
 
 	if userId > 0 {
 		query = query.Where("address.user_id = ?", userId)

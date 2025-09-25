@@ -19,9 +19,11 @@ type AddressService interface {
 
 	// 新的 Admin 地址管理方法
 	AdminGetAddressList(userID int64, userName string, page, pageSize int) ([]*model.AdminAddressInfo, int64, int, int, error)
+	AdminGetAddressListByShop(userID int64, userName string, shopID int64, page, pageSize int) ([]*model.AdminAddressInfo, int64, int, int, error)
 	AdminCreateAddress(req *model.AdminCreateAddressRequest) error
 	AdminUpdateAddress(req *model.AdminUpdateAddressRequest) error
 	AdminDeleteAddress(addressID int64) error
+	GetAddressByID(addressID int64) (*model.Address, error)
 }
 
 type addressService struct {
@@ -269,11 +271,63 @@ func (as *addressService) AdminGetAddressList(userID int64, userName string, pag
 	return result, total, page, pageSize, nil
 }
 
+// AdminGetAddressListByShop 根据店铺获取后台地址列表
+func (as *addressService) AdminGetAddressListByShop(userID int64, userName string, shopID int64, page, pageSize int) ([]*model.AdminAddressInfo, int64, int, int, error) {
+	// 设置默认分页参数
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+
+	// 调用 repository 层获取数据
+	addressWithUsers, err := as.addressRepo.GetAddressListByShop(userID, userName, shopID)
+	if err != nil {
+		return nil, 0, page, pageSize, err
+	}
+
+	// 计算总数
+	total := int64(len(addressWithUsers))
+
+	// 分页处理
+	offset := (page - 1) * pageSize
+	end := offset + pageSize
+	if end > len(addressWithUsers) {
+		end = len(addressWithUsers)
+	}
+	if offset >= len(addressWithUsers) {
+		return []*model.AdminAddressInfo{}, total, page, pageSize, nil
+	}
+
+	// 数据转换
+	var result []*model.AdminAddressInfo
+	for _, addr := range addressWithUsers[offset:end] {
+		adminAddr := &model.AdminAddressInfo{
+			AddressID:      addr.ID,
+			UserID:         addr.UserId,
+			UserName:       addr.UserName,
+			RecipientName:  addr.RecipientName,
+			RecipientPhone: addr.RecipientPhone,
+			Province:       addr.Province,
+			City:           addr.City,
+			District:       addr.District,
+			Detail:         addr.Detail,
+			IsDefault:      addr.IsDefault == 1,
+			CreatedAt:      "", // Address 模型中没有 CreatedAt 字段
+		}
+		result = append(result, adminAddr)
+	}
+
+	return result, total, page, pageSize, nil
+}
+
 // AdminCreateAddress 后台创建地址
 func (as *addressService) AdminCreateAddress(req *model.AdminCreateAddressRequest) error {
 	// 构建地址实体
 	address := &model.Address{
 		UserId:         req.UserID,
+		ShopID:         req.ShopID,
 		RecipientName:  req.RecipientName,
 		RecipientPhone: req.RecipientPhone,
 		Province:       req.Province,
@@ -307,6 +361,7 @@ func (as *addressService) AdminUpdateAddress(req *model.AdminUpdateAddressReques
 	// 构建更新数据
 	updateData := map[string]interface{}{
 		"user_id":         req.UserID,
+		"shop_id":         req.ShopID,
 		"recipient_name":  req.RecipientName,
 		"recipient_phone": req.RecipientPhone,
 		"province":        req.Province,
@@ -334,4 +389,9 @@ func (as *addressService) AdminUpdateAddress(req *model.AdminUpdateAddressReques
 // AdminDeleteAddress 后台删除地址
 func (as *addressService) AdminDeleteAddress(addressID int64) error {
 	return as.addressRepo.Delete(addressID)
+}
+
+// GetAddressByID 根据ID获取地址
+func (as *addressService) GetAddressByID(addressID int64) (*model.Address, error) {
+	return as.addressRepo.GetById(addressID)
 }

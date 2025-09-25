@@ -2,6 +2,7 @@ package controller
 
 import (
 	"cmf/paint_proj/model"
+	"cmf/paint_proj/pkg"
 	"cmf/paint_proj/service"
 	"net/http"
 	"strconv"
@@ -11,10 +12,11 @@ import (
 
 type AddressController struct {
 	addressService service.AddressService
+	shopService    service.ShopService
 }
 
-func NewAddressController(s service.AddressService) *AddressController {
-	return &AddressController{addressService: s}
+func NewAddressController(s service.AddressService, shopService service.ShopService) *AddressController {
+	return &AddressController{addressService: s, shopService: shopService}
 }
 
 func (ac *AddressController) GetAddressList(c *gin.Context) {
@@ -211,7 +213,35 @@ func (ac *AddressController) AdminAddressList(c *gin.Context) {
 		return
 	}
 
-	list, total, page, pageSize, err := ac.addressService.AdminGetAddressList(req.UserID, req.UserName, req.Page, req.PageSize)
+	// 获取shop_id参数
+	shopIDStr := c.Query("shop_id")
+	var shopID int64
+	if shopIDStr != "" {
+		var err error
+		shopID, err = strconv.ParseInt(shopIDStr, 10, 64)
+		if err != nil {
+			shopID = 0
+		}
+	}
+
+	// 验证店铺权限
+	validShopID, isValid := pkg.ValidateShopPermission(c, shopID)
+	if !isValid {
+		return
+	}
+	shopID = validShopID
+
+	// 根据shopID决定调用哪个方法
+	var list []*model.AdminAddressInfo
+	var total int64
+	var page, pageSize int
+	var err error
+	if shopID > 0 {
+		list, total, page, pageSize, err = ac.addressService.AdminGetAddressListByShop(req.UserID, req.UserName, shopID, req.Page, req.PageSize)
+	} else {
+		list, total, page, pageSize, err = ac.addressService.AdminGetAddressList(req.UserID, req.UserName, req.Page, req.PageSize)
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取地址列表失败: " + err.Error()})
 		return
@@ -237,6 +267,13 @@ func (ac *AddressController) AdminCreateAddress(c *gin.Context) {
 		return
 	}
 
+	// 验证店铺权限
+	validShopID, isValid := pkg.ValidateShopPermission(c, req.ShopID)
+	if !isValid {
+		return
+	}
+	req.ShopID = validShopID
+
 	err := ac.addressService.AdminCreateAddress(&req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "创建地址失败: " + err.Error()})
@@ -253,6 +290,13 @@ func (ac *AddressController) AdminUpdateAddress(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误: " + err.Error()})
 		return
 	}
+
+	// 验证店铺权限
+	validShopID, isValid := pkg.ValidateShopPermission(c, req.ShopID)
+	if !isValid {
+		return
+	}
+	req.ShopID = validShopID
 
 	err := ac.addressService.AdminUpdateAddress(&req)
 	if err != nil {
@@ -272,6 +316,23 @@ func (ac *AddressController) AdminDeleteAddress(c *gin.Context) {
 		return
 	}
 
+	// 1. 先查询地址信息
+	address, err := ac.addressService.GetAddressByID(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取地址信息失败: " + err.Error()})
+		return
+	}
+
+	// 2. 验证店铺权限
+	operatorShopID := c.GetInt64("shop_id")
+	isRoot := c.GetBool("is_root")
+
+	if !isRoot && address.ShopID != operatorShopID {
+		c.JSON(http.StatusForbidden, gin.H{"code": -1, "message": "无权限删除该地址"})
+		return
+	}
+
+	// 3. 删除地址
 	err = ac.addressService.AdminDeleteAddress(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "删除地址失败: " + err.Error()})

@@ -802,18 +802,51 @@ Authorization: Bearer TOKEN
 
 #### 后台获取地址列表
 
+**说明：**
+- 支持 `shop_id` 参数进行店铺筛选
+- 超级管理员(root)可以查看所有店铺的地址，普通管理员只能查看自己店铺的地址
+- 如果未传递 `shop_id` 参数，则自动使用JWT token中的店铺ID
+
 ```bash
-curl --location 'http://127.0.0.1:8009/admin/address/list?user_id=123&user_name=张三&page=1&page_size=10'
-{"code":0,"data":{"list":[{"address_id":1,"user_id":123,"user_name":"张三","recipient_name":"李四","recipient_phone":"13800138000","province":"广东省","city":"深圳市","district":"南山区","detail":"科技园路1号","is_default":true,"created_at":"2024-01-15T10:30:00Z","updated_at":"2024-01-15T10:30:00Z"}],"total":1,"page":1,"page_size":10},"message":"获取地址列表成功"}
+# 超级管理员(root) - 查看所有地址
+curl --location 'http://127.0.0.1:8009/admin/address/list?user_id=123&user_name=张三&page=1&page_size=10' \
+--header 'Authorization: Bearer ROOT_TOKEN'
+
+# 超级管理员(root) - 查看指定店铺的地址
+curl --location 'http://127.0.0.1:8009/admin/address/list?user_id=123&user_name=张三&page=1&page_size=10&shop_id=2' \
+--header 'Authorization: Bearer ROOT_TOKEN'
+
+# 普通管理员(lizengchun) - 只能查看自己店铺的地址
+curl --location 'http://127.0.0.1:8009/admin/address/list?user_id=123&user_name=张三&page=1&page_size=10' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN'
+
+# 普通管理员(lizengchun) - 尝试查看其他店铺地址会返回403错误
+curl --location 'http://127.0.0.1:8009/admin/address/list?user_id=123&user_name=张三&page=1&page_size=10&shop_id=2' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN'
+# 返回: {"code":-1,"message":"无权限操作该店铺的数据"}
+```
+
+**请求示例：**
+```http
+GET /admin/address/list?user_id=123&user_name=张三&page=1&page_size=10&shop_id=1
+Authorization: Bearer TOKEN
 ```
 
 #### 后台新增地址
 
+**说明：**
+- 支持 `shop_id` 参数进行店铺筛选
+- 超级管理员(root)可以添加任何店铺的地址，普通管理员只能添加自己店铺的地址
+- 如果未传递 `shop_id` 参数，则自动使用JWT token中的店铺ID
+
 ```bash
+# 超级管理员(root) - 添加地址到指定店铺
 curl --location 'http://127.0.0.1:8009/admin/address/add' \
 --header 'Content-Type: application/json' \
+--header 'Authorization: Bearer ROOT_TOKEN' \
 --data '{
     "user_id": 123,
+    "shop_id": 1,
     "recipient_name": "李四",
     "recipient_phone": "13800138000",
     "province": "广东省",
@@ -822,17 +855,76 @@ curl --location 'http://127.0.0.1:8009/admin/address/add' \
     "detail": "科技园路1号",
     "is_default": true
 }'
-{"code":0,"message":"创建地址成功"}
+
+# 普通管理员(lizengchun) - 只能添加自己店铺的地址
+curl --location 'http://127.0.0.1:8009/admin/address/add' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN' \
+--data '{
+    "user_id": 123,
+    "shop_id": 1,
+    "recipient_name": "李四",
+    "recipient_phone": "13800138000",
+    "province": "广东省",
+    "city": "深圳市",
+    "district": "南山区",
+    "detail": "科技园路1号",
+    "is_default": true
+}'
+
+# 普通管理员(lizengchun) - 尝试添加其他店铺地址会返回403错误
+curl --location 'http://127.0.0.1:8009/admin/address/add' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN' \
+--data '{
+    "user_id": 123,
+    "shop_id": 2,
+    "recipient_name": "李四",
+    "recipient_phone": "13800138000",
+    "province": "广东省",
+    "city": "深圳市",
+    "district": "南山区",
+    "detail": "科技园路1号",
+    "is_default": true
+}'
+# 返回: {"code":-1,"message":"无权限操作该店铺的数据"}
+```
+
+**请求示例：**
+```http
+POST /admin/address/add
+Content-Type: application/json
+Authorization: Bearer TOKEN
+
+{
+    "user_id": 123,
+    "shop_id": 1,
+    "recipient_name": "李四",
+    "recipient_phone": "13800138000",
+    "province": "广东省",
+    "city": "深圳市",
+    "district": "南山区",
+    "detail": "科技园路1号",
+    "is_default": true
+}
 ```
 
 #### 后台编辑地址
 
+**说明：**
+- 支持 `shop_id` 参数进行店铺筛选
+- 超级管理员(root)可以编辑任何店铺的地址，普通管理员只能编辑自己店铺的地址
+- 如果未传递 `shop_id` 参数，则自动使用JWT token中的店铺ID
+
 ```bash
+# 超级管理员(root) - 编辑地址到指定店铺
 curl --location --request PUT 'http://127.0.0.1:8009/admin/address/edit' \
 --header 'Content-Type: application/json' \
+--header 'Authorization: Bearer ROOT_TOKEN' \
 --data '{
     "id": 1,
     "user_id": 123,
+    "shop_id": 1,
     "recipient_name": "李四（更新）",
     "recipient_phone": "13800138001",
     "province": "广东省",
@@ -841,14 +933,88 @@ curl --location --request PUT 'http://127.0.0.1:8009/admin/address/edit' \
     "detail": "科技园路2号",
     "is_default": false
 }'
-{"code":0,"message":"更新地址成功"}
+
+# 普通管理员(lizengchun) - 只能编辑自己店铺的地址
+curl --location --request PUT 'http://127.0.0.1:8009/admin/address/edit' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN' \
+--data '{
+    "id": 1,
+    "user_id": 123,
+    "shop_id": 1,
+    "recipient_name": "李四（更新）",
+    "recipient_phone": "13800138001",
+    "province": "广东省",
+    "city": "深圳市",
+    "district": "南山区",
+    "detail": "科技园路2号",
+    "is_default": false
+}'
+
+# 普通管理员(lizengchun) - 尝试编辑其他店铺地址会返回403错误
+curl --location --request PUT 'http://127.0.0.1:8009/admin/address/edit' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN' \
+--data '{
+    "id": 1,
+    "user_id": 123,
+    "shop_id": 2,
+    "recipient_name": "李四（更新）",
+    "recipient_phone": "13800138001",
+    "province": "广东省",
+    "city": "深圳市",
+    "district": "南山区",
+    "detail": "科技园路2号",
+    "is_default": false
+}'
+# 返回: {"code":-1,"message":"无权限操作该店铺的数据"}
+```
+
+**请求示例：**
+```http
+PUT /admin/address/edit
+Content-Type: application/json
+Authorization: Bearer TOKEN
+
+{
+    "id": 1,
+    "user_id": 123,
+    "shop_id": 1,
+    "recipient_name": "李四（更新）",
+    "recipient_phone": "13800138001",
+    "province": "广东省",
+    "city": "深圳市",
+    "district": "南山区",
+    "detail": "科技园路2号",
+    "is_default": false
+}
 ```
 
 #### 后台删除地址
 
+**说明：**
+- 无需传递 `shop_id` 参数，但会校验地址所属店铺权限
+- 超级管理员(root)可以删除任何地址，普通管理员只能删除自己店铺的地址
+
 ```bash
-curl --location --request DELETE 'http://127.0.0.1:8009/admin/address/del/1'
-{"code":0,"message":"删除地址成功"}
+# 超级管理员(root) - 可以删除任何地址
+curl --location --request DELETE 'http://127.0.0.1:8009/admin/address/del/1' \
+--header 'Authorization: Bearer ROOT_TOKEN'
+
+# 普通管理员(lizengchun) - 只能删除自己店铺的地址
+curl --location --request DELETE 'http://127.0.0.1:8009/admin/address/del/1' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN'
+
+# 普通管理员(lizengchun) - 尝试删除其他店铺地址会返回403错误
+curl --location --request DELETE 'http://127.0.0.1:8009/admin/address/del/2' \
+--header 'Authorization: Bearer LIZENGCHUN_TOKEN'
+# 返回: {"code":-1,"message":"无权限删除该地址"}
+```
+
+**请求示例：**
+```http
+DELETE /admin/address/del/1
+Authorization: Bearer TOKEN
 ```
 
 **响应字段说明**:

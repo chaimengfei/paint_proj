@@ -258,3 +258,15 @@ ADD FOREIGN KEY IF NOT EXISTS (shop_id) REFERENCES shop(id) ON DELETE RESTRICT;
 
 -- 为现有分类设置默认店铺（燕郊店）
 UPDATE category SET shop_id = 1 WHERE shop_id IS NULL OR shop_id = 0;
+
+-- 为地址表添加shop_id字段
+ALTER TABLE address 
+ADD COLUMN IF NOT EXISTS shop_id BIGINT DEFAULT NULL COMMENT '关联店铺ID' AFTER user_id,
+ADD INDEX IF NOT EXISTS idx_shop_id (shop_id),
+ADD FOREIGN KEY IF NOT EXISTS (shop_id) REFERENCES shop(id) ON DELETE SET NULL;
+
+-- 为现有地址数据设置shop_id（通过user表获取）
+UPDATE address a 
+JOIN user u ON a.user_id = u.id 
+SET a.shop_id = u.shop_id 
+WHERE a.shop_id IS NULL;

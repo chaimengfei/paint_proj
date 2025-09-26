@@ -270,3 +270,18 @@ UPDATE address a
 JOIN user u ON a.user_id = u.id 
 SET a.shop_id = u.shop_id 
 WHERE a.shop_id IS NULL;
+
+-- 为库存操作明细表添加shop_id字段
+ALTER TABLE stock_operation_item 
+ADD COLUMN IF NOT EXISTS shop_id BIGINT DEFAULT NULL COMMENT '关联店铺ID' AFTER operation_id,
+ADD INDEX IF NOT EXISTS idx_shop_id (shop_id),
+ADD FOREIGN KEY IF NOT EXISTS (shop_id) REFERENCES shop(id) ON DELETE SET NULL;
+
+-- 为现有库存操作明细数据设置shop_id（通过stock_operation表获取）
+UPDATE stock_operation_item soi 
+JOIN stock_operation so ON soi.operation_id = so.id 
+SET soi.shop_id = so.shop_id 
+WHERE soi.shop_id IS NULL;
+
+-- 为product表的name字段添加索引，优化模糊查询性能
+ALTER TABLE product ADD INDEX idx_name (name);

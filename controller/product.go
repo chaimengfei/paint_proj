@@ -72,6 +72,7 @@ func (pc *ProductController) GetAdminProductList(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	pageSizeStr := c.DefaultQuery("page_size", "10")
 	shopIDStr := c.DefaultQuery("shop_id", "0")
+	name := c.Query("name") // 获取商品名称搜索参数
 
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
@@ -93,7 +94,7 @@ func (pc *ProductController) GetAdminProductList(c *gin.Context) {
 	}
 	shopID = validShopID
 
-	products, total, err := pc.productService.GetAdminProductList(page, pageSize, shopID)
+	products, total, err := pc.productService.GetAdminProductList(page, pageSize, shopID, name)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": err.Error()})
 		return

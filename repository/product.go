@@ -19,7 +19,9 @@ type ProductRepository interface {
 	GetByIDAndShop(productID int64, shopID int64) (*model.Product, error) // 根据ID和店铺获取商品
 	GetByIDs(productIDs []int64) ([]model.Product, error)
 	GetList(offset, limit int) ([]model.Product, int64, error)
-	GetListByShop(offset, limit int, shopID int64) ([]model.Product, int64, error) // 根据店铺获取商品列表
+	GetListByShop(offset, limit int, shopID int64) ([]model.Product, int64, error)                      // 根据店铺获取商品列表
+	GetListWithName(offset, limit int, name string) ([]model.Product, int64, error)                     // 根据名称模糊查询商品列表
+	GetListByShopWithName(offset, limit int, shopID int64, name string) ([]model.Product, int64, error) // 根据店铺和名称模糊查询商品列表
 
 	Create(product *model.Product) error
 	Update(product *model.Product) error
@@ -147,6 +149,42 @@ func (p *productRepository) GetListByShop(offset, limit int, shopID int64) ([]mo
 		return nil, 0, err
 	}
 	if err := p.db.Where("shop_id = ?", shopID).Offset(offset).Limit(limit).Find(&products).Error; err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
+}
+
+func (p *productRepository) GetListWithName(offset, limit int, name string) ([]model.Product, int64, error) {
+	var products []model.Product
+	var total int64
+
+	query := p.db.Model(&model.Product{})
+	if name != "" {
+		query = query.Where("name LIKE ?", "%"+name+"%")
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Offset(offset).Limit(limit).Find(&products).Error; err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
+}
+
+func (p *productRepository) GetListByShopWithName(offset, limit int, shopID int64, name string) ([]model.Product, int64, error) {
+	var products []model.Product
+	var total int64
+
+	query := p.db.Model(&model.Product{}).Where("shop_id = ?", shopID)
+	if name != "" {
+		query = query.Where("name LIKE ?", "%"+name+"%")
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Offset(offset).Limit(limit).Find(&products).Error; err != nil {
 		return nil, 0, err
 	}
 	return products, total, nil

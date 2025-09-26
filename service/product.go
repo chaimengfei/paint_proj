@@ -9,7 +9,7 @@ type ProductService interface {
 	GetProductList() ([]model.Category, map[int64][]model.ProductSimple, error)
 	GetProductListByShop(shopID int64) ([]model.Category, map[int64][]model.ProductSimple, error)
 
-	GetAdminProductList(page, pageSize int, shopID int64) ([]model.Product, int64, error)
+	GetAdminProductList(page, pageSize int, shopID int64, name string) ([]model.Product, int64, error)
 	GetProductByID(id int64) (*model.Product, error)
 	GetProductByIDAndShop(id int64, shopID int64) (*model.Product, error)
 	AddProduct(p *model.Product) error
@@ -101,10 +101,16 @@ func (ps *productService) GetCategoriesByShop(shopID int64) ([]model.Category, e
 	return ps.productRepo.GetCategoriesByShop(shopID)
 }
 
-func (ps *productService) GetAdminProductList(page, pageSize int, shopID int64) ([]model.Product, int64, error) {
+func (ps *productService) GetAdminProductList(page, pageSize int, shopID int64, name string) ([]model.Product, int64, error) {
 	offset := (page - 1) * pageSize
 	if shopID > 0 {
+		if name != "" {
+			return ps.productRepo.GetListByShopWithName(offset, pageSize, shopID, name)
+		}
 		return ps.productRepo.GetListByShop(offset, pageSize, shopID)
+	}
+	if name != "" {
+		return ps.productRepo.GetListWithName(offset, pageSize, name)
 	}
 	return ps.productRepo.GetList(offset, pageSize)
 }

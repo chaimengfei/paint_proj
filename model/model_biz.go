@@ -130,7 +130,7 @@ type UpdateAddressReq struct {
 }
 
 // 简化的商品请求结构体
-type AddOrEditSimpleProductRequest struct {
+type AddSimpleProductRequest struct {
 	Name          string `json:"name" binding:"required"`         // 商品全名
 	CategoryId    int64  `json:"category_id" binding:"required"`  // 分类ID
 	Image         string `json:"image" binding:"required"`        // 商品图片
@@ -139,18 +139,22 @@ type AddOrEditSimpleProductRequest struct {
 	Unit          string `json:"unit" binding:"required"`         // 单位 L/桶/卷
 	IsOnShelf     int8   `json:"is_on_shelf" binding:"required"`  // 是否上架(1:上架,0:下架)
 	Remark        string `json:"remark"`                          // 备注（可选）
+	Stock         int    `json:"stock"`                           // 库存
+	Cost          Amount `json:"cost"`                            // 成本价=运费成本+货物成本
+	ShippingCost  Amount `json:"shipping_cost"`                   // 运费成本
+	ProductCost   Amount `json:"product_cost"`                    // 货物成本
 	ShopID        int64  `json:"shop_id"`                         // 店铺ID（可选，从JWT token中获取）
 }
 
 // 编辑商品请求结构体
 type EditProductRequest struct {
-	Name          string `json:"name" binding:"required"`         // 商品全名
-	Image         string `json:"image" binding:"required"`        // 商品图片
-	SellerPrice   Amount `json:"seller_price" binding:"required"` // 售价
-	Specification string `json:"specification"`                   // 规格（可选）
-	IsOnShelf     int8   `json:"is_on_shelf" binding:"required"`  // 是否上架(1:上架,0:下架)
-	Remark        string `json:"remark"`                          // 备注（可选）
-	ShopID        int64  `json:"shop_id"`                         // 店铺ID（可选，从JWT token中获取）
+	SellerPrice   Amount `json:"seller_price"`  // 售价
+	Specification string `json:"specification"` // 规格（可选）
+	IsOnShelf     int8   `json:"is_on_shelf"`   // 是否上架(1:上架,0:下架)
+	Remark        string `json:"remark"`        // 备注（可选）
+	Stock         int64  `json:"stock"`         // 库存
+	ShopID        int64  `json:"shop_id"`       // 店铺ID（可选，从JWT token中获取）
+
 }
 
 // 分类管理请求结构体

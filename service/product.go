@@ -14,6 +14,7 @@ type ProductService interface {
 	GetProductByIDAndShop(id int64, shopID int64) (*model.Product, error)
 	AddProduct(p *model.Product) error
 	UpdateProduct(p *model.Product) error
+	UpdateProductFields(id int64, fields map[string]interface{}) error
 	DeleteProduct(id int64) error
 	CheckProductNameExists(name string, excludeID ...int64) (bool, error)
 
@@ -121,6 +122,10 @@ func (ps *productService) AddProduct(p *model.Product) error {
 
 func (ps *productService) UpdateProduct(p *model.Product) error {
 	return ps.productRepo.Update(p)
+}
+
+func (ps *productService) UpdateProductFields(id int64, fields map[string]interface{}) error {
+	return ps.productRepo.UpdateFields(id, fields)
 }
 
 func (ps *productService) GetProductByID(id int64) (*model.Product, error) {

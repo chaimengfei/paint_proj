@@ -131,7 +131,7 @@ func (pc *ProductController) GetAdminProductList(c *gin.Context) {
 
 // AddProduct 新增商品（后台）
 func (pc *ProductController) AddProduct(c *gin.Context) {
-	var req model.AddOrEditSimpleProductRequest
+	var req model.AddSimpleProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误: " + err.Error()})
 		return
@@ -170,11 +170,11 @@ func (pc *ProductController) AddProduct(c *gin.Context) {
 		Remark:        req.Remark,
 		IsOnShelf:     req.IsOnShelf,
 		ShopID:        shopID,
-		// 成本相关字段由入库单自动更新，初始化为0
-		Cost:         0,
-		ShippingCost: 0,
-		ProductCost:  0,
-		Stock:        0,
+		// 成本相关字段从请求中获取
+		Cost:         req.Cost,
+		ShippingCost: req.ShippingCost,
+		ProductCost:  req.ProductCost,
+		Stock:        req.Stock, // 库存初始化为0，由入库操作更新
 	}
 
 	if err := pc.productService.AddProduct(product); err != nil {
@@ -234,57 +234,48 @@ func (pc *ProductController) EditProduct(c *gin.Context) {
 		return
 	}
 
-	// 检查商品名称是否已存在（排除当前编辑的商品）
-	exists, err := pc.productService.CheckProductNameExists(req.Name, id)
+	// 先获取现有商品信息，验证商品是否存在且有权限访问
+	_, err = pc.productService.GetProductByIDAndShop(id, shopID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "检查商品名称失败: " + err.Error()})
-		return
-	}
-	if exists {
-		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": pkg.ErrProductNameExists})
+		c.JSON(http.StatusNotFound, gin.H{"code": -1, "message": "商品不存在或无权限访问"})
 		return
 	}
 
-	// 转换为完整的Product结构体
-	product := &model.Product{
-		ID:            id,
-		Name:          req.Name,
-		Image:         req.Image,
-		SellerPrice:   req.SellerPrice,
-		Specification: req.Specification,
-		Remark:        req.Remark,
-		IsOnShelf:     req.IsOnShelf,
-		ShopID:        shopID,
+	// 构建更新字段映射，只更新前端传递的字段
+	updateData := make(map[string]interface{})
+	if req.SellerPrice > 0 {
+		updateData["seller_price"] = req.SellerPrice
+	}
+	if req.Stock > 0 {
+		updateData["stock"] = req.Stock
+	}
+	if req.Specification != "" {
+		updateData["specification"] = req.Specification
+	}
+	// IsOnShelf 字段需要特殊处理，因为0也是有效值
+	if req.IsOnShelf == 0 || req.IsOnShelf == 1 {
+		updateData["is_on_shelf"] = req.IsOnShelf
+	}
+	if req.Remark != "" {
+		updateData["remark"] = req.Remark
+	}
+	// 如果没有需要更新的字段，直接返回成功
+	if len(updateData) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"code":    0,
+			"message": "没有需要更新的字段",
+		})
+		return
 	}
 
-	if err = pc.productService.UpdateProduct(product); err != nil {
+	// 执行更新
+	if err = pc.productService.UpdateProductFields(id, updateData); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "编辑商品失败: " + err.Error()})
 		return
 	}
-
-	// 获取店铺信息
-	var shopInfo *model.ShopSimple
-	if shopID > 0 {
-		shop, err := pc.shopService.GetShopByID(shopID)
-		if err == nil && shop != nil {
-			shopInfo = &model.ShopSimple{
-				ID:          shop.ID,
-				Name:        shop.Name,
-				Code:        shop.Code,
-				Address:     shop.Address,
-				Phone:       shop.Phone,
-				ManagerName: shop.ManagerName,
-				IsActive:    shop.IsActive,
-			}
-		}
-	}
-
 	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "编辑成功",
-		"data": gin.H{
-			"shop_info": shopInfo,
-		},
 	})
 }
 

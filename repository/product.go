@@ -25,6 +25,7 @@ type ProductRepository interface {
 
 	Create(product *model.Product) error
 	Update(product *model.Product) error
+	UpdateFields(id int64, fields map[string]interface{}) error
 	Delete(id int64) error
 	CheckNameExists(name string, excludeID ...int64) (bool, error)
 
@@ -196,6 +197,10 @@ func (p *productRepository) Create(product *model.Product) error {
 
 func (p *productRepository) Update(product *model.Product) error {
 	return p.db.Model(&model.Product{}).Where("id = ?", product.ID).Updates(product).Error
+}
+
+func (p *productRepository) UpdateFields(id int64, fields map[string]interface{}) error {
+	return p.db.Model(&model.Product{}).Where("id = ?", id).Updates(fields).Error
 }
 
 func (p *productRepository) Delete(id int64) error {

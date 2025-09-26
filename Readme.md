@@ -1047,36 +1047,36 @@ Authorization: Bearer TOKEN
    - 获取商品列表支持 `shop_id` 参数进行店铺筛选
    - 新增和编辑商品时，`shop_id` 字段可选，如果未提供则从JWT token中获取
    - 超级管理员(root)可以操作所有店铺的商品，其他管理员只能操作自己店铺的商品
-   - **权限验证机制**：
-     - 前端可以传递 `shop_id` 参数，便于显示当前操作的店铺
-     - 后端会验证前端传递的 `shop_id` 是否与管理员权限匹配
-     - 如果前端未传递 `shop_id`，则自动使用JWT token中的店铺ID
-     - 普通管理员(lizengchun/zhangweiyang)只能操作自己店铺的数据
-     - 超级管理员(root)可以操作任意店铺的数据
+7. **商品名称查询**: 
+   - 获取商品列表支持 `name` 参数进行商品名称模糊查询
+   - 支持与 `shop_id` 参数组合使用，实现店铺+名称的组合筛选
+   - 查询使用 `LIKE '%keyword%'` 进行模糊匹配
+8. **成本字段管理**: 
+   - 添加商品时支持设置成本相关字段：`cost`（成本价）、`shipping_cost`（运费成本）、`product_cost`（货物成本）
+   - 成本价 = 运费成本 + 货物成本
+   - 这些字段为可选字段，如果不提供则默认为0
+   - 编辑商品时不支持修改成本字段，成本由入库操作自动更新
+9. **编辑商品字段管理**: 
+   - 编辑商品支持部分字段更新，前端传什么字段就更新什么字段，不传的字段保持不变
+   - 支持更新的字段：`seller_price`（售价）、`specification`（规格）、`is_on_shelf`（上架状态）、`remark`（备注）、`stock`（库存）
+   - 不支持更新的字段：`name`（商品名称）、`image`（商品图片）、`category_id`（分类ID）、`unit`（单位）、成本相关字段
+   - 这种设计避免了不必要的字段更新，提高了接口的灵活性和性能
+10. **权限验证机制**：
+   - 前端可以传递 `shop_id` 参数，便于显示当前操作的店铺
+   - 后端会验证前端传递的 `shop_id` 是否与管理员权限匹配
+   - 如果前端未传递 `shop_id`，则自动使用JWT token中的店铺ID
+   - 普通管理员(lizengchun/zhangweiyang)只能操作自己店铺的数据
+   - 超级管理员(root)可以操作任意店铺的数据
 
-6. **字段对比**
+11. **字段对比**
 
-| 操作     | 商品名称 | 商品分类 | 商品图片 | 售价   | 规格   | 单位   | 备注   | 状态   | 成本相关 |
-| :------- | :------- | :------- | :------- | :----- | :----- | :----- | :----- | :----- | :------- |
-|          |          |          |          |        |        |        |        |        |          |
-| 添加商品 | ✅ 必填   | ✅ 必填   | ✅ 必填   | ✅ 必填 | ✅ 可选 | ✅ 必填 | ✅ 可选 | ✅ 必填 | ❌ 去掉   |
-| 编辑商品 | ✅ 必填   | ❌ 去掉   | ✅ 必填   | ✅ 必填 | ✅ 可选 | ❌ 去掉 | ✅ 可选 | ✅ 必填 |          |
+| 操作     | 商品名称 | 商品分类 | 商品图片 | 售价   | 规格   | 单位   | 备注   | 状态   | 库存   | 成本价 | 运费成本 | 货物成本 |
+| :------- | :------- | :------- | :------- | :----- | :----- | :----- | :----- | :----- | :----- | :----- | :------- | :------- |
+|          |          |          |          |        |        |        |        |        |        |        |          |          |
+| 添加商品 | ✅ 必填   | ✅ 必填   | ✅ 必填   | ✅ 必填 | ✅ 可选 | ✅ 必填 | ✅ 可选 | ✅ 必填 | ❌ 固定0 | ✅ 可选 | ✅ 可选   | ✅ 可选   |
+| 编辑商品 | ❌ 不支持 | ❌ 不支持 | ❌ 不支持 | ✅ 可选 | ✅ 可选 | ❌ 不支持 | ✅ 可选 | ✅ 可选 | ✅ 可选 | ❌ 不支持 | ❌ 不支持 | ❌ 不支持 |
 
----
 
-#### 错误码说明
-
-- `0`: 操作成功
-- `-1`: 操作失败，具体错误信息在message字段中
-
-常见错误信息：
-
-- "参数错误: ..." - 请求参数格式错误
-- "商品ID格式错误" - 路径参数ID格式不正确
-- "添加商品失败: ..." - 数据库操作失败
-- "编辑商品失败: ..." - 更新操作失败
-- "删除失败" - 删除操作失败
-- "获取商品信息失败: ..." - 查询操作失败
 
 #### 接口示例
 
@@ -1089,6 +1089,14 @@ curl "http://127.0.0.1:8009/admin/product/list?page=1&page_size=10" \
 
 # 超级管理员(root) - 可以查看指定店铺的商品
 curl "http://127.0.0.1:8009/admin/product/list?page=1&page_size=10&shop_id=2" \
+  -H "Authorization: Bearer ROOT_TOKEN"
+
+# 支持商品名称模糊查询
+curl "http://127.0.0.1:8009/admin/product/list?page=1&page_size=10&name=油漆" \
+  -H "Authorization: Bearer ROOT_TOKEN"
+
+# 支持店铺+名称组合查询
+curl "http://127.0.0.1:8009/admin/product/list?page=1&page_size=10&shop_id=1&name=涂料" \
   -H "Authorization: Bearer ROOT_TOKEN"
 
 # 普通管理员(lizengchun) - 只能查看自己店铺的商品
@@ -1118,7 +1126,10 @@ curl -X POST "http://127.0.0.1:8009/admin/product/add" \
     "unit": "桶",
     "is_on_shelf": 1,
     "remark": "",
-    "shop_id": 1
+    "shop_id": 1,
+    "cost": 100,
+    "shipping_cost": 10,
+    "product_cost": 90
   }'
 
 # 普通管理员(lizengchun) - 不传递shop_id，自动使用JWT中的店铺ID
@@ -1132,7 +1143,10 @@ curl -X POST "http://127.0.0.1:8009/admin/product/add" \
     "image": "http://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/07GE2k1DJWhah4QA_RlY91685434479136.jpg",
     "unit": "桶",
     "is_on_shelf": 1,
-    "remark": ""
+    "remark": "",
+    "cost": 100,
+    "shipping_cost": 10,
+    "product_cost": 90
   }'
 
 # 普通管理员(lizengchun) - 尝试添加商品到其他店铺会返回403错误
@@ -1154,17 +1168,42 @@ curl -X POST "http://127.0.0.1:8009/admin/product/add" \
 
 ##### 编辑商品
 
+**说明：**
+- 支持部分字段更新，前端传什么字段就更新什么字段，不传的字段保持不变
+- 支持更新的字段：`seller_price`（售价）、`specification`（规格）、`is_on_shelf`（上架状态）、`remark`（备注）、`stock`（库存）
+- 不支持更新：`name`（商品名称）、`image`（商品图片）、`category_id`（分类ID）、成本相关字段
+- 成本相关字段由入库操作自动更新，不支持手动修改
+
 ```bash
-# 编辑商品（店铺ID从JWT token中获取）
+# 编辑商品（只更新售价和上架状态）
 curl -X PUT "http://127.0.0.1:8009/admin/product/edit/4" \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "贸彩1K白",
     "seller_price": 120,
-    "image": "http://dsers-dev-public.oss-cn-zhangjiakou.aliyuncs.com/07GE2k1DJWhah4QA_RlY91685434479136.jpg",
     "is_on_shelf": 1,
-    "remark": "",
+    "shop_id": 1
+  }'
+
+# 编辑商品（只更新库存）
+curl -X PUT "http://127.0.0.1:8009/admin/product/edit/4" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stock": 100,
+    "shop_id": 1
+  }'
+
+# 编辑商品（更新多个字段）
+curl -X PUT "http://127.0.0.1:8009/admin/product/edit/4" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "seller_price": 120,
+    "specification": "1L装",
+    "is_on_shelf": 1,
+    "remark": "高质量油漆",
+    "stock": 50,
     "shop_id": 1
   }'
 ```
@@ -2008,5 +2047,4 @@ CREATE TABLE stock_operation_item (
 - `operation_id` → `stock_operation(id)`: 级联删除
 - `shop_id` → `shop(id)`: 店铺删除时设为NULL
 - `product_id` → `product(id)`: 级联删除
-
 

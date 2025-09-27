@@ -4,8 +4,9 @@ import (
 	"cmf/paint_proj/model"
 	"cmf/paint_proj/service"
 	"context"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type PayController struct {
@@ -23,11 +24,12 @@ func (pc *PayController) PaymentData(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "PaymentData 参数错误"})
 		return
 	}
-	//userID := c.GetInt64("user_id")     // 从认证中获取用户ID
-	openid := "" // TODO getOpenIDByCode(req.Code) // 伪函数，请替换为真实获取 openid
+	userID := c.GetInt64("user_id") // 从认证中获取用户ID
+	shopID := c.GetInt64("shop_id") // 从认证中获取店铺ID
+	openid := ""                    // TODO getOpenIDByCode(req.Code) // 伪函数，请替换为真实获取 openid
 	orderNo := req.OrderNo
 
-	resp, err := pc.payService.PayOrder(context.Background(), orderNo, openid, req.Total)
+	resp, err := pc.payService.PayOrder(context.Background(), userID, shopID, orderNo, openid, req.Total)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "<UNK>"})
 		return

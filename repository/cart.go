@@ -14,6 +14,7 @@ type CartRepository interface {
 	GetByID(id int64) (*model.Cart, error)
 	GetByIDs(ids []int64) ([]model.Cart, error)
 	GetByIDAndUser(id, userID int64) (*model.Cart, error)
+	GetByIDAndUserAndShop(id, userID, shopID int64) (*model.Cart, error)
 	GetByUserAndProduct(userID, productID int64) (*model.Cart, error)
 	GetByUserID(userID int64) ([]model.Cart, error)
 	GetByUserIDWithProduct(userID int64) ([]model.CartWithProduct, error)
@@ -52,6 +53,12 @@ func (cr *cartRepository) GetByIDs(ids []int64) ([]model.Cart, error) {
 func (cr *cartRepository) GetByIDAndUser(id, userID int64) (*model.Cart, error) {
 	var cart model.Cart
 	err := cr.db.Model(&model.Cart{}).Where("id = ? AND user_id = ?", id, userID).First(&cart).Error
+	return &cart, err
+}
+
+func (cr *cartRepository) GetByIDAndUserAndShop(id, userID, shopID int64) (*model.Cart, error) {
+	var cart model.Cart
+	err := cr.db.Model(&model.Cart{}).Where("id = ? AND user_id = ? AND shop_id = ?", id, userID, shopID).First(&cart).Error
 	return &cart, err
 }
 

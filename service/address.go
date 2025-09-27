@@ -7,11 +7,11 @@ import (
 )
 
 type AddressService interface {
-	GetAddressList(userID int64) ([]*model.AddressInfo, error)
-	CreateAddress(userID int64, req *model.CreateAddressReq) error
-	SetDefaultAddress(userID, addressId int64) error
-	UpdateAddress(userID, addressId int64, req *model.UpdateAddressReq) error
-	DeleteAddress(userID, addressId int64) error
+	GetAddressList(userID int64, shopID int64) ([]*model.AddressInfo, error)
+	CreateAddress(userID int64, shopID int64, req *model.CreateAddressReq) error
+	SetDefaultAddress(userID, shopID int64, addressId int64) error
+	UpdateAddress(userID, shopID int64, addressId int64, req *model.UpdateAddressReq) error
+	DeleteAddress(userID, shopID int64, addressId int64) error
 
 	GetAdminAddressList(userId int64, userName string) ([]*model.AdminAddressInfo, error)
 	CreateAdminAddress(userId int64, req *model.CreateAddressReq) error
@@ -36,8 +36,8 @@ func NewAddressService(ar repository.AddressRepository) AddressService {
 	}
 }
 
-func (a addressService) GetAddressList(userID int64) ([]*model.AddressInfo, error) {
-	dbList, err := a.addressRepo.GetByUserId(userID)
+func (a addressService) GetAddressList(userID int64, shopID int64) ([]*model.AddressInfo, error) {
+	dbList, err := a.addressRepo.GetByUserIdAndShop(userID, shopID)
 	if err != nil {
 		return nil, err
 	}
@@ -58,9 +58,10 @@ func (a addressService) GetAddressList(userID int64) ([]*model.AddressInfo, erro
 	return res, nil
 }
 
-func (a addressService) CreateAddress(userID int64, req *model.CreateAddressReq) error {
+func (a addressService) CreateAddress(userID int64, shopID int64, req *model.CreateAddressReq) error {
 	dbData := model.Address{
 		UserId:         userID,
+		ShopID:         shopID,
 		RecipientName:  req.Data.RecipientName,
 		RecipientPhone: req.Data.RecipientPhone,
 		Province:       req.Data.Province,
@@ -81,11 +82,11 @@ func (a addressService) CreateAddress(userID int64, req *model.CreateAddressReq)
 	return a.addressRepo.Create(&dbData)
 }
 
-func (a addressService) SetDefaultAddress(userID, addressId int64) error {
-	return a.addressRepo.SetDefault(userID, addressId)
+func (a addressService) SetDefaultAddress(userID, shopID int64, addressId int64) error {
+	return a.addressRepo.SetDefault(userID, shopID, addressId)
 }
 
-func (a addressService) UpdateAddress(userID, addressId int64, req *model.UpdateAddressReq) error {
+func (a addressService) UpdateAddress(userID, shopID int64, addressId int64, req *model.UpdateAddressReq) error {
 	dbData := map[string]interface{}{}
 	if req.Data.RecipientName != "" {
 		dbData["recipient_name"] = req.Data.RecipientName
@@ -118,8 +119,8 @@ func (a addressService) UpdateAddress(userID, addressId int64, req *model.Update
 	return a.addressRepo.Update(addressId, dbData)
 }
 
-func (a addressService) DeleteAddress(userID, addressId int64) error {
-	return a.addressRepo.Delete(addressId)
+func (a addressService) DeleteAddress(userID, shopID int64, addressId int64) error {
+	return a.addressRepo.DeleteByUserAndShop(addressId, userID, shopID)
 }
 
 // GetAdminAddressList 获取admin地址列表
@@ -345,7 +346,7 @@ func (as *addressService) AdminCreateAddress(req *model.AdminCreateAddressReques
 	// 如果设置为默认地址，需要先取消其他默认地址
 	if req.IsDefault {
 		// 先取消所有默认地址
-		err = as.addressRepo.SetDefault(req.UserID, address.ID)
+		err = as.addressRepo.SetDefault(req.UserID, req.ShopID, address.ID)
 		if err != nil {
 			return err
 		}
@@ -374,7 +375,7 @@ func (as *addressService) AdminUpdateAddress(req *model.AdminUpdateAddressReques
 	if req.IsDefault {
 		updateData["is_default"] = 1
 		// 先取消该用户的其他默认地址
-		err := as.addressRepo.SetDefault(req.UserID, req.ID)
+		err := as.addressRepo.SetDefault(req.UserID, req.ShopID, req.ID)
 		if err != nil {
 			return err
 		}

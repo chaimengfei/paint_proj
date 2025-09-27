@@ -16,6 +16,7 @@ type AddressWithUser struct {
 type AddressRepository interface {
 	GetById(id int64) (*model.Address, error)
 	GetByUserId(userId int64) ([]model.Address, error)
+	GetByUserIdAndShop(userId int64, shopId int64) ([]model.Address, error)
 	GetByUserAppointId(userId, id int64) (*model.Address, error)
 	GetDefaultOrFirstAddressID(userId int64) (*model.Address, error)
 	// 新增：通过用户ID或用户名搜索地址（用于admin）
@@ -24,8 +25,9 @@ type AddressRepository interface {
 
 	Create(data *model.Address) error
 	Update(id int64, data map[string]interface{}) error
-	SetDefault(userId, id int64) error
+	SetDefault(userId, shopId, id int64) error
 	Delete(id int64) error
+	DeleteByUserAndShop(id, userId, shopId int64) error
 }
 
 type addressRepository struct {
@@ -45,6 +47,12 @@ func (ar *addressRepository) GetById(id int64) (*model.Address, error) {
 func (ar *addressRepository) GetByUserId(userId int64) ([]model.Address, error) {
 	var result []model.Address
 	err := ar.db.Model(&model.Address{}).Where("user_id = ? AND is_delete = 0", userId).Order("is_default desc").Find(&result).Error
+	return result, err
+}
+
+func (ar *addressRepository) GetByUserIdAndShop(userId int64, shopId int64) ([]model.Address, error) {
+	var result []model.Address
+	err := ar.db.Model(&model.Address{}).Where("user_id = ? AND shop_id = ? AND is_delete = 0", userId, shopId).Order("is_default desc").Find(&result).Error
 	return result, err
 }
 
@@ -122,16 +130,16 @@ func (ar *addressRepository) Create(data *model.Address) error {
 func (ar *addressRepository) Update(id int64, data map[string]interface{}) error {
 	return ar.db.Model(&model.Address{}).Where("id = ?", id).Updates(&data).Error
 }
-func (ar *addressRepository) SetDefault(userId, id int64) error {
+func (ar *addressRepository) SetDefault(userId, shopId, id int64) error {
 	err := ar.db.Transaction(func(tx *gorm.DB) error {
 		// 将现有的1设置为0
-		err := tx.Model(&model.Address{}).Where("user_id = ? and is_default = 1", userId).Updates(map[string]interface{}{"is_default": 0}).Error
+		err := tx.Model(&model.Address{}).Where("user_id = ? and shop_id = ? and is_default = 1", userId, shopId).Updates(map[string]interface{}{"is_default": 0}).Error
 		if err != nil {
 			return err
 		}
 		// 如果id > 0，将指定的地址设置为默认
 		if id > 0 {
-			err = tx.Model(&model.Address{}).Where("user_id = ? and id = ?", userId, id).Updates(map[string]interface{}{"is_default": 1}).Error
+			err = tx.Model(&model.Address{}).Where("user_id = ? and shop_id = ? and id = ?", userId, shopId, id).Updates(map[string]interface{}{"is_default": 1}).Error
 			if err != nil {
 				return err
 			}
@@ -143,4 +151,8 @@ func (ar *addressRepository) SetDefault(userId, id int64) error {
 
 func (ar *addressRepository) Delete(id int64) error {
 	return ar.db.Model(&model.Address{}).Where("id = ?", id).Updates(&model.Address{IsDelete: 1}).Error
+}
+
+func (ar *addressRepository) DeleteByUserAndShop(id, userId, shopId int64) error {
+	return ar.db.Model(&model.Address{}).Where("id = ? AND user_id = ? AND shop_id = ?", id, userId, shopId).Updates(&model.Address{IsDelete: 1}).Error
 }

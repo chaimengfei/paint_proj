@@ -12,7 +12,7 @@ import (
 
 type UserService interface {
 	LoginHandler(ctx context.Context, req *model.LoginRequest) (int64, string, error)
-	UpdateUserInfo(ctx context.Context, userId int64, req *model.UpdateUserInfoRequest) error
+	UpdateUserInfo(ctx context.Context, userId int64, shopID int64, req *model.UpdateUserInfoRequest) error
 
 	// 后台用户管理
 	CreateUserByAdmin(req *model.AdminUserAddRequest) (*model.User, error)
@@ -101,8 +101,8 @@ func (u userService) LoginHandler(ctx context.Context, req *model.LoginRequest) 
 	return user.ID, token, nil
 }
 
-func (u userService) UpdateUserInfo(ctx context.Context, userId int64, req *model.UpdateUserInfoRequest) error {
-	return u.userRepo.UpdateUserInfo(userId, req)
+func (u userService) UpdateUserInfo(ctx context.Context, userId int64, shopID int64, req *model.UpdateUserInfoRequest) error {
+	return u.userRepo.UpdateUserInfo(userId, shopID, req)
 }
 
 // CreateUserByAdmin 后台创建用户

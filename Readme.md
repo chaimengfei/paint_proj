@@ -1,6 +1,6 @@
 # 油漆销售系统
 
-## 功能特性
+## 业务说明
 
 ### 店铺管理
 
@@ -27,174 +27,23 @@
 - 库存操作按店铺分别管理
 - 入库操作需要管理员手动选择店铺
 
-#### 店铺接口
-系统提供店铺信息查询接口，支持小程序和后台管理系统：
+#### (技术)数据库初始化
 
-**获取店铺列表**
-```bash
-# 小程序接口
-curl -X GET "http://localhost:8009/api/shop/list"
+首次使用前，需要在数据库中插入店铺数据：
 
-# 后台管理接口
-curl -X GET "http://localhost:8009/admin/shop/list"
-```
-
-**响应示例**
-```json
-{
-  "code": 0,
-  "data": [
-    {
-      "id": 1,
-      "name": "燕郊店",
-      "code": "YJ001",
-      "address": "河北省廊坊市三河市燕郊镇",
-      "phone": "13161621688",
-      "manager_name": "张三",
-      "is_active": 1
-    },
-    {
-      "id": 2,
-      "name": "涞水店", 
-      "code": "LS001",
-      "address": "河北省保定市涞水县",
-      "phone": "12345678910",
-      "manager_name": "李四",
-      "is_active": 1
-    }
-  ],
-  "message": "获取店铺列表成功"
-}
-```
-
-**注意事项**
-- 店铺接口无需token验证，可直接访问
-- 只返回启用状态（is_active=1）的店铺
-- 支持小程序和后台管理系统同时使用
-
-### 后台管理系统认证
-
-系统支持后台管理员登录认证，使用 JWT Token 方案：
-
-#### 管理员账号
-- **root** (密码: admin123): 超级管理员，可操作所有店铺数据
-- **lizengchun** (密码: lzc123): 燕郊店管理员，只能操作燕郊店数据
-- **zhangweiyang** (密码: zwy123): 涞水店管理员，只能操作涞水店数据
-
-#### 登录接口
-```bash
-curl -X POST "http://localhost:8009/admin/operator/login" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "operator_name": "lizengchun",
-    "password": "your_password"
-  }'
-```
-
-**响应示例**
-
-**普通管理员登录响应**：
-```json
-{
-  "code": 0,
-  "message": "登录成功",
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "operator": {
-      "id": 2,
-      "operator_name": "lizengchun",
-      "shop_id": 1,
-      "real_name": "李增春",
-      "phone": "131-0000-0000",
-      "is_active": 1
-    },
-    "shop_info": {
-      "id": 1,
-      "name": "燕郊店",
-      "code": "YJ001",
-      "address": "河北省廊坊市三河市燕郊镇",
-      "phone": "13161621688",
-      "manager_name": "张三",
-      "is_active": 1
-    },
-    "expires_in": 7200
-  }
-}
-```
-
-**超级管理员(root)登录响应**：
-```json
-{
-  "code": 0,
-  "message": "登录成功",
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "operator": {
-      "id": 1,
-      "operator_name": "root",
-      "shop_id": 1,
-      "real_name": "超级管理员",
-      "phone": "400-000-0000",
-      "is_active": 1
-    },
-    "shop_list": [
-      {
-        "id": 1,
-        "name": "燕郊店",
-        "code": "YJ001",
-        "address": "河北省廊坊市三河市燕郊镇",
-        "phone": "13161621688",
-        "manager_name": "张三",
-        "is_active": 1
-      },
-      {
-        "id": 2,
-        "name": "涞水店",
-        "code": "LS001",
-        "address": "河北省保定市涞水县",
-        "phone": "0312-7654321",
-        "manager_name": "张伟阳",
-        "is_active": 1
-      }
-    ],
-    "expires_in": 7200
-  }
-}
-```
+### 后台管理认证
 
 #### 权限控制
+
 - **超级管理员 (root)**: 可以操作所有店铺的数据
-- **普通管理员**: 只能操作自己所属店铺的数据
-- **Token 有效期**: 2小时
-- **自动店铺关联**: 所有操作自动关联到管理员所属店铺
 
-#### 使用示例
-```bash
-# 添加商品（自动关联到管理员所属店铺）
-curl -X POST "http://localhost:8009/admin/product/add" \
-  -H "Authorization: Bearer <admin_token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "新商品",
-    "price": 100,
-    "description": "商品描述"
-  }'
+- **普通管理员(lizengchun、zhangweiyang)**: 只能操作自己所属店铺的数据
 
-# 批量入库（自动关联到管理员所属店铺）
-curl -X POST "http://localhost:8009/admin/stock/batch/inbound" \
-  -H "Authorization: Bearer <admin_token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "items": [
-      {
-        "product_id": 1,
-        "quantity": 100
-      }
-    ]
-  }'
-```
+  Token 有效期: 2小时
 
-#### 数据库初始化
+  自动店铺关联: 所有操作自动关联到管理员所属店铺
+
+#### (技术)数据库初始化
 首次使用前，需要在数据库中插入管理员数据：
 ```sql
 -- 插入示例管理员数据（密码已加密）
@@ -207,10 +56,11 @@ INSERT INTO operator (name, password, shop_id, real_name, phone) VALUES
 
 **注意**: 管理员账号数量有限，如需新增管理员，请直接在数据库中插入记录。系统不提供通过接口创建、修改、删除管理员的功能。
 
-### 关于登陆
+### 关于账号&登陆
 
-1. 是否每次都要调用 GetOpenIDByCode?
-**不是每次都要调用。标准流程如下：**
+#### 1.小程序登陆
+
+1. 小程序的openid 作为用户在微信的唯一标识 仅第一次登陆，发起支付用。
 
 
 | 阶段             | 操作                                       | 调用 GetOpenIDByCode？ | 后端是否需要用它？ |
@@ -219,37 +69,23 @@ INSERT INTO operator (name, password, shop_id, real_name, phone) VALUES
 | 后续所有请求     | 带上 token 或 userID                       | ❌ 否                   | ❌ 不需要调用       |
 | 发起支付         | 用存下来的 openid 发起支付下单             | ❌ 否                   | ✅ 用 openid        |
 
-2. 微信小程序中，`openid` 可以作为用户唯一标识，是否可以替代 `user_id`？
+2. 我们系统会生成唯一的user_id 与 open_id 进行绑定
 
-| 方案                         | 是否可行 | 说明                                                         |
-| ---------------------------- | -------- | ------------------------------------------------------------ |
-| 直接用 `openid` 作为用户主键 | ✅ 可行   | 若你项目只对接微信小程序，openid 是稳定主键                  |
-| 使用 `user_id`（数字ID）     | ✅ 推荐   | 更通用、便于关联数据库中的其他表（如订单、评论、积分等）     |
-| 两者都存                     | ✅ 最推荐 | 保留 `user_id`（主键自增ID），记录 `openid`（平台标识），便于扩展和对接其他渠道（如 Web、App、小程序等） |
+#### 2.web后台添加账号
 
- ✅ 使用方式推荐
+### 关于下单
 
-| 场景             | 建议使用                                                     |
-| ---------------- | ------------------------------------------------------------ |
-| 用户注册、登录时 | 使用 `openid` 查找/创建用户                                  |
-| 数据库关联、查询 | 使用 `user_id`                                               |
-| 接口认证         | 生成 Token 时包含 `user_id` 或 `openid`，推荐以 `user_id` 为主 |
-
-### 小程序购买流程
-1. 用户下单 → 创建 `order` 记录
-2. 创建 `stock_operation` 记录（出库操作）
-3. 创建 `stock_operation_item` 记录（商品明细，关联订单ID）
-4. 更新商品库存
+#### 1. 小程序购买
 
 ```
 CheckoutOrder()
 ├── 数据校验和准备阶段
 └── processCheckoutTransaction() // 事务处理
-    ├── 创建订单
-    ├── 记录订单日志
-    ├── 创建库存操作记录
-    ├── 处理库存出库
-    └── 删除购物车
+    ├── 创建订单 >order表
+    ├── 记录订单日志 >order_log表
+    ├── 创建库存操作记录 >stock_operation表、stock_operation_log表
+    ├── 处理库存出库 > 更新product表
+    └── 删除购物车 > 更新cart表
 ```
 
 - order 表专注于订单业务逻辑（支付状态、收货信息等）
@@ -257,84 +93,8 @@ CheckoutOrder()
 - order_log：订单业务操作日志(创建、取消、删除、支付等)
 - stock_operation_item 统一记录所有商品明细，避免数据重复
 
-#### 2. 管理员后台操作流程
-1. 管理员操作 → 创建 `stock_operation` 记录
-2. 创建 `stock_operation_item` 记录（商品明细）
-3. 更新商品库存
-
-### 库存管理功能
-
-#### 1. 小程序用户购买自动出库
-- 当用户在小程序中下单时，系统会自动：
-  - 检查商品库存是否充足
-  - 创建订单记录
-  - 自动减少商品库存
-  - 记录库存出库日志
-
-#### 2. 管理员后台库存操作
-- **批量入库操作** (`POST /admin/stock/batch/inbound`)
-  - 管理员可以一次性对多个商品进行入库
-  - 记录操作人和操作人ID
-  - 记录入库日志
-  
-- **批量出库操作** (`POST /admin/stock/batch/outbound`)
-  - 管理员可以一次性对多个商品进行出库
-  - 记录用户名称、用户ID、用户账号、购买时间
-  - 检查库存是否充足
-  - 记录出库日志
-
-#### 3. 库存操作查询
-- **获取库存操作列表** (`GET /admin/stock/operations`)
-  - 支持分页查询
-  - 显示所有库存操作记录
-  
-- **获取库存操作详情** (`GET /admin/stock/operation/:id`)
-  - 显示操作主表信息
-  - 显示操作子表商品明细
-  - 记录所有库存操作历史（兼容旧版本）
-
-1. **小程序购买流程**：
-
-   - 用户选择商品并下单
-   - 系统自动检查库存
-   - 创建订单并减少库存
-   - 记录出库日志
-
-2. **管理员库存管理**：
-
-   - 通过后台管理界面进行入库、出库、退货操作
-   - 所有操作都会记录详细的日志
-   - 支持库存日志查询和追溯
-
-3. **库存安全**：
-
-   - 所有库存操作都有库存检查
-   - 出库时会验证库存是否充足
-   - 完整的操作日志记录
-
-   
-
-## 测试建议
-
-### 1. 功能测试
-
-- 正常下单流程
-- 库存不足时的处理
-- 并发下单场景
-
-### 2. 异常测试
-
-- 数据库连接异常
-- 网络超时
-- 死锁场景
-
-### 3. 性能测试
-
-- 高并发下单
-- 事务执行时间
-- 数据库连接池使用情况
-
-## 后续优化建议
+#### 2. 管理员后台创建出库单
+## TODO后续优化建议
 
 ### 1. 库存锁定机制
 
@@ -1953,98 +1713,33 @@ curl 'http://192.168.99.172:8009/admin/stock/operations?types=2&page=1&page_size
 
 
 
----
-
-## 业务逻辑说明
-
-### 1. 默认地址处理
-
-- 当设置某个地址为默认地址时，系统会自动取消该用户的其他默认地址
-- 每个用户只能有一个默认地址
-
-### 2. 权限控制
-
-- 管理员可以为任意用户创建、编辑、删除地址
-- 删除地址时需要提供用户ID进行权限验证
-
-### 3. 数据安全
-
-- 删除地址采用软删除方式，不会真正删除数据库记录
-- 所有操作都会记录操作日志
-
-### 4. 搜索功能
-
-- 支持通过用户ID精确搜索
-- 支持通过用户名称模糊搜索
-- 两个搜索条件可以同时使用
-
-### 5. 数据验证
-
-- 收货人姓名、电话、省市区、详细地址为必填字段
-- 电话号码格式建议进行前端验证
-- 地址信息建议进行合理性验证
-- 
-
 ## 需初始化的数据库表结构
 
-### 库存操作明细表
+### Admin
 
-#### stock_operation_item 库存操作子表
-```sql
-CREATE TABLE stock_operation_item (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  operation_id BIGINT NOT NULL COMMENT '操作主表ID',
-  shop_id BIGINT DEFAULT NULL COMMENT '关联店铺ID',
-  order_id BIGINT COMMENT '关联订单ID(小程序购买时)',
-  order_no VARCHAR(64) COMMENT '关联订单号(小程序购买时)',
-  product_id BIGINT NOT NULL COMMENT '商品ID',
-  quantity INT NOT NULL COMMENT '操作数量',
-  unit_price BIGINT NOT NULL DEFAULT 0 COMMENT '单价(分)',
-  total_price BIGINT NOT NULL DEFAULT 0 COMMENT '总价(分)',
-  before_stock INT NOT NULL COMMENT '操作前库存',
-  after_stock INT NOT NULL COMMENT '操作后库存',
-  product_cost BIGINT NOT NULL DEFAULT 0 COMMENT '货物成本(进价) 单位:分',
-  profit BIGINT NOT NULL DEFAULT 0 COMMENT '利润(卖价-总成本)*数量 单位:分',
-  product_name VARCHAR(255) NOT NULL COMMENT '商品全名',
-  specification VARCHAR(200) DEFAULT '' COMMENT '规格',
-  unit VARCHAR(50) DEFAULT '' COMMENT '单位',
-  remark VARCHAR(500) DEFAULT '' COMMENT '备注',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  INDEX idx_operation_id (operation_id),
-  INDEX idx_shop_id (shop_id),
-  INDEX idx_product_id (product_id),
-  INDEX idx_order_id (order_id),
-  FOREIGN KEY (operation_id) REFERENCES stock_operation(id) ON DELETE CASCADE,
-  FOREIGN KEY (shop_id) REFERENCES shop(id) ON DELETE SET NULL,
-  FOREIGN KEY (product_id) REFERENCES product(id) ON DELETE CASCADE
-);
-```
+1. operator表、shop表、category表、supplier表、user表
 
-**字段说明：**
-- `shop_id`: 关联店铺ID，用于快速筛选和权限控制
-- `operation_id`: 关联库存操作主表ID
-- `order_id`: 关联订单ID（小程序购买时）
-- `product_id`: 商品ID
-- `quantity`: 操作数量（正数为入库，负数为出库）
-- `unit_price`: 单价（入库时为0，出库时为售价）
-- `total_price`: 总价
-- `before_stock`: 操作前库存
-- `after_stock`: 操作后库存
-- `product_cost`: 商品成本（进价）
-- `profit`: 利润（出库时计算：(卖价-总成本)*数量）
-- `product_name`: 商品名称（冗余存储，便于查询）
-- `specification`: 商品规格
-- `unit`: 商品单位
-- `remark`: 备注
 
-**索引说明：**
-- `idx_operation_id`: 按操作ID查询明细
-- `idx_shop_id`: 按店铺ID快速筛选明细
-- `idx_product_id`: 按商品ID查询明细
-- `idx_order_id`: 按订单ID查询明细
 
-**外键约束：**
-- `operation_id` → `stock_operation(id)`: 级联删除
-- `shop_id` → `shop(id)`: 店铺删除时设为NULL
-- `product_id` → `product(id)`: 级联删除
+## 测试用例Case
+
+### 1. 功能测试
+
+- 正常下单流程
+- 库存不足时的处理
+- 并发下单场景
+
+### 2. 异常测试
+
+- 数据库连接异常
+- 网络超时
+- 死锁场景
+
+### 3. 性能测试
+
+- 高并发下单
+- 事务执行时间
+- 数据库连接池使用情况
+
+
 

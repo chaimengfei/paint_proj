@@ -9,7 +9,7 @@ import (
 
 type UserRepository interface {
 	GetOrCreateUserByOpenID(openid, nickname, avatar string) (*model.User, error)
-	UpdateUserInfo(userId int64, req *model.UpdateUserInfoRequest) error
+	UpdateUserInfo(userId int64, shopID int64, req *model.UpdateUserInfoRequest) error
 
 	// 后台用户管理
 	CreateUserByAdmin(user *model.User) error
@@ -52,7 +52,7 @@ func (u userRepository) GetOrCreateUserByOpenID(openid, nickname, avatar string)
 	return nil, err
 }
 
-func (u userRepository) UpdateUserInfo(userId int64, req *model.UpdateUserInfoRequest) error {
+func (u userRepository) UpdateUserInfo(userId int64, shopID int64, req *model.UpdateUserInfoRequest) error {
 	updateVal := map[string]interface{}{}
 	if req.Nickname != "" {
 		updateVal["nickname"] = req.Nickname
@@ -60,7 +60,7 @@ func (u userRepository) UpdateUserInfo(userId int64, req *model.UpdateUserInfoRe
 	if req.Mobile != "" {
 		updateVal["mobile_phone"] = req.Mobile
 	}
-	err := u.db.Model(&model.User{}).Where("id = ?", userId).Updates(updateVal).Error
+	err := u.db.Model(&model.User{}).Where("id = ? AND shop_id = ?", userId, shopID).Updates(updateVal).Error
 	return err
 }
 

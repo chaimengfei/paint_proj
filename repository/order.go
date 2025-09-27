@@ -9,7 +9,7 @@ import (
 
 type OrderRepository interface {
 	GetOrderList(req *model.OrderListRequest) ([]model.Order, int64, error)
-	GetOrderByNo(userID int64, orderNo string) (*model.Order, error)
+	GetOrderByNo(userID int64, shopID int64, orderNo string) (*model.Order, error)
 	GetOrderByOrderNo(orderNo string) (*model.Order, error)
 
 	DeleteOrder(orderID int64, order *model.Order, orderLog *model.OrderLog) error
@@ -37,7 +37,7 @@ func (or *orderRepository) GetOrderList(req *model.OrderListRequest) ([]model.Or
 		page = 1
 	}
 	offset := (page - 1) * pageSize
-	queryDb := or.db.Model(&model.Order{}).Where("user_id = ? and deleted_at is NULL", req.UserID)
+	queryDb := or.db.Model(&model.Order{}).Where("user_id = ? and shop_id = ? and deleted_at is NULL", req.UserID, req.ShopID)
 	if req.Status > 0 {
 		queryDb = queryDb.Where("order_status = ?", req.Status)
 	}
@@ -54,9 +54,9 @@ func (or *orderRepository) GetOrderList(req *model.OrderListRequest) ([]model.Or
 
 // GetOrderItemList 已废弃，订单商品信息现在通过stock_operation_item表获取
 // 此方法已移除，请使用stock repository的GetStockOperationItemsByOrderID方法
-func (or *orderRepository) GetOrderByNo(userID int64, orderNo string) (*model.Order, error) {
+func (or *orderRepository) GetOrderByNo(userID int64, shopID int64, orderNo string) (*model.Order, error) {
 	var order model.Order
-	err := or.db.Model(&model.Order{}).Where("user_id = ? and order_no= ?", userID, orderNo).First(&order).Error
+	err := or.db.Model(&model.Order{}).Where("user_id = ? and shop_id = ? and order_no= ?", userID, shopID, orderNo).First(&order).Error
 	if err != nil {
 		return nil, err
 	}

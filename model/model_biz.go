@@ -80,6 +80,7 @@ type PaidCallbackData struct {
 }
 type OrderListRequest struct {
 	UserID   int64
+	ShopID   int64 // 添加店铺ID
 	Status   int32
 	Page     int32
 	PageSize int32

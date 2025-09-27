@@ -67,6 +67,7 @@ func (oc *OrderController) CheckoutOrder(c *gin.Context) {
 // GetOrderList 获取订单列表
 func (oc *OrderController) GetOrderList(c *gin.Context) {
 	userID := c.GetInt64("user_id")
+	shopID := c.GetInt64("shop_id") // 从认证中获取店铺ID
 	statusStr := c.Query("status")
 	pageStr := c.DefaultQuery("page", "1")
 	pageSizeStr := c.DefaultQuery("page_size", "10")
@@ -77,6 +78,7 @@ func (oc *OrderController) GetOrderList(c *gin.Context) {
 
 	req := &model.OrderListRequest{
 		UserID:   userID,
+		ShopID:   shopID, // 添加店铺ID
 		Status:   int32(status),
 		Page:     int32(page),
 		PageSize: int32(pageSize),
@@ -96,8 +98,9 @@ func (oc *OrderController) GetOrderList(c *gin.Context) {
 // GetOrderDetail 获取订单详情
 func (oc *OrderController) GetOrderDetail(c *gin.Context) {
 	userID := c.GetInt64("user_id")
+	shopID := c.GetInt64("shop_id") // 从认证中获取店铺ID
 	orderNo := c.Query("order_no")
-	order, err := oc.orderService.GetOrderDetail(c.Request.Context(), userID, orderNo)
+	order, err := oc.orderService.GetOrderDetail(c.Request.Context(), userID, shopID, orderNo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取订单详情失败:" + err.Error()})
 		return
@@ -108,6 +111,7 @@ func (oc *OrderController) GetOrderDetail(c *gin.Context) {
 // CancelOrder 取消订单
 func (oc *OrderController) CancelOrder(c *gin.Context) {
 	userID := c.GetInt64("user_id")
+	shopID := c.GetInt64("shop_id") // 从认证中获取店铺ID
 	var req model.OrderNoReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
@@ -115,7 +119,7 @@ func (oc *OrderController) CancelOrder(c *gin.Context) {
 	}
 
 	orderNo := req.OrderNo
-	order, err := oc.orderService.GetOrderDetail(c.Request.Context(), userID, orderNo)
+	order, err := oc.orderService.GetOrderDetail(c.Request.Context(), userID, shopID, orderNo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "查询订单异常:" + err.Error()})
 		return
@@ -130,8 +134,9 @@ func (oc *OrderController) CancelOrder(c *gin.Context) {
 // DeleteOrder 删除订单
 func (oc *OrderController) DeleteOrder(c *gin.Context) {
 	userID := c.GetInt64("user_id")
+	shopID := c.GetInt64("shop_id") // 从认证中获取店铺ID
 	orderNo := c.Query("order_no")
-	order, err := oc.orderService.GetOrderDetail(c.Request.Context(), userID, orderNo)
+	order, err := oc.orderService.GetOrderDetail(c.Request.Context(), userID, shopID, orderNo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "查询订单异常:" + err.Error()})
 		return

@@ -7,14 +7,15 @@ import (
 	"cmf/paint_proj/repository"
 	"context"
 	"errors"
+	"time"
+
 	"github.com/wechatpay-apiv3/wechatpay-go/core"
 	"github.com/wechatpay-apiv3/wechatpay-go/services/payments/jsapi"
 	"github.com/wechatpay-apiv3/wechatpay-go/utils"
-	"time"
 )
 
 type PayService interface {
-	PayOrder(ctx context.Context, openid, orderNo string, total model.Amount) (*jsapi.PrepayWithRequestPaymentResponse, error)
+	PayOrder(ctx context.Context, userID int64, shopID int64, openid, orderNo string, total model.Amount) (*jsapi.PrepayWithRequestPaymentResponse, error)
 	PaidCallback(ctx context.Context, req *model.PaidCallbackData) error // 订单支付成功回调
 }
 
@@ -32,13 +33,17 @@ func NewPayService(or repository.OrderRepository, cr repository.CartRepository, 
 	}
 }
 
-func (ps *payService) PayOrder(ctx context.Context, openid, orderNo string, total model.Amount) (*jsapi.PrepayWithRequestPaymentResponse, error) {
+func (ps *payService) PayOrder(ctx context.Context, userID int64, shopID int64, openid, orderNo string, total model.Amount) (*jsapi.PrepayWithRequestPaymentResponse, error) {
 	// 1. 获取订单
 	order, err := ps.orderRepo.GetOrderByOrderNo(orderNo)
 	if err != nil {
 		return nil, err
 	}
-	// 2. 检查订单状态是否可以支付
+	// 2. 验证订单是否属于用户和店铺
+	if order.UserId != userID || order.ShopID != shopID {
+		return nil, errors.New("订单不属于当前用户或店铺")
+	}
+	// 3. 检查订单状态是否可以支付
 	if order.OrderStatus != model.OrderStatusPendingPayment {
 		return nil, errors.New("订单状态异常 无法支付")
 	}

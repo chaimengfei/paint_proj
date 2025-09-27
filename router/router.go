@@ -68,29 +68,16 @@ func SetupRouter() *gin.Engine {
 	// API路由 供微信小程序用
 	api := r.Group("/api")
 	{
-		// 店铺接口（无需token验证）
-		shopGroup := api.Group("/shop")
-		{
-			shopGroup.GET("/list", shopController.GetShopList) // 获取店铺列表
-		}
-
+		api.POST("/login", userController.Login)          // 首次登陆注册user_id并获取token（无需token验证）
+		api.GET("/shop/list", shopController.GetShopList) // 获取店铺列表（无需token验证）
 		userGroup := api.Group("/user")
 		{
-			userGroup.POST("/login", userController.Login) // 首次登陆注册user_id并获取token
 			userGroup.POST("/update/info", auth.AuthMiddleware(), userController.UpdateUserInfo)
 			userGroup.POST("/bind-mobile", auth.AuthMiddleware(), userController.WechatBindMobile) // 绑定手机号
 		}
-		productGroup := api.Group("/product")
+		productGroup := api.Group("/product", auth.AuthMiddleware())
 		{
-			productGroup.GET("/list", auth.AuthMiddleware(), productController.GetProductList)
-		}
-		addressGroup := api.Group("/address", auth.AuthMiddleware())
-		{
-			addressGroup.GET("/list", addressController.GetAddressList)
-			addressGroup.POST("/create", addressController.CreateAddress)
-			addressGroup.POST("/set_default/:id", addressController.SetDefultAddress)
-			addressGroup.POST("/update", addressController.UpdateAddress)
-			addressGroup.DELETE("/delete/:id", addressController.DeleteAddress)
+			productGroup.GET("/list", productController.GetProductList)
 		}
 		cartGroup := api.Group("/cart", auth.AuthMiddleware())
 		{
@@ -113,6 +100,14 @@ func SetupRouter() *gin.Engine {
 
 			payGroup.POST("/data", auth.AuthMiddleware(), payController.PaymentData)
 			payGroup.POST("/callback", payController.PaymentCallback)
+		}
+		addressGroup := api.Group("/address", auth.AuthMiddleware())
+		{
+			addressGroup.GET("/list", addressController.GetAddressList)
+			addressGroup.POST("/create", addressController.CreateAddress)
+			addressGroup.POST("/set_default/:id", addressController.SetDefultAddress)
+			addressGroup.POST("/update", addressController.UpdateAddress)
+			addressGroup.DELETE("/delete/:id", addressController.DeleteAddress)
 		}
 	}
 	// Admin路由 供Web后台管理系统

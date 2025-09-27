@@ -8,8 +8,8 @@ import (
 type CartService interface {
 	GetCartList(userID int64, shopID int64) ([]model.CartWithProduct, error)
 	AddToCart(userID, productID int64, shopID int64) error
-	UpdateCartItem(userID, cartID int64, quantity int) error
-	DeleteCartItem(userID, cartID int64) error
+	UpdateCartItem(userID, shopID, cartID int64, quantity int) error
+	DeleteCartItem(userID, shopID, cartID int64) error
 }
 
 type cartService struct {
@@ -60,9 +60,9 @@ func (cs *cartService) AddToCart(userID, productID int64, shopID int64) error {
 	return cs.cartRepo.Create(cart)
 }
 
-func (cs *cartService) UpdateCartItem(userID, cartID int64, quantity int) error {
-	// 验证购物车项属于该用户
-	_, err := cs.cartRepo.GetByIDAndUser(cartID, userID)
+func (cs *cartService) UpdateCartItem(userID, shopID, cartID int64, quantity int) error {
+	// 验证购物车项属于该用户和店铺
+	_, err := cs.cartRepo.GetByIDAndUserAndShop(cartID, userID, shopID)
 	if err != nil {
 		return err
 	}
@@ -70,9 +70,9 @@ func (cs *cartService) UpdateCartItem(userID, cartID int64, quantity int) error 
 	return cs.cartRepo.UpdateQuantity(cartID, quantity)
 }
 
-func (cs *cartService) DeleteCartItem(userID, cartID int64) error {
-	// 验证购物车项属于该用户
-	_, err := cs.cartRepo.GetByIDAndUser(cartID, userID)
+func (cs *cartService) DeleteCartItem(userID, shopID, cartID int64) error {
+	// 验证购物车项属于该用户和店铺
+	_, err := cs.cartRepo.GetByIDAndUserAndShop(cartID, userID, shopID)
 	if err != nil {
 		return err
 	}

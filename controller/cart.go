@@ -54,13 +54,14 @@ func (cc *CartController) AddToCart(c *gin.Context) {
 // UpdateCartItem 更新购物车商品数量
 func (cc *CartController) UpdateCartItem(c *gin.Context) {
 	userID := c.GetInt64("user_id")
+	shopID := c.GetInt64("shop_id") // 从认证中获取店铺ID
 	var req model.UpdateCartItemReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
 		return
 	}
 
-	err := cc.cartService.UpdateCartItem(userID, req.CartID, req.Quantity)
+	err := cc.cartService.UpdateCartItem(userID, shopID, req.CartID, req.Quantity)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "更新失败"})
 		return
@@ -72,11 +73,12 @@ func (cc *CartController) UpdateCartItem(c *gin.Context) {
 // DeleteCartItem 删除购物车商品
 func (cc *CartController) DeleteCartItem(c *gin.Context) {
 	userID := c.GetInt64("user_id")
+	shopID := c.GetInt64("shop_id") // 从认证中获取店铺ID
 
 	idStr := c.Param("id")
 	cartId, _ := strconv.ParseInt(idStr, 10, 64)
 
-	err := cc.cartService.DeleteCartItem(userID, cartId)
+	err := cc.cartService.DeleteCartItem(userID, shopID, cartId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "删除失败"})
 		return

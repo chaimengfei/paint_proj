@@ -11,8 +11,8 @@ import (
 
 type OrderService interface {
 	CheckoutOrder(ctx context.Context, userID int64, shopID int64, req *model.CheckoutOrderRequest) (*model.CheckoutResponse, error)
-	GetOrderList(ctx context.Context, req *model.OrderListRequest) ([]model.Order, int64, error) // 获取订单列表
-	GetOrderDetail(ctx context.Context, userID int64, orderNo string) (*model.Order, error)      // 获取订单详情
+	GetOrderList(ctx context.Context, req *model.OrderListRequest) ([]model.Order, int64, error)          // 获取订单列表
+	GetOrderDetail(ctx context.Context, userID int64, shopID int64, orderNo string) (*model.Order, error) // 获取订单详情
 
 	CancelOrder(ctx context.Context, userID int64, order *model.Order) error // 取消订单
 	DeleteOrder(ctx context.Context, userID int64, order *model.Order) error // 删除订单
@@ -327,8 +327,8 @@ func (os *orderService) GetOrderList(ctx context.Context, req *model.OrderListRe
 	}
 	return orders, total, nil
 }
-func (os *orderService) GetOrderDetail(ctx context.Context, userID int64, orderNo string) (*model.Order, error) {
-	order, err := os.orderRepo.GetOrderByNo(userID, orderNo)
+func (os *orderService) GetOrderDetail(ctx context.Context, userID int64, shopID int64, orderNo string) (*model.Order, error) {
+	order, err := os.orderRepo.GetOrderByNo(userID, shopID, orderNo)
 	if err != nil {
 		return nil, err
 	}

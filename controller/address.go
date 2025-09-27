@@ -21,8 +21,9 @@ func NewAddressController(s service.AddressService, shopService service.ShopServ
 
 func (ac *AddressController) GetAddressList(c *gin.Context) {
 	userID := c.GetInt64("user_id")
+	shopID := c.GetInt64("shop_id") // 从认证中获取店铺ID
 
-	list, err := ac.addressService.GetAddressList(userID)
+	list, err := ac.addressService.GetAddressList(userID, shopID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "获取地址失败"})
 		return
@@ -34,12 +35,13 @@ func (ac *AddressController) GetAddressList(c *gin.Context) {
 // CreateAddress 创建地址
 func (ac *AddressController) CreateAddress(c *gin.Context) {
 	userID := c.GetInt64("user_id") // 从认证中获取用户ID
+	shopID := c.GetInt64("shop_id") // 从认证中获取店铺ID
 	var req model.CreateAddressReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
 		return
 	}
-	err := ac.addressService.CreateAddress(userID, &req)
+	err := ac.addressService.CreateAddress(userID, shopID, &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "创建地址失败"})
 		return
@@ -50,9 +52,10 @@ func (ac *AddressController) CreateAddress(c *gin.Context) {
 // SetDefultAddress 设置默认地址
 func (ac *AddressController) SetDefultAddress(c *gin.Context) {
 	userID := c.GetInt64("user_id") // 从认证中获取用户ID
+	shopID := c.GetInt64("shop_id") // 从认证中获取店铺ID
 	addressID, _ := strconv.ParseInt(c.PostForm("id"), 10, 64)
 
-	err := ac.addressService.SetDefaultAddress(userID, addressID)
+	err := ac.addressService.SetDefaultAddress(userID, shopID, addressID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "更新默认地址失败"})
 		return
@@ -64,12 +67,13 @@ func (ac *AddressController) SetDefultAddress(c *gin.Context) {
 // UpdateAddress 更新购物车商品数量
 func (ac *AddressController) UpdateAddress(c *gin.Context) {
 	userID := c.GetInt64("user_id")
+	shopID := c.GetInt64("shop_id") // 从认证中获取店铺ID
 	var req model.UpdateAddressReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "参数错误"})
 		return
 	}
-	err := ac.addressService.UpdateAddress(userID, req.Data.AddressID, &req)
+	err := ac.addressService.UpdateAddress(userID, shopID, req.Data.AddressID, &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "更新地址失败"})
 		return
@@ -81,10 +85,11 @@ func (ac *AddressController) UpdateAddress(c *gin.Context) {
 // DeleteAddress 删除地址
 func (ac *AddressController) DeleteAddress(c *gin.Context) {
 	userID := c.GetInt64("user_id")
+	shopID := c.GetInt64("shop_id") // 从认证中获取店铺ID
 	idStr := c.Param("id")
 	addressID, _ := strconv.ParseInt(idStr, 10, 64)
 
-	err := ac.addressService.DeleteAddress(userID, addressID)
+	err := ac.addressService.DeleteAddress(userID, shopID, addressID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "删除失败"})
 		return
@@ -194,9 +199,8 @@ func (ac *AddressController) DeleteAdminAddress(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "缺少用户ID参数"})
 		return
 	}
-	userID, _ := strconv.ParseInt(userIDStr, 10, 64)
 
-	err := ac.addressService.DeleteAddress(userID, addressID)
+	err := ac.addressService.AdminDeleteAddress(addressID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": "删除地址失败"})
 		return

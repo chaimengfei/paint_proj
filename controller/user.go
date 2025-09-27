@@ -57,7 +57,8 @@ func (uc *UserController) UpdateUserInfo(c *gin.Context) {
 	}
 
 	userID := c.GetInt64("user_id")
-	err := uc.userService.UpdateUserInfo(context.Background(), userID, &req)
+	shopID := c.GetInt64("shop_id") // 从认证中获取店铺ID
+	err := uc.userService.UpdateUserInfo(context.Background(), userID, shopID, &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新信息失败:" + err.Error()})
 		return

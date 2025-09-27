@@ -238,7 +238,7 @@ func (sr *stockRepository) ProcessInboundTransaction(operation *model.StockOpera
 			// 检查是否需要更新成本价
 			var product model.Product
 			if err := tx.Model(&model.Product{}).
-				Select("cost, name").
+				Select("cost, name, shipping_cost, product_cost").
 				Where("id = ?", item.ProductID).
 				First(&product).Error; err != nil {
 				return err
